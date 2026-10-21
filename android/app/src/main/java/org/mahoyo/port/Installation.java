@@ -35,6 +35,13 @@ final class Installation {
   for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);File file=new File(source,row.getString("name"));if(!file.isFile())continue;android.system.StructStat stat=android.system.Os.stat(file.getPath());bytes+=Math.min(row.getLong("bytes"),Math.min(file.length(),Math.max(0,stat.st_blocks)*512L));}
   return bytes;
  }
+ void preservePartialSteamFiles(File source)throws Exception{
+  org.json.JSONArray rows=SteamResources.assetJson(context,"steam-profile/source-profile.json",1024*1024).getJSONArray("archives");
+  for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);File file=new File(source,row.getString("name"));long expected=row.getLong("bytes");
+   // Upstream truncates short large files to zero before validating. Sparse extension preserves completed chunks.
+   if(file.isFile()&&file.length()>0&&file.length()<expected&&expected>100L*1024*1024)try(RandomAccessFile output=new RandomAccessFile(file,"rw")){output.setLength(expected);}
+  }
+ }
  synchronized boolean owned()throws Exception{return InstallationRecord.owned(read());}
  synchronized void confirmOwnership(String steamId)throws Exception{
   save(InstallationRecord.confirm(read(),steamId));

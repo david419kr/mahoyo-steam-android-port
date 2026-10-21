@@ -40,7 +40,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
 
 /** Created only by an explicit installation action. No session token is persisted. */
-class SteamSession(private val listener: Listener,private val supportedManifest:Long): Closeable {
+class SteamSession(private val listener: Listener,private val supportedManifest:Long,private val supportedInstallBytes:Long): Closeable {
     interface Listener {
         fun status(stage: String)
         fun guard(email: String?, incorrect: Boolean, answer: CompletableFuture<String>)
@@ -179,8 +179,8 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
                 override fun onStatusUpdate(message:String){lastActivity.set(android.os.SystemClock.elapsedRealtime())}
                 override fun onDownloadFailed(item:DownloadItem,error:Throwable){finished.completeExceptionally(error)}
                 override fun onDownloadCompleted(item:DownloadItem){finished.complete(Unit)}
-                override fun onChunkCompleted(depotId:Int,depotPercentComplete:Float,compressedBytes:Long,uncompressedBytes:Long){lastActivity.set(android.os.SystemClock.elapsedRealtime());post{listener.progress(depotPercentComplete,compressedBytes,uncompressedBytes)}}
-                override fun onFileCompleted(depotId:Int,fileName:String,depotPercentComplete:Float){lastActivity.set(android.os.SystemClock.elapsedRealtime());post{listener.progress(depotPercentComplete,0,0)}}
+                override fun onChunkCompleted(depotId:Int,depotPercentComplete:Float,compressedBytes:Long,uncompressedBytes:Long){lastActivity.set(android.os.SystemClock.elapsedRealtime());post{listener.progress(TransferStats.overall(depotPercentComplete,compressedBytes,uncompressedBytes,supportedInstallBytes),compressedBytes,uncompressedBytes)}}
+                override fun onFileCompleted(depotId:Int,fileName:String,depotPercentComplete:Float){lastActivity.set(android.os.SystemClock.elapsedRealtime())} // SDK reports each finished file as 100%, not the depot.
             })
             transfer.add(AppItem(Installation.APP_ID,installDirectory=destination.absolutePath,branch="public",os="windows",osArch="64",downloadAllLanguages=true,depot=listOf(2052411),manifest=listOf(supportedManifest),verify=true))
             transfer.finishAdding();transfer.startDownloading()

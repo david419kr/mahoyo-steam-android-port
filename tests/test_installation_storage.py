@@ -37,13 +37,14 @@ public void failWrite(FileOutputStream out){try{out.close();}catch(IOException i
             'org/mahoyo/port/SteamResources.java':r'''package org.mahoyo.port;import android.content.Context;import org.json.*;import java.io.*;
 class SteamResources{static final String MARKER=".steam-ready";static byte[] read(InputStream input,int cap)throws IOException{try(InputStream in=input){byte[] bytes=in.readNBytes(cap+1);if(bytes.length>cap)throw new IOException("budget");return bytes;}}
 static boolean available(File root){return new File(root,MARKER).isFile();}static boolean sourceAvailable(Context c,File root){throw new UnsupportedOperationException("Not a media verification test");}
-static JSONObject assetJson(Context c,String name,int cap){throw new UnsupportedOperationException("Not a media verification test");}}''',
+static JSONObject assetJson(Context c,String name,int cap){return new JSONObject().put("archives",new JSONArray().put(new JSONObject().put("name","data00000.hfa").put("bytes",128L*1024*1024)));}}''',
             'org/mahoyo/port/InstallationFsCheck.java':r'''package org.mahoyo.port;import android.content.Context;import org.json.*;import java.io.*;import java.nio.file.*;
 public class InstallationFsCheck{
 static void check(boolean value){if(!value)throw new AssertionError();}static Context context(File root){return new Context(root);}
 public static void main(String[]args)throws Exception{File base=new File(args[0]);Installation first=new Installation(context(base));first.confirmOwnership("76561198000000000");
 File source=first.downloadSource(),media=new File(source,"data00000.hfa");Files.write(media.toPath(),new byte[]{42});
 Installation restart=new Installation(context(base));check(restart.downloadSource().equals(source));
+restart.preservePartialSteamFiles(source);check(media.length()==128L*1024*1024);try(RandomAccessFile file=new RandomAccessFile(media,"r")){check(file.read()==42);file.seek(file.length()-1);check(file.read()==0);}
 File game=restart.child("game-steam-11111111-2222-3333-4444-555555555555");game.mkdirs();Files.writeString(new File(game,"assets.json").toPath(),"{}");File marker=new File(game,SteamResources.MARKER);Files.writeString(marker.toPath(),new JSONObject().put("schema",1).put("source",source.getPath()).toString());
 File save=new File(game.getParentFile(),"savedata/slot1.whs");save.getParentFile().mkdirs();Files.write(save.toPath(),new byte[]{77});restart.activate(game,null,"vanilla","steam");
 check(!new File(context(base).getFilesDir(),"download.json").exists());
@@ -51,7 +52,7 @@ Installation after=new Installation(context(base));check(after.ready());check(af
 File checkpoint=new File(context(base).getFilesDir(),"download.json");Files.writeString(checkpoint.toPath(),DownloadRecord.create(source.getName()).toString());check(!new Installation(context(base)).downloadSource().equals(source));
 Files.writeString(checkpoint.toPath(),new JSONObject().put("schema",1).put("appId",2052410).put("source","../outside").toString());File recovered=new Installation(context(base)).downloadSource();check(recovered.getCanonicalFile().getParentFile().equals(source.getParentFile()));
 Files.writeString(marker.toPath(),"corrupt marker");Files.writeString(checkpoint.toPath(),DownloadRecord.create(second.getName()).toString());check(!new Installation(context(base)).downloadSource().equals(second));
-check(Files.readAllBytes(media.toPath())[0]==42);check(Files.readAllBytes(save.toPath())[0]==77);check(new Installation(context(base)).ready());System.out.println("Installation restart, interrupted resume, activation, stale/corrupt checkpoints and active-file preservation passed");}}
+try(FileInputStream file=new FileInputStream(media)){check(file.read()==42);}check(Files.readAllBytes(save.toPath())[0]==77);check(new Installation(context(base)).ready());System.out.println("Installation restart, interrupted resume, activation, stale/corrupt checkpoints and active-file preservation passed");}}
 '''}
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)
