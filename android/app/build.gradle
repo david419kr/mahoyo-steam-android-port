@@ -1,0 +1,64 @@
+plugins { id 'com.android.application' }
+
+def colorAssetFile = new File(rootProject.projectDir.parentFile, 'android/app/build/generated/sourceAssets/color-mode3.rgb')
+def colorAssetsDirectory = layout.buildDirectory.dir('generated/colorAssets')
+def uiAssetFile = new File(rootProject.projectDir.parentFile, 'data/ui-text.json')
+def uiAssetsDirectory = layout.buildDirectory.dir('generated/uiAssets')
+def generateUiAssets = tasks.register('generateUiAssets') {
+    inputs.file uiAssetFile
+    outputs.dir uiAssetsDirectory
+    doLast { project.copy { from uiAssetFile; into uiAssetsDirectory } }
+}
+def generateColorAssets = tasks.register('generateColorAssets') {
+    inputs.file colorAssetFile
+    outputs.dir colorAssetsDirectory
+    doLast {
+        if (!colorAssetFile.isFile() || colorAssetFile.length() != 768) throw new GradleException('The verified native sepia LUT is missing or truncated.')
+        def hash = java.security.MessageDigest.getInstance('SHA-256').digest(colorAssetFile.bytes).encodeHex().toString()
+        if (hash != '7a793f9900385ff43c366a1631dca3b955b19ba0a1ae02b5eca46fd6ea5b8293') throw new GradleException('The native sepia LUT differs from the verified Steam build.')
+        project.copy { from colorAssetFile; into colorAssetsDirectory }
+    }
+}
+
+android {
+    namespace 'org.mahoyo.port'
+    compileSdk 35
+    ndkVersion '29.0.13113456'
+    defaultConfig {
+        applicationId 'org.mahoyo.port'
+        minSdk 28
+        targetSdk 35
+        versionCode 83
+        versionName '0.5.7'
+        ndk { abiFilters 'arm64-v8a' }
+        externalNativeBuild { cmake { cppFlags '-std=c++17' } }
+    }
+    flavorDimensions 'edition'
+    productFlavors {
+        vanilla {
+            dimension 'edition'
+        }
+        korean {
+            dimension 'edition'
+            applicationIdSuffix '.kr'
+        }
+    }
+    signingConfigs {
+        localRelease {
+            storeFile file(System.getenv('WOH_KEYSTORE') ?: rootProject.projectDir.parentFile.absolutePath + '/.local/signing/port-release.jks')
+            storePassword System.getenv('WOH_STORE_PASSWORD') ?: 'local-port'
+            keyAlias 'woh-port'
+            keyPassword System.getenv('WOH_KEY_PASSWORD') ?: 'local-port'
+        }
+    }
+    buildTypes {
+        release { debuggable false; minifyEnabled false; signingConfig signingConfigs.localRelease }
+    }
+    externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    sourceSets.main.assets.srcDir(colorAssetsDirectory)
+    sourceSets.main.assets.srcDir(uiAssetsDirectory)
+    sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/dialogueAssets'))
+}
+
+tasks.named('preBuild').configure { dependsOn generateColorAssets; dependsOn generateUiAssets }
