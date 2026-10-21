@@ -28,10 +28,14 @@ public Context getApplicationContext(){return this;}public File getFilesDir(){Fi
 public File getExternalFilesDir(String ignored){File f=new File(root,"external");f.mkdirs();return f;}
 public Prefs getSharedPreferences(String key,int mode){return new Prefs();}public static class Prefs{public Prefs edit(){return this;}public Prefs putString(String key,String value){return this;}public boolean commit(){return true;}}}''',
             'android/util/AtomicFile.java':r'''package android.util;import java.io.*;import java.nio.file.*;
-public class AtomicFile{final File file;public AtomicFile(File f){file=f;}public File getBaseFile(){return file;}
-public FileInputStream openRead()throws IOException{return new FileInputStream(file);}public FileOutputStream startWrite()throws IOException{return new FileOutputStream(new File(file+".new"));}
-public void finishWrite(FileOutputStream out)throws IOException{out.close();Files.move(new File(file+".new").toPath(),file.toPath(),StandardCopyOption.REPLACE_EXISTING);}
-public void failWrite(FileOutputStream out){try{out.close();}catch(IOException ignored){}new File(file+".new").delete();}public void delete(){file.delete();}}''',
+public class AtomicFile{
+public static volatile java.util.concurrent.CountDownLatch writeStarted,releaseWrite;
+private static volatile Thread writer;
+final File file;public AtomicFile(File f){file=f;}public File getBaseFile(){return file;}
+public FileInputStream openRead()throws IOException{if(writer!=null&&writer!=Thread.currentThread())throw new IOException("Concurrent AtomicFile access across Installation instances");return new FileInputStream(file);}
+public FileOutputStream startWrite()throws IOException{if(writer!=null)throw new IOException("Concurrent AtomicFile writers");writer=Thread.currentThread();if(writeStarted!=null){writeStarted.countDown();try{if(!releaseWrite.await(3,java.util.concurrent.TimeUnit.SECONDS))throw new IOException("Writer test timeout");}catch(InterruptedException e){Thread.currentThread().interrupt();throw new IOException(e);}}return new FileOutputStream(new File(file+".new"));}
+public void finishWrite(FileOutputStream out)throws IOException{out.close();Files.move(new File(file+".new").toPath(),file.toPath(),StandardCopyOption.REPLACE_EXISTING);writer=null;}
+public void failWrite(FileOutputStream out){try{out.close();}catch(IOException ignored){}new File(file+".new").delete();writer=null;}public void delete(){file.delete();}}''',
             'android/system/StructStat.java':'package android.system;public class StructStat{public long st_blocks;}',
             'android/system/Os.java':'package android.system;public class Os{public static StructStat stat(String path){throw new UnsupportedOperationException("Not a filesystem allocation test");}}',
             'org/mahoyo/port/SteamResources.java':r'''package org.mahoyo.port;import android.content.Context;import org.json.*;import java.io.*;
@@ -52,7 +56,21 @@ Installation after=new Installation(context(base));check(after.ready());check(af
 File checkpoint=new File(context(base).getFilesDir(),"download.json");Files.writeString(checkpoint.toPath(),DownloadRecord.create(source.getName()).toString());check(!new Installation(context(base)).downloadSource().equals(source));
 Files.writeString(checkpoint.toPath(),new JSONObject().put("schema",1).put("appId",2052410).put("source","../outside").toString());File recovered=new Installation(context(base)).downloadSource();check(recovered.getCanonicalFile().getParentFile().equals(source.getParentFile()));
 Files.writeString(marker.toPath(),"corrupt marker");Files.writeString(checkpoint.toPath(),DownloadRecord.create(second.getName()).toString());check(!new Installation(context(base)).downloadSource().equals(second));
-try(FileInputStream file=new FileInputStream(media)){check(file.read()==42);}check(Files.readAllBytes(save.toPath())[0]==77);check(new Installation(context(base)).ready());System.out.println("Installation restart, interrupted resume, activation, stale/corrupt checkpoints and active-file preservation passed");}}
+try(FileInputStream file=new FileInputStream(media)){check(file.read()==42);}check(Files.readAllBytes(save.toPath())[0]==77);check(new Installation(context(base)).ready());
+android.util.AtomicFile.writeStarted=new java.util.concurrent.CountDownLatch(1);android.util.AtomicFile.releaseWrite=new java.util.concurrent.CountDownLatch(1);
+java.util.concurrent.ExecutorService pool=java.util.concurrent.Executors.newFixedThreadPool(2);
+try{
+ java.util.concurrent.Future<?> writing=pool.submit(()->{try{new Installation(context(base)).confirmOwnership("76561198000000001");}catch(Exception e){throw new RuntimeException(e);}});
+ check(android.util.AtomicFile.writeStarted.await(2,java.util.concurrent.TimeUnit.SECONDS));
+ java.util.concurrent.CountDownLatch readAttempted=new java.util.concurrent.CountDownLatch(1);
+ java.util.concurrent.Future<JSONObject> reading=pool.submit(()->{readAttempted.countDown();return new Installation(context(base)).read();});
+ check(readAttempted.await(2,java.util.concurrent.TimeUnit.SECONDS));
+ try{reading.get(150,java.util.concurrent.TimeUnit.MILLISECONDS);throw new AssertionError("A different Installation instance read during the write");}
+ catch(java.util.concurrent.TimeoutException expected){}
+ finally{android.util.AtomicFile.releaseWrite.countDown();}
+ writing.get(2,java.util.concurrent.TimeUnit.SECONDS);check(reading.get(2,java.util.concurrent.TimeUnit.SECONDS).optBoolean("ready"));
+}finally{android.util.AtomicFile.releaseWrite.countDown();pool.shutdownNow();android.util.AtomicFile.writeStarted=null;android.util.AtomicFile.releaseWrite=null;}
+System.out.println("Cross-instance AtomicFile mutual exclusion passed");System.out.println("Installation restart, interrupted resume, activation, stale/corrupt checkpoints and active-file preservation passed");}}
 '''}
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)
