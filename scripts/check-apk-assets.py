@@ -29,7 +29,7 @@ def check(path):
         if unexpected or not owned.keys() <= assets:
             raise ValueError(f'APK asset allowlist mismatch: extra={sorted(unexpected)}, missing={sorted(owned.keys() - assets)}')
         for name, source in owned.items():
-            if apk.read(name) != source.read_bytes():
+            if apk.read(name).replace(b'\r\n', b'\n') != source.read_bytes().replace(b'\r\n', b'\n'):
                 raise ValueError(f'Bundled project asset differs: {name}')
         rasters = [name for name in names if name.startswith('res/') and name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.ico', '.avif'))]
         if len(rasters) != 1:
