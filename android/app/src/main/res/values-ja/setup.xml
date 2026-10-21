@@ -27,7 +27,7 @@
     <string name="setup_ready">インストール完了</string>
     <string name="setup_play">プレイ</string>
     <string name="setup_retry">再試行</string>
-    <string name="setup_missing">ゲームデータが見つかりません。所有権の確認記録は保持されています。方法を選択して修復してください。</string>
+    <string name="setup_missing">ゲームデータがありません。ゲームをインストールしてください。</string>
     <string name="setup_failure">インストールできませんでした</string>
     <string name="setup_patch">韓国語パッチZIPを適用</string>
     <string name="setup_patch_info">ゲーム1.1用の韓国語パッチ1.2 ZIPを選択します。フォルダー構成は問いません。ZIPとは別に約2.5GBの空きが必要です。ゲーム本体はダウンロードしません。</string>
@@ -39,9 +39,24 @@
     <string name="setup_qr">QRコードでログイン</string>
     <string name="setup_qr_guide">Steamモバイルアプリでコードを読み取り、ログインを承認してください。コードは自動更新されます。</string>
     <string name="setup_manage">ゲームデータ・インストール管理</string>
-    <string name="setup_transfer_info">%1$.1f%% · 今回の受信 %2$.2f GB / 展開 %3$.2f GB · %4$.1f MB/s\nインストール全体 %5$.2f GB</string>
+    <string name="setup_transfer_info">%1$.1f%% · ダウンロード %2$.2f GB / 展開 %3$.2f GB · %4$.1f MB/s\nインストール全体 %5$.2f GB</string>
     <string name="setup_manifest_unavailable">Steam がゲーム1.1の固定 manifest へのアクセスを許可しませんでした。再試行するか、対応する OBB を取り込んでください。既存のインストールには影響しません。</string>
     <string name="setup_connection_lost">Steam の接続またはリクエストが終了しました。続行するには再度ログインしてください。既存のインストールは引き続きオフラインで実行できます。</string>
  <string name="setup_back_install">インストール方法に戻る</string>
     <string name="setup_available">空き容量: %1$.1fGB</string>
+    <string name="setup_password_show">パスワードを表示</string>
+    <string name="setup_password_hide">パスワードを非表示</string>
+    <string name="setup_qr_lan_start">別の端末にQRを表示</string>
+    <string name="setup_qr_lan_stop">QR共有を停止</string>
+    <string name="setup_qr_lan_starting">QR共有を準備中…</string>
+    <string name="setup_qr_lan_title">別の端末にQRを表示</string>
+    <string name="setup_qr_lan_help">このスマートフォンでSteam認証アプリを使用していて、画面のQRを読み取れませんか？別の端末にQRを表示すると、このアプリにSteamのIDやパスワードを入力せずにログインできます。\n\n1. \"%1$s\"ボタンを押し、表示されたアドレスを確認します。\n2. PC・タブレット・別のスマートフォンのブラウザーで開きます。\n3. この端末で\"%2$s\"を押し、承認します。\n\n両方の端末を同じLANに接続してください。同じWi-Fi、または同じルーターの有線LANを利用できます。端末間通信を制限するゲストネットワークでは接続できない場合があります。\n\nQRは自動更新され、ログイン完了・キャンセル時に共有が終了します。</string>
+    <string name="setup_qr_lan_address">別の端末のブラウザーで開いてください：\n%1$s</string>
+    <string name="setup_qr_lan_unavailable">Wi-Fiまたは有線LANに接続して再試行してください。</string>
+    <string name="setup_qr_lan_page_guide">スマートフォンのSteamアプリでQRを読み取ってください。自動更新されます。</string>
+    <string name="setup_qr_lan_ended">QR共有は終了しました。スマートフォンのログイン画面を確認してください。</string>
+    <string name="setup_steam_authenticator">Steam認証アプリを開く</string>
+    <string name="setup_steam_app_missing">Steamアプリをインストールして再試行してください。</string>
+    <string name="setup_qr_lan_page_title">SteamログインQR</string>
+    <string name="setup_advanced">上級者向け · PCで変換したファイル</string>
 </resources>

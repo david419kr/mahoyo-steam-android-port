@@ -27,7 +27,7 @@
     <string name="setup_ready">安装完成</string>
     <string name="setup_play">开始游戏</string>
     <string name="setup_retry">重试</string>
-    <string name="setup_missing">未找到游戏数据。所有权验证记录仍然有效，请选择安装方式进行修复。</string>
+    <string name="setup_missing">未找到游戏数据。请安装游戏。</string>
     <string name="setup_failure">无法完成安装</string>
     <string name="setup_patch">应用韩语补丁ZIP</string>
     <string name="setup_patch_info">选择游戏1.1的韩语补丁1.2 ZIP，无需特定文件夹结构。除ZIP外还需约2.5GB可用空间，不会下载游戏本体。</string>
@@ -39,9 +39,24 @@
     <string name="setup_qr">扫码登录</string>
     <string name="setup_qr_guide">使用Steam手机应用扫描二维码并批准登录。二维码会自动刷新。</string>
     <string name="setup_manage">游戏数据与安装</string>
-    <string name="setup_transfer_info">%1$.1f%% · 本次接收 %2$.2f GB / 解压 %3$.2f GB · %4$.1f MB/s\n完整安装 %5$.2f GB</string>
+    <string name="setup_transfer_info">%1$.1f%% · 下载 %2$.2f GB / 解压 %3$.2f GB · %4$.1f MB/s\n完整安装 %5$.2f GB</string>
     <string name="setup_manifest_unavailable">Steam 未授予游戏 1.1 固定 manifest 的访问权限。您可以重试或导入兼容的 OBB。现有安装不受影响。</string>
     <string name="setup_connection_lost">Steam 连接或请求已中断。请重新登录后继续。现有安装仍可离线运行。</string>
  <string name="setup_back_install">返回安装选项</string>
     <string name="setup_available">可用存储空间：%1$.1fGB</string>
+    <string name="setup_password_show">显示密码</string>
+    <string name="setup_password_hide">隐藏密码</string>
+    <string name="setup_qr_lan_start">在其他设备显示QR</string>
+    <string name="setup_qr_lan_stop">停止共享QR</string>
+    <string name="setup_qr_lan_starting">正在准备QR共享…</string>
+    <string name="setup_qr_lan_title">在其他设备显示QR</string>
+    <string name="setup_qr_lan_help">正在本手机上使用Steam令牌，无法扫描自己屏幕上的QR码？可将QR码显示在其他设备上，无需在本应用输入Steam账号和密码。\n\n1. 点击\"%1$s\"按钮并查看显示的地址。\n2. 在PC、平板或其他手机的浏览器打开该地址。\n3. 在本手机点击\"%2$s\"并完成验证。\n\n两台设备必须位于同一局域网：相同Wi-Fi，或同一路由器的有线网络。隔离设备的访客网络可能阻止连接。\n\nQR码会自动更新，登录完成或取消时停止共享。</string>
+    <string name="setup_qr_lan_address">在其他设备的浏览器打开：\n%1$s</string>
+    <string name="setup_qr_lan_unavailable">请连接Wi-Fi或有线局域网后重试。</string>
+    <string name="setup_qr_lan_page_guide">请使用手机上的Steam应用扫描QR码，代码会自动更新。</string>
+    <string name="setup_qr_lan_ended">QR共享已结束，请查看手机上的登录页面。</string>
+    <string name="setup_steam_authenticator">打开Steam令牌</string>
+    <string name="setup_steam_app_missing">请安装Steam手机应用后重试。</string>
+    <string name="setup_qr_lan_page_title">Steam登录QR</string>
+    <string name="setup_advanced">高级选项 · 使用PC转换的文件</string>
 </resources>

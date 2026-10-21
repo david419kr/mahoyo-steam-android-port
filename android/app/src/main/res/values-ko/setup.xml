@@ -27,7 +27,7 @@
     <string name="setup_ready">설치 완료</string>
     <string name="setup_play">게임 실행</string>
     <string name="setup_retry">다시 시도</string>
-    <string name="setup_missing">게임 데이터가 없습니다. 소유권 확인 기록은 유지되어 있으니 설치 방법을 선택하여 복구해 주세요.</string>
+    <string name="setup_missing">게임 데이터가 없습니다. 게임을 설치해 주세요.</string>
     <string name="setup_failure">설치를 완료하지 못했습니다</string>
     <string name="setup_patch">한글패치 ZIP 적용</string>
     <string name="setup_patch_info">게임 1.1용 한글패치 1.2 ZIP을 선택하세요. 내부 폴더 배치는 상관없습니다. ZIP 외에 약 2.5GB의 추가 여유 공간이 필요하며 게임 원본은 다운로드하지 않습니다.</string>
@@ -39,9 +39,25 @@
     <string name="setup_qr">QR로 로그인</string>
     <string name="setup_qr_guide">Steam 모바일 앱으로 QR을 스캔하고 로그인을 승인하세요. 코드는 자동으로 갱신됩니다.</string>
     <string name="setup_manage">게임 데이터·설치 관리</string>
-    <string name="setup_transfer_info">%1$.1f%% · 이번 전송 %2$.2fGB / 복원 %3$.2fGB · %4$.1fMB/s\n전체 설치 파일 %5$.2fGB</string>
+    <string name="setup_transfer_info">%1$.1f%% · 다운로드 %2$.2fGB / 압축 해제 %3$.2fGB · %4$.1fMB/s\n전체 설치 파일 %5$.2fGB</string>
     <string name="setup_manifest_unavailable">Steam이 게임 1.1의 고정 manifest 접근을 허용하지 않았습니다. 다시 시도하거나 지원하는 OBB를 가져올 수 있습니다. 기존 설치에는 영향이 없습니다.</string>
     <string name="setup_connection_lost">Steam 연결 또는 요청이 중단되었습니다. 계속하려면 다시 로그인해 주세요. 기존 설치는 계속 오프라인으로 실행할 수 있습니다.</string>
  <string name="setup_back_install">설치 방법으로 돌아가기</string>
     <string name="setup_available">사용 가능한 저장공간: %1$.1fGB</string>
+    <string name="setup_password_show">비밀번호 보기</string>
+    <string name="setup_password_hide">비밀번호 숨기기</string>
+    <string name="setup_qr_lan_start">다른 기기에 QR 표시</string>
+    <string name="setup_qr_lan_stop">QR 공유 끄기</string>
+    <string name="setup_qr_lan_starting">QR 공유 준비 중…</string>
+    <string name="setup_qr_lan_title">다른 기기에 QR 표시</string>
+    <string name="setup_qr_lan_help">이 휴대폰에서 Steam 인증기를 사용 중이라 화면의 QR을 직접 스캔하기 어려우신가요? Steam ID와 비밀번호를 이 앱에 입력하지 않고 로그인할 수 있도록, 다른 기기에 QR을 표시하는 기능입니다.\n\n1. \"%1$s\" 버튼을 눌러 표시된 주소를 확인하세요.\n2. PC·태블릿·다른 휴대폰의 브라우저에서 그 주소를 여세요.\n3. 이 휴대폰에서 \"%2$s\"를 누르고 인증을 진행하세요.\n\n두 기기는 같은 로컬 네트워크에 연결되어 있어야 합니다. 같은 Wi-Fi 또는 같은 공유기에 연결된 유선 LAN을 사용할 수 있습니다. 게스트 네트워크처럼 기기 간 연결을 차단한 환경에서는 접속되지 않을 수 있습니다.\n\nQR은 자동으로 갱신되며 로그인 완료·취소 시 공유가 종료됩니다.</string>
+    <string name="setup_qr_lan_address">다른 기기의 브라우저에서 여세요:\n%1$s</string>
+    <string name="setup_qr_lan_unavailable">같은 LAN의 Wi-Fi 또는 유선 네트워크에 연결되어 있는지 확인해 주세요.</string>
+    <string name="setup_qr_lan_page_guide">휴대폰의 Steam 앱으로 QR을 스캔하세요. 코드는 자동으로 갱신됩니다.</string>
+    <string name="setup_qr_lan_ended">QR 공유가 종료되었습니다. 휴대폰의 로그인 화면을 확인해 주세요.</string>
+    <string name="setup_steam_authenticator">Steam 인증기 열기</string>
+    <string name="setup_steam_app_missing">Steam 앱을 설치한 뒤 다시 시도해 주세요.</string>
+    <string name="setup_qr_lan_page_title">Steam 로그인 QR</string>
+    <string name="setup_advanced">상급자용 · PC에서 변환한 파일 사용</string>
+    <string name="setup_patch_hint">Steam에서 설치한 후, 한글패치 ZIP 파일이 있다면 별도로 추가 설치할 수 있습니다.</string>
 </resources>

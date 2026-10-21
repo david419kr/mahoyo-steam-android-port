@@ -27,7 +27,7 @@
     <string name="setup_ready">Installation complete</string>
     <string name="setup_play">Play</string>
     <string name="setup_retry">Try again</string>
-    <string name="setup_missing">Game data is missing. Your ownership confirmation is preserved; choose an installation method to repair it.</string>
+    <string name="setup_missing">Game data is missing. Please install the game.</string>
     <string name="setup_failure">Installation could not be completed</string>
     <string name="setup_patch">Apply a Korean patch ZIP</string>
     <string name="setup_patch_info">Choose your supported Korean patch 1.2 ZIP. Any folder layout is accepted. Allow about 2.5 GB extra space in addition to the ZIP; game files are not downloaded.</string>
@@ -39,9 +39,25 @@
     <string name="setup_qr">Sign in with QR</string>
     <string name="setup_qr_guide">Scan this code with the Steam mobile app and approve the sign-in. The code refreshes automatically.</string>
     <string name="setup_manage">Game data and installation</string>
-    <string name="setup_transfer_info">%1$.1f%% · This session: %2$.2f GB received / %3$.2f GB unpacked · %4$.1f MB/s\nTotal installation: %5$.2f GB</string>
+    <string name="setup_transfer_info">%1$.1f%% · Downloaded %2$.2f GB / Unpacked %3$.2f GB · %4$.1f MB/s\nTotal installation: %5$.2f GB</string>
     <string name="setup_manifest_unavailable">Steam did not grant access to the fixed game 1.1 manifest. You can retry or import a supported OBB. Your existing installation is unaffected.</string>
     <string name="setup_connection_lost">The Steam connection or request ended. Please sign in again to continue. Your existing installation remains available offline.</string>
  <string name="setup_back_install">Back to installation options</string>
     <string name="setup_available">Available storage: %1$.1f GB</string>
+    <string name="setup_password_show">Show password</string>
+    <string name="setup_password_hide">Hide password</string>
+    <string name="setup_qr_lan_start">Show QR on another device</string>
+    <string name="setup_qr_lan_stop">Stop QR sharing</string>
+    <string name="setup_qr_lan_starting">Starting QR sharing…</string>
+    <string name="setup_qr_lan_title">Show QR on another device</string>
+    <string name="setup_qr_lan_help">Using Steam Mobile on this phone and unable to scan its own screen? Display the QR on another device to sign in without entering your Steam account name or password in this app.\n\n1. Tap \"%1$s\" and note the address.\n2. Open it in a browser on a PC, tablet or another phone.\n3. Tap \"%2$s\" on this phone and complete the Steam approval.\n\nBoth devices must be on the same local network: the same Wi-Fi, or Ethernet connected to the same router. Guest networks that isolate devices may block the connection.\n\nThe QR refreshes automatically. Sharing stops when login completes or is canceled.</string>
+    <string name="setup_qr_lan_address">Open this address in the other device browser:\n%1$s</string>
+    <string name="setup_qr_lan_unavailable">Connect to a Wi-Fi or Ethernet local network and try again.</string>
+    <string name="setup_qr_lan_page_guide">Scan this QR using Steam Mobile on your phone. It refreshes automatically.</string>
+    <string name="setup_qr_lan_ended">QR sharing has ended. Check the login screen on your phone.</string>
+    <string name="setup_steam_authenticator">Open Steam authenticator</string>
+    <string name="setup_steam_app_missing">Install the Steam Mobile app and try again.</string>
+    <string name="setup_qr_lan_page_title">Steam sign-in QR</string>
+    <string name="setup_advanced">Advanced · PC-prepared files</string>
+    <string name="setup_patch_hint"></string>
 </resources>
