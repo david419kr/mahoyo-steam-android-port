@@ -39,4 +39,6 @@
     <string name="setup_qr">QRコードでログイン</string>
     <string name="setup_qr_guide">Steamモバイルアプリでコードを読み取り、ログインを承認してください。コードは自動更新されます。</string>
     <string name="setup_manage">ゲームデータ・インストール管理</string>
+    <string name="setup_transfer_info">%1$.1f%% · 今回の受信 %2$.2f GB / 展開 %3$.2f GB · %4$.1f MB/s\nインストール全体 %5$.2f GB</string>
+    <string name="setup_manifest_unavailable">Steam がゲーム1.1の固定 manifest へのアクセスを許可しませんでした。再試行するか、対応する OBB を取り込んでください。既存のインストールには影響しません。</string>
 </resources>

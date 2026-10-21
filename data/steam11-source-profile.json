@@ -1,6 +1,14 @@
 {
   "schema": 1,
   "gameVersion": "1.1",
+  "steam": {
+    "appId": 2052410,
+    "buildId": 13060638,
+    "depotId": 2052411,
+    "manifestId": "2393599331048596479",
+    "networkBytes": 11599174768,
+    "installedBytes": 17702837564
+  },
   "archives": [
     {
       "name": "data00000.hfa",

@@ -6,7 +6,6 @@ import `in`.dragonbra.javasteam.depotdownloader.DepotDownloader
 import `in`.dragonbra.javasteam.depotdownloader.IDownloadListener
 import `in`.dragonbra.javasteam.depotdownloader.data.AppItem
 import `in`.dragonbra.javasteam.depotdownloader.data.DownloadItem
-import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.enums.EOSType
 import `in`.dragonbra.javasteam.networking.steam3.ProtocolTypes
@@ -20,6 +19,7 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclie
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.License
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
+import `in`.dragonbra.javasteam.steam.handlers.steamcontent.SteamContent
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.LicenseListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
@@ -40,7 +40,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicLong
 
 /** Created only by an explicit installation action. No session token is persisted. */
-class SteamSession(private val listener: Listener): Closeable {
+class SteamSession(private val listener: Listener,private val supportedManifest:Long): Closeable {
     interface Listener {
         fun status(stage: String)
         fun guard(email: String?, incorrect: Boolean, answer: CompletableFuture<String>)
@@ -100,8 +100,7 @@ class SteamSession(private val listener: Listener): Closeable {
         post{listener.status("ownership")}
         val list=withTimeout(60000){licenseList.await()};check(list.result==EResult.OK){"Steam licenses: "+list.result}
         val account=requireNotNull(steam.steamID).accountID
-        val rejected=setOf(ELicenseFlags.Pending,ELicenseFlags.Expired,ELicenseFlags.CancelledByAdmin,ELicenseFlags.CancelledByUser,ELicenseFlags.CancelledByFriendlyFraudLock,ELicenseFlags.CancelledByPartner,ELicenseFlags.PendingRefund,ELicenseFlags.Borrowed,ELicenseFlags.NonPermanent,ELicenseFlags.NotActivated)
-        val owned=list.licenseList.filter{(it.ownerAccountID==0||it.ownerAccountID.toUInt().toLong()==account)&&it.licenseFlags.none{flag->flag in rejected}}
+        val owned=list.licenseList.filter{SteamOwnership.permanent(it.ownerAccountID,account,it.licenseFlags)}
         check(owned.isNotEmpty()){ "No permanent game license found" }
         val apps=requireNotNull(steam.getHandler(SteamApps::class.java))
         var gameOwned=false
@@ -151,20 +150,25 @@ class SteamSession(private val listener: Listener): Closeable {
         return approval(session,false)
     }
     private fun requestGuard(email:String?,incorrect:Boolean):CompletableFuture<String>{val answer=CompletableFuture<String>();guard=answer;post{listener.guard(email,incorrect,answer)};return answer}
-    private suspend fun querySize(steam:SteamClient,apps:SteamApps){
-        try{
+    private data class DepotPlan(val manifest:Long,val network:Long,val installed:Long)
+    private suspend fun depotPlan(apps:SteamApps):DepotPlan=withTimeout(60000){
             val tokens=apps.picsGetAccessTokens(listOf(Installation.APP_ID),emptyList()).await()
             val info=apps.picsGetProductInfo(listOf(PICSRequest(Installation.APP_ID,tokens.appTokens[Installation.APP_ID]?:0)),emptyList()).await()
-            val app=info.results.firstNotNullOfOrNull{it.apps[Installation.APP_ID]}?:return
+            val app=info.results.firstNotNullOfOrNull{it.apps[Installation.APP_ID]}?:error("Steam game information is unavailable")
             val depot=app.keyValues["depots"]["2052411"]["manifests"]["public"]
-            val installed=depot["size"].asLong();val download=depot["download"].asLong()
-            post{listener.estimate(download,installed)}
+            DepotPlan(depot["gid"].asUnsignedLong().toLong(),depot["download"].asLong(),depot["size"].asLong())
+    }
+    private suspend fun querySize(steam:SteamClient,apps:SteamApps){
+        try{val plan=depotPlan(apps);if(plan.manifest==supportedManifest)post{listener.estimate(plan.network,plan.installed)}
         }catch(ignored:Exception){/* The installer can still use the validated profile's size estimate. */}
     }
     fun connected():Boolean=verified&&client?.isConnected==true
     fun download(destination:File){scope.launch{
         try{
             check(connected()){ "Sign in to Steam again to download" }
+            val content=requireNotNull(client?.getHandler(SteamContent::class.java))
+            val requestCode=withTimeout(60000){content.getManifestRequestCode(2052411,Installation.APP_ID,supportedManifest,branch="public",parentScope=scope).await()}
+            check(requestCode!=0L){"PINNED_MANIFEST_UNAVAILABLE"}
             // Upstream's completion future is not completed on every failure path.
             val finished=CompletableDeferred<Unit>();val lastActivity=AtomicLong(android.os.SystemClock.elapsedRealtime())
             val transfer=DepotDownloader(requireNotNull(client),licenses,debug=false,useLanCache=false,maxDownloads=4,maxDecompress=2,androidEmulation=true,parentJob=scope.coroutineContext[Job],autoStartDownload=false,skipLargeFileAllocation=true)
@@ -176,7 +180,7 @@ class SteamSession(private val listener: Listener): Closeable {
                 override fun onChunkCompleted(depotId:Int,depotPercentComplete:Float,compressedBytes:Long,uncompressedBytes:Long){lastActivity.set(android.os.SystemClock.elapsedRealtime());post{listener.progress(depotPercentComplete,compressedBytes,uncompressedBytes)}}
                 override fun onFileCompleted(depotId:Int,fileName:String,depotPercentComplete:Float){lastActivity.set(android.os.SystemClock.elapsedRealtime());post{listener.progress(depotPercentComplete,0,0)}}
             })
-            transfer.add(AppItem(Installation.APP_ID,installDirectory=destination.absolutePath,branch="public",os="windows",osArch="64",downloadAllLanguages=true,depot=listOf(2052411),verify=true))
+            transfer.add(AppItem(Installation.APP_ID,installDirectory=destination.absolutePath,branch="public",os="windows",osArch="64",downloadAllLanguages=true,depot=listOf(2052411),manifest=listOf(supportedManifest),verify=true))
             transfer.finishAdding();transfer.startDownloading()
             while(withTimeoutOrNull(15000){finished.await();true}!=true){check(android.os.SystemClock.elapsedRealtime()-lastActivity.get()<300000){"Download stopped responding. Sign in again to resume the saved files."}}
             transfer.close();downloader=null

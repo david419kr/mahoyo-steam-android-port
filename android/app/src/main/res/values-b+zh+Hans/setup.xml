@@ -39,4 +39,6 @@
     <string name="setup_qr">扫码登录</string>
     <string name="setup_qr_guide">使用Steam手机应用扫描二维码并批准登录。二维码会自动刷新。</string>
     <string name="setup_manage">游戏数据与安装</string>
+    <string name="setup_transfer_info">%1$.1f%% · 本次接收 %2$.2f GB / 解压 %3$.2f GB · %4$.1f MB/s\n完整安装 %5$.2f GB</string>
+    <string name="setup_manifest_unavailable">Steam 未授予游戏 1.1 固定 manifest 的访问权限。您可以重试或导入兼容的 OBB。现有安装不受影响。</string>
 </resources>

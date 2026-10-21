@@ -39,4 +39,6 @@
     <string name="setup_qr">Sign in with QR</string>
     <string name="setup_qr_guide">Scan this code with the Steam mobile app and approve the sign-in. The code refreshes automatically.</string>
     <string name="setup_manage">Game data and installation</string>
+    <string name="setup_transfer_info">%1$.1f%% · This session: %2$.2f GB received / %3$.2f GB unpacked · %4$.1f MB/s\nTotal installation: %5$.2f GB</string>
+    <string name="setup_manifest_unavailable">Steam did not grant access to the fixed game 1.1 manifest. You can retry or import a supported OBB. Your existing installation is unaffected.</string>
 </resources>

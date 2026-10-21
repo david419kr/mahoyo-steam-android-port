@@ -26,7 +26,7 @@ Build the APK using [BUILDING.md](BUILDING.md). Its package is `org.mahoyo.port.
 On first use, sign in to Steam with a password/Steam Guard or scan the QR using Steam Mobile. The account must own WITCH ON THE HOLY NIGHT. Then choose:
 
 - **Import an AVIF OBB, approximately 5 GB.** Make it on a PC using [OBB-BUILDER.md](OBB-BUILDER.md), copy it anywhere accessible on the phone, and select it in the app. Older original-quality OBB files are also accepted. The app copies and verifies the chosen file; keep enough free space for the copy.
-- **Download directly from Steam.** No PC conversion is required. The supported original Steam files occupy approximately **17.7 GB**, plus cache and preparation space. The installer displays the current network download and installed-size estimates when available. Files remain in their original HFA archives.
+- **Download directly from Steam.** No PC conversion is required. The supported original Steam files occupy approximately **17.7 GB**, plus cache and preparation space. The installer displays the current network download and installed-size estimates when available. Files remain in their original HFA archives. Downloads request the fixed game 1.1 manifest, independently of the current public branch. Steam must still grant the account access to that manifest.
 
 For a direct Steam installation, choose a user-supplied **Korean patch 1.2 ZIP** in game data management. The app finds and verifies the required files regardless of ZIP folder layout; Windows code is never executed. A Korean OBB is detected automatically. Korean installations replace the English language slot with Korean.
 
