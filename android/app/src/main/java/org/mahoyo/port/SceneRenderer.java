@@ -664,7 +664,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     }
     private void loadColorPalette(int mode){
         if(failedColorPalettes.contains(mode))return;
-        try(InputStream input=mode==3?view.getContext().getAssets().open("color-mode3.rgb"):assets.file("meta/color"+mode+"-rgb.bin").open()){
+        try(InputStream input=assets.file("meta/color"+mode+"-rgb.bin").open()){
             byte[] data=new byte[768];int offset=0;
             while(offset<data.length){int count=input.read(data,offset,data.length-offset);if(count<=0)throw new java.io.IOException("Truncated sepia LUT");offset+=count;}
             if(input.read()!=-1)throw new java.io.IOException("Unexpected sepia LUT size");

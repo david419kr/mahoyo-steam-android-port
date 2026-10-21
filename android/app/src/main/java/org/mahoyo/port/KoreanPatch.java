@@ -107,7 +107,7 @@ final class KoreanPatch {
         return output.toString();
     }
 
-    private static Map<String,List<String>> csv(String value)throws IOException {
+    static Map<String,List<String>> csv(String value)throws IOException {
         Map<String,List<String>> result=new LinkedHashMap<>();List<String> row=new ArrayList<>();StringBuilder field=new StringBuilder();boolean quoted=false;
         for(int i=0;i<=value.length();i++) {
             char c=i==value.length()?'\n':value.charAt(i);

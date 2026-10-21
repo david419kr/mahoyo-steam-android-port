@@ -16,7 +16,8 @@ final class SteamResources {
  SteamResources(Context context,File root)throws Exception{
   this.root=root.getCanonicalFile();JSONObject ready=new JSONObject(new String(Files.readAllBytes(new File(root,MARKER).toPath()),StandardCharsets.UTF_8));if(ready.getInt("schema")!=1)throw new IOException("Unsupported Steam installation record");source=new File(ready.getString("source")).getCanonicalFile();entries=HfaIndex.directory(source);manifest=new JSONObject(new String(Files.readAllBytes(new File(root,"assets.json").toPath()),StandardCharsets.UTF_8));
   korean=ready.has("patch");koreanEntries=korean?KoreanPatch.members(new File(ready.getString("patch")),entries.keySet()):new LinkedHashMap<>();
-  JSONObject profile=assetJson(context,"steam-profile/bitmap-recipes.json",4*1024*1024);JSONArray rows=profile.getJSONArray("records");for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);recipes.put(row.getString("key"),new String[]{row.getString("primary"),row.isNull("alias")?"":row.getString("alias")});}
+  SteamDerivedAssets.prepare(source,root,entries,korean?new File(ready.getString("patch")):null);
+  JSONObject profile=new JSONObject(new String(read(new FileInputStream(new File(root,"meta/bitmap-recipes.json")),4*1024*1024),StandardCharsets.UTF_8));JSONArray rows=profile.getJSONArray("records");for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);recipes.put(row.getString("key"),new String[]{row.getString("primary"),row.isNull("alias")?"":row.getString("alias")});}
  }
  boolean korean(){return korean;}
  File source(){return source;}
@@ -55,7 +56,8 @@ final class SteamResources {
  static void prepare(Context context,File source,File output,File patch,Consumer<String> progress)throws Exception{
   source=source.getCanonicalFile();output=output.getCanonicalFile();if(output.equals(source)||output.getPath().startsWith(source.getPath()+File.separator))throw new IOException("Engine output must be outside Steam source");if(!output.isDirectory()&&!output.mkdirs())throw new IOException("Cannot create engine directory");
   LinkedHashMap<String,HfaIndex.Entry> entries=HfaIndex.directory(source);JSONObject profile=assetJson(context,"steam-profile/profile.json",1024*1024),files=profile.getJSONObject("files");
-  for(Iterator<String> names=files.keys();names.hasNext();){String name=names.next();if(name.indexOf('/')>=0||name.indexOf('\\')>=0||name.equals(".."))throw new IOException("Unsafe engine profile path");byte[] data=read(context.getAssets().open("steam-profile/"+name),64*1024*1024);if(!sha(data).equals(files.getString(name)))throw new IOException("Engine profile checksum mismatch");write(new File(output,"meta/"+name),data);}
+  for(Iterator<String> names=files.keys();names.hasNext();){String name=names.next();if(name.indexOf('/')>=0||name.indexOf('\\')>=0||name.equals(".."))throw new IOException("Unsafe engine profile path");if(SteamDerivedAssets.generated(name))continue;byte[] data=read(context.getAssets().open("steam-profile/"+name),64*1024*1024);if(!sha(data).equals(files.getString(name)))throw new IOException("Engine profile checksum mismatch");write(new File(output,"meta/"+name),data);}
+  SteamDerivedAssets.prepare(source,output,entries,null);
   JSONObject assets=new JSONObject();int done=0;long engineBytes=0;
   for(Map.Entry<String,HfaIndex.Entry> item:entries.entrySet()){
    if(Thread.currentThread().isInterrupted())throw new InterruptedIOException("Installation canceled");
@@ -69,7 +71,7 @@ final class SteamResources {
    assets.put(name,row);if((++done)%200==0&&progress!=null)progress.accept("Preparing game data: "+done);
   }
   Map<String,int[]> dimensions=new TreeMap<>();for(String name:entries.keySet())if(name.endsWith(".mzp")||name.endsWith(".cbg"))dimensions.put(name,HfaImageInfo.read(entries.get(name)));
-  JSONObject recipes=assetJson(context,"steam-profile/bitmap-recipes.json",4*1024*1024);JSONArray rows=recipes.getJSONArray("records");StringBuilder geometry=new StringBuilder();int pairs=0;
+  JSONObject recipes=new JSONObject(new String(read(new FileInputStream(new File(output,"meta/bitmap-recipes.json")),4*1024*1024),StandardCharsets.UTF_8));JSONArray rows=recipes.getJSONArray("records");StringBuilder geometry=new StringBuilder();int pairs=0;
   for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);String name=row.getString("key"),primary=row.getString("primary");if(!dimensions.containsKey(name)||!dimensions.containsKey(primary))continue;if(!row.isNull("alias")){int[] old=dimensions.get(name),next=HfaImageInfo.read(entries.get(primary));geometry.append('"').append(name).append("\" ").append(old[0]).append(' ').append(old[1]).append(' ').append(next[0]).append(' ').append(next[1]).append('\n');pairs++;}dimensions.put(name,HfaImageInfo.read(entries.get(primary)));}
   String authority="abef1143c161fc1573f7c6478b9f0024cb32a766e72a5da087b54a3a8b9e0f2f";write(new File(output,"meta/native-composite-geometry.tsv"),("WOHCOMPOSITEGEOMETRY1 "+profile.getString("nativeSha256")+" "+authority+" "+pairs+"\n"+geometry).getBytes(StandardCharsets.UTF_8));
   StringBuilder sizes=new StringBuilder("WOH_IMAGE_DIMENSIONS1\n");for(Map.Entry<String,int[]> item:dimensions.entrySet())sizes.append(item.getKey()).append('\t').append(item.getValue()[0]).append('\t').append(item.getValue()[1]).append('\n');write(new File(output,"meta/image-dimensions.tsv"),sizes.toString().getBytes(StandardCharsets.UTF_8));

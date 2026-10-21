@@ -1,19 +1,21 @@
 package org.mahoyo.port;
 
-import android.content.Context;
 import android.graphics.*;
 import java.io.*;
 
 /** Immutable original pixels, loaded once and shared by live Canvas and frozen frames. */
 final class DialogueArt {
     private static volatile Bitmap window,cursor;
-    static synchronized void load(Context context){
-        if(window!=null)return;
-        try(InputStream w=context.getAssets().open("dialogue/window.png");InputStream c=context.getAssets().open("dialogue/cursor.png")){
-            BitmapFactory.Options options=new BitmapFactory.Options();options.inScaled=false;
-            Bitmap panel=BitmapFactory.decodeStream(w,null,options),drop=BitmapFactory.decodeStream(c,null,options);
+    private static String sourceKey="";
+    static synchronized void load(GameResources resources){
+        try{
+            GameAsset w=resources.file("images/txtwindow00.mzp.png"),c=resources.file("images/linebreak_a.cbg.png");
+            String key=w.key()+"|"+c.key();if(window!=null&&key.equals(sourceKey))return;
+            BitmapFactory.Options options=new BitmapFactory.Options();options.inScaled=false;options.inPremultiplied=false;
+            Bitmap panel=w.bitmap(options);options.inPremultiplied=true;Bitmap drop=c.bitmap(options);
             if(panel==null||drop==null||panel.getWidth()!=1920||panel.getHeight()!=1080||drop.getWidth()!=900||drop.getHeight()!=124)throw new IOException("Invalid original dialogue artwork");
-            cursor=drop;window=panel;
+            int[] pixels=new int[panel.getWidth()*panel.getHeight()];panel.getPixels(pixels,0,panel.getWidth(),0,0,panel.getWidth(),panel.getHeight());DialoguePixels.removeBackdrop(pixels);
+            Bitmap ornament=Bitmap.createBitmap(pixels,panel.getWidth(),panel.getHeight(),Bitmap.Config.ARGB_8888);panel.recycle();cursor=drop;window=ornament;sourceKey=key;
         }catch(IOException error){throw new IllegalStateException("Original dialogue artwork unavailable",error);}
     }
     static void frame(Canvas canvas,RectF box,boolean split,float alpha){
