@@ -6,6 +6,8 @@ English · [한국어](README.ko.md) · [日本語](README.ja.md)
 
 A native Android port designed for phones, tablets and foldables across different screen sizes and aspect ratios. **Install your Steam copy directly on your phone, then play completely offline. No PC is required.**
 
+This repository and the distributed APK contain none of the original game's image, audio, video, or dialogue data. Game data is downloaded directly through the Steam account of a user who has legitimately purchased the game.
+
 **[Download the latest APK](https://github.com/david419kr/mahoyo-steam-android-port/releases/latest/download/mahoyo-unofficial.apk)**
 
 ## What you need

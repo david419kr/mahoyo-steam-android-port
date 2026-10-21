@@ -6,6 +6,8 @@
 
 画面サイズや縦横比の異なるスマートフォン・タブレット・折りたたみ端末に対応した、ネイティブAndroid移植版です。**PCなしでSteamのゲームを端末に直接インストールし、その後は完全にオフラインで遊べます。**
 
+このリポジトリおよび配布APKには、原作ゲームの画像・音声・映像・台詞データは一切含まれていません。ゲームデータは、ゲームを正規に購入したユーザーのSteamアカウントを通じて直接ダウンロードします。
+
 **[最新APKをダウンロード](https://github.com/david419kr/mahoyo-steam-android-port/releases/latest/download/mahoyo-unofficial.apk)**
 
 ## 必要なもの

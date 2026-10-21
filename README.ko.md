@@ -6,6 +6,8 @@
 
 다양한 화면 크기와 화면비를 가진 휴대폰·태블릿·폴더블폰을 고려한 네이티브 Android 포트입니다. **PC 없이 휴대폰에서 Steam 게임을 직접 설치하고, 설치 후에는 완전히 오프라인으로 플레이할 수 있습니다.**
 
+이 저장소와 배포 APK에는 원본 게임의 이미지·음성·영상·대사 데이터가 일절 포함되어 있지 않습니다. 게임 데이터는 정식으로 게임을 구매한 사용자의 Steam 계정을 통해 직접 다운로드합니다.
+
 **[최신 APK 다운로드](https://github.com/david419kr/mahoyo-steam-android-port/releases/latest/download/mahoyo-unofficial.apk)**
 
 ## 준비물
