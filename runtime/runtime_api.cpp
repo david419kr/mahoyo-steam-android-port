@@ -1339,6 +1339,8 @@ struct Runtime final:mahoyo::vm::Host {
     }
     void loadGame(int slot) {
         if(slot<1||slot>12)throw mahoyo::save::Error("Invalid save slot");
+        std::error_code missing;
+        if(!std::filesystem::exists(savePath(slot),missing)&&!missing){notice="No saved game was found.";return;}
         const auto document=mahoyo::save::read(savePath(slot));auto candidate=std::make_unique<Machine>(*this);candidate->loadState(document.vm);
         std::map<int,Layer> restored;
         for(const auto& s:document.layers){if(!s.image.empty()&&!safeName(s.image))throw mahoyo::save::Error("Invalid saved image path");Layer l{s.id,s.z,s.image,s.kind,s.color,s.x,s.y,s.w,s.h,s.alpha};l.baseAlpha=s.alpha;l.crop=s.crop;l.hasCrop=s.hasCrop;restored.emplace(l.id,l);}

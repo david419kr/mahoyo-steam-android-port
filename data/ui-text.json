@@ -106,6 +106,7 @@
     ["confirm_overwrite", [], "Overwrite slot %d?", "スロット %d を上書きしますか？", "슬롯 %d을 덮어쓸까요?", "覆盖存档位 %d？", "覆寫存檔位 %d？"],
     ["confirm_load", [], "Load slot %d?", "スロット %d をロードしますか？", "슬롯 %d을 불러올까요?", "读取存档位 %d？", "讀取存檔位 %d？"],
     ["saved_notice", ["Saved"], "Saved", "保存しました", "저장했습니다", "已保存", "已儲存"],
+    ["no_saved_game", ["No saved game was found."], "No saved game was found.", "セーブデータがありません。", "저장된 게임이 없습니다.", "没有可用的存档。", "沒有可用的存檔。"],
     ["loaded_notice", ["Loaded"], "Loaded", "読み込みました", "불러왔습니다", "已读取", "已讀取"],
     ["next", ["次へ"], "Next", "次へ", "다음", "下一步", "下一步"],
     ["game_data_error", [], "Game data could not be read: %s", "ゲームデータを読み込めませんでした：%s", "게임 데이터를 읽을 수 없습니다: %s", "无法读取游戏数据：%s", "無法讀取遊戲資料：%s"],
