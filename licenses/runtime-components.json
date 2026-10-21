@@ -425,7 +425,7 @@
         "runtime/MPL-2.0.txt",
         "runtime/public-suffix-list-NOTICE.txt"
       ],
-      "source": "https://github.com/david419kr/mahoyo-steam-android-port/releases/download/v0.6.3/public-suffix-list-5.1.0-source.txt",
+      "source": "https://github.com/david419kr/mahoyo-steam-android-port/releases/latest/download/public-suffix-list-5.1.0-source.txt",
       "upstream": "https://raw.githubusercontent.com/square/okhttp/parent-5.1.0/okhttp/src/jvmTest/resources/okhttp3/internal/publicsuffix/public_suffix_list.dat",
       "sourceSha256": "986879fc41f0a5cc65f5e7d88fa68f6f0d9c366bb620418b8b8045f61a134077",
       "binarySha256": "c75ab827afd7ffff59a51b14729c25dbfc3b45237eb40ccf02bec7b7d44304a4"
