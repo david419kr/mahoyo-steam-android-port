@@ -10,7 +10,7 @@ final class LanguagePolicy {
     static String[] labels(boolean korean){return korean?new String[]{"Auto","한","日","简","繁"}:new String[]{"Auto","日","En","简","繁"};}
     static boolean koreanPackage(String packageName){
         if("org.mahoyo.port.kr".equals(packageName))return true;
-        if("org.mahoyo.port".equals(packageName))return false;
+        if("org.mahoyo.port".equals(packageName)||"org.mahoyo.port.unofficial".equals(packageName))return false;
         throw new IllegalArgumentException("Unknown game edition: "+packageName);
     }
     static String preference(boolean korean,String requested){return Arrays.asList(choices(korean)).contains(requested)?requested:AUTO;}

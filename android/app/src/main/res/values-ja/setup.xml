@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="setup_unofficial">非公式Android移植版</string>
+    <string name="setup_intro">初回のみSteamにログインして所有権を確認します。インストール後は期限や定期的な再認証なしで完全にオフラインで遊べます。</string>
+    <string name="setup_user">Steamアカウント名</string>
+    <string name="setup_password">パスワード</string>
+    <string name="setup_login">Steamにログイン</string>
+    <string name="setup_cancel">キャンセル</string>
+    <string name="setup_guard">Steamガードのコードを入力してください。</string>
+    <string name="setup_guard_wrong">コードを確認できませんでした。新しいコードを入力してください。</string>
+    <string name="setup_submit">続ける</string>
+    <string name="setup_mobile">Steamモバイルアプリで今回のログインを承認してください。</string>
+    <string name="setup_choose">インストール方法を選択</string>
+    <string name="setup_obb">AVIF OBBを取り込む</string>
+    <string name="setup_obb_info">約5GB。PCでOBBを作成し、この端末でファイルを選択します。</string>
+    <string name="setup_steam">Steamからダウンロード</string>
+    <string name="setup_steam_info">PCは不要です。元データ約%1$sGBとキャッシュ容量が必要です。通信量は確認後に表示します。</string>
+    <string name="setup_guide">PC変換ガイド</string>
+    <string name="setup_guide_body">PCのOBB作成ツールに所有するSteamゲームのフォルダーを指定します。約5GBのAVIF OBBを作成後、この端末のダウンロードフォルダーへコピーし、AVIF OBBを取り込むから選択してください。通常版と韓国語パッチ版を自動判定します。</string>
+    <string name="setup_connecting">Steamに接続中…</string>
+    <string name="setup_authenticating">ログイン中…</string>
+    <string name="setup_ownership">ゲームの所有権を確認中…</string>
+    <string name="setup_downloading">ゲームをダウンロード中…</string>
+    <string name="setup_verifying">ファイルを検証中…</string>
+    <string name="setup_preparing">ゲームデータを準備中…</string>
+    <string name="setup_importing">OBBを取り込み中…</string>
+    <string name="setup_ready">インストール完了</string>
+    <string name="setup_play">プレイ</string>
+    <string name="setup_retry">再試行</string>
+    <string name="setup_missing">ゲームデータが見つかりません。所有権の確認記録は保持されています。方法を選択して修復してください。</string>
+    <string name="setup_failure">インストールできませんでした</string>
+    <string name="setup_patch">韓国語パッチZIPを適用</string>
+    <string name="setup_patch_info">対応する韓国語パッチ1.2のZIPを選択します。フォルダー構成は問いません。ゲーム本体はダウンロードしません。</string>
+    <string name="setup_relogin">ダウンロードするにはSteamにログインしてください。既存のオフライン実行には影響しません。</string>
+    <string name="setup_storage">空き容量が不足しています。</string>
+    <string name="setup_install_channel">ゲームのインストール</string>
+    <string name="setup_offline">オフラインでプレイできます。インストール済みゲームの起動にSteamログインは不要です。</string>
+    <string name="setup_guide_link">PC作成ツールを入手</string>
+    <string name="setup_qr">QRコードでログイン</string>
+    <string name="setup_qr_guide">Steamモバイルアプリでコードを読み取り、ログインを承認してください。コードは自動更新されます。</string>
+    <string name="setup_manage">ゲームデータ・インストール管理</string>
+</resources>

@@ -5,7 +5,7 @@
 The Windows build scripts require:
 
 - Python **3.12 x64** or newer, with `venv` and `pip`.
-- JDK **17+**; set `JAVA_HOME` (Android Studio's JBR works).
+- JDK **21**; set `JAVA_HOME` (Android Studio's JBR works). The Android app targets Java 17 bytecode; the pinned JavaSteam source build needs JDK 21.
 - Gradle **8.14** on PATH, or pass its `gradle.bat` path with `-Gradle`.
 - Android SDK platform **35**, build-tools **36.0.0**, NDK **29.0.13113456**, and SDK CMake **3.22.1**.
 - A supported Steam game 1.1 installation.
@@ -45,18 +45,16 @@ $env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'
 .\scripts\build-android.ps1 `
   -Source 'D:\Games\WITCH ON THE HOLY NIGHT' `
   -SdkRoot 'C:\Android\Sdk' `
-  -Gradle 'C:\Tools\gradle-8.14\bin\gradle.bat' `
-  -Edition all
+  -Gradle 'C:\Tools\gradle-8.14\bin\gradle.bat'
 ```
 
-`-Edition vanilla` or `korean` builds only that edition. APK UI artwork, the original icon, and exact layout/color tables are generated from the supplied game into ignored build directories. No private analysis directory is required.
+The script checks out JavaSteam at the commit in `dependencies/steam.json`, then builds it as a source dependency. APK artwork, icon, layout/color tables, and the small original-HFA runtime profile are generated from the supplied game into ignored build directories. A fresh clone needs Git and network access for dependency setup. No private development directory is required.
 
 Outputs:
 
-- `android/app/build/outputs/apk/vanilla/release/app-vanilla-release.apk`
-- `android/app/build/outputs/apk/korean/release/app-korean-release.apk`
+- `android/app/build/outputs/apk/release/app-release.apk` — unified `org.mahoyo.port.unofficial` application
 
-The script verifies signatures, 16 KiB ZIP alignment, release flags, package identity, and edition-specific launcher languages. It does not install an APK or interact with a device.
+The script runs installer unit tests and verifies signatures, 16 KiB ZIP alignment, release flags, and package identity. It does not install an APK or interact with a device. The separate `src/androidTest` instrumentation is not included in the release APK.
 
 ## Signing
 

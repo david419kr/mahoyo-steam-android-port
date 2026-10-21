@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/joshuatam/JavaSteam.git",
+  "commit": "433f2ad15c36d5e690a4fe77401ec3f6b960641e",
+  "core": "io.github.joshuatam:javasteam:1.8.0.1-26-SNAPSHOT",
+  "downloader": "io.github.joshuatam:javasteam-depotdownloader:1.8.0.1-26-SNAPSHOT",
+  "kotlin": "2.2.0"
+}

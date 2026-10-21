@@ -1,0 +1,12 @@
+package org.mahoyo.port;
+import org.json.JSONObject;import org.junit.Test;import static org.junit.Assert.*;
+public final class InstallationRecordTest {
+ private JSONObject ready()throws Exception{return InstallationRecord.activate(InstallationRecord.confirm(InstallationRecord.empty(),"76561198000000000"),"game-source","","vanilla","steam");}
+ @Test public void firstInstallRequiresSteamOwnership()throws Exception{assertFalse(InstallationRecord.owned(InstallationRecord.empty()));assertFalse(InstallationRecord.ready(InstallationRecord.empty()));try{InstallationRecord.activate(InstallationRecord.empty(),"game-source","","vanilla","steam");fail();}catch(java.io.IOException expected){}}
+ @Test public void installedGrantHasNoExpiryOrSessionDependency()throws Exception{JSONObject record=ready();assertTrue(InstallationRecord.ready(record));assertFalse(record.has("expiresAt"));record.put("sessionToken",JSONObject.NULL).put("tokenExpiresAt",0).put("loggedOut",true).put("networkAvailable",false);assertTrue(InstallationRecord.ready(new JSONObject(record.toString())));record.remove("sessionToken");record.remove("tokenExpiresAt");assertTrue(InstallationRecord.ready(record));}
+ @Test public void freshDataAfterUninstallNeedsActivation()throws Exception{assertTrue(InstallationRecord.ready(ready()));assertFalse(InstallationRecord.ready(InstallationRecord.empty()));}
+ @Test public void updatesPreserveReadyState()throws Exception{JSONObject stored=ready();for(int version:new int[]{84,85,1000}){stored.put("lastApkVersion",version);assertTrue(InstallationRecord.ready(new JSONObject(stored.toString())));}}
+ @Test public void unknownOrCorruptRecordsAreErrorsNotNewLoginState()throws Exception{for(String key:new String[]{"schema","appId"}){JSONObject record=ready();record.put(key,-1);try{InstallationRecord.validate(record);fail();}catch(java.io.IOException expected){}}}
+ @Test public void pathsCannotEscapeStorage()throws Exception{for(String root:new String[]{"../savedata","/data/secret","a/b","a\\b","..",""})try{InstallationRecord.activate(InstallationRecord.confirm(InstallationRecord.empty(),"76561198000000000"),root,"","vanilla","steam");fail(root);}catch(java.io.IOException expected){}}
+ @Test public void koreanObbIsADataProfileNotAnotherPackage()throws Exception{JSONObject record=InstallationRecord.activate(InstallationRecord.confirm(InstallationRecord.empty(),"76561198000000000"),"game-obb","game.obb","korean","obb");assertTrue(InstallationRecord.ready(record));assertEquals("korean",record.getString("edition"));}
+}

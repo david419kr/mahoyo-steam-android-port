@@ -76,6 +76,7 @@ final class SettingsPanel extends LinearLayout {
         }else if(tab==1){
             language();textSpeed();autoDelay();
             volume("음악","bgm");volume("음성","voice");volume("효과음","se");
+            Button installation=button(getContext().getString(R.string.setup_manage));installation.setOnClickListener(v->getContext().startActivity(new android.content.Intent(getContext(),InstallActivity.class).putExtra("manage",true)));content.addView(installation,new LinearLayout.LayoutParams(-1,dp(48)));
             TextView hint=label("하단 분리와 자동 배치는 화면 탭에서 선택할 수 있습니다. 대화창을 위아래로 밀어 이전 문장을 읽고, 탭하여 진행합니다.",14);hint.setTextColor(0xffa7b9d0);hint.setPadding(0,dp(18),0,dp(18));content.addView(hint);
         }else{
             content.addView(ReaderHelpDialog.guide(getContext()));Button open=button("다음 실행시 도움말 다시 보기");open.setOnClickListener(v->{prefs.values.edit().putBoolean("hideReaderHelp",false).apply();Toast.makeText(getContext(),UiText.key(getContext(),"help_reset_done"),Toast.LENGTH_SHORT).show();});content.addView(open,new LinearLayout.LayoutParams(-1,dp(48)));

@@ -1,0 +1,50 @@
+package org.mahoyo.port;
+import android.app.*;
+import android.content.*;
+import android.net.Uri;
+import android.os.*;
+import java.io.*;
+import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+/** Installation-only service; never started by a ready game's offline startup. */
+public final class InstallService extends Service implements SteamSession.Listener {
+ final class LocalBinder extends Binder {InstallService service(){return InstallService.this;}}
+ interface Observer {void changed();}
+ private final LocalBinder binder=new LocalBinder();private final ExecutorService worker=Executors.newSingleThreadExecutor();private final Handler main=new Handler(Looper.getMainLooper());
+ private Observer observer;private SteamSession session;private Future<?> job;private CompletableFuture<String> guard;private PowerManager.WakeLock wakeLock;
+ String stage="choose",error="",email="",qrChallenge="";boolean incorrect=false;long done=0,total=0,estimatedDownload=0,estimatedInstall=17_702_837_564L;float fraction=0;private boolean foreground=false;private long lastProgress=0;private volatile long operation=0;
+ @Override public IBinder onBind(Intent intent){return binder;}
+ void observe(Observer value){observer=value;if(value!=null)value.changed();}
+ boolean busy(){return stage.equals("connecting")||stage.equals("authenticating")||stage.equals("ownership")||stage.equals("guard")||stage.equals("mobile")||stage.equals("qr")||stage.equals("downloading")||stage.equals("verifying")||stage.equals("preparing")||stage.equals("importing");}
+ private void changed(){if(observer!=null)observer.changed();if(foreground)notification();}
+ void login(String username,char[] password){if(busy())return;if(session!=null)session.close();error="";session=new SteamSession(this);stage="connecting";changed();session.login(username,password);}
+ void loginQr(){if(busy())return;if(session!=null)session.close();error="";qrChallenge="";session=new SteamSession(this);stage="connecting";changed();session.loginQr();}
+ void submitGuard(String code){CompletableFuture<String> answer=guard;if(answer!=null){guard=null;stage="authenticating";changed();answer.complete(code.trim());}}
+ void disconnect(){if(session!=null)session.close();session=null;guard=null;qrChallenge="";}
+ @Override public void status(String value){stage=value;changed();}
+ @Override public void guard(String email,boolean incorrect,CompletableFuture<String> answer){this.email=email==null?"":email;this.incorrect=incorrect;guard=answer;stage="guard";changed();}
+ @Override public void qr(String challenge){qrChallenge=challenge;stage="qr";changed();}
+ @Override public void mobileApproval(){stage="mobile";changed();}
+ @Override public void owned(String steamId){try{new Installation(this).confirmOwnership(steamId);stage="choose";changed();}catch(Exception e){failed(e.getMessage());}}
+ @Override public void estimate(long downloadBytes,long installedBytes){estimatedDownload=downloadBytes>0?downloadBytes:0;if(installedBytes>0)estimatedInstall=installedBytes;changed();}
+ @Override public void progress(float value,long compressed,long installed){long now=SystemClock.uptimeMillis();if(now-lastProgress<200&&value<1)return;lastProgress=now;fraction=value;if(compressed>0)done=compressed;if(estimatedDownload>0)total=estimatedDownload;changed();}
+ @Override public void downloaded(){disconnect();beginPrepare();}
+ @Override public void failed(String message){disconnect();error=message==null?"Unknown error":message;stage="error";stopForegroundWork();changed();}
+ void chooseObb(){disconnect();stage="choose";changed();}
+ void importObb(Uri uri){if(busy())return;long task=++operation;disconnect();beginForeground();stage="importing";error="";changed();job=worker.submit(()->{try{GameInstaller.Result result=GameInstaller.obb(this,uri,(s,d,t)->updateProgress(task,s,d,t));activate(result,task);}catch(Exception e){main.post(()->{if(task==operation)failed(e.getMessage());});}});}
+ void importPatch(Uri uri){if(busy())return;long task=++operation;disconnect();beginForeground();stage="importing";error="";changed();job=worker.submit(()->{try{GameInstaller.Result result=GameInstaller.patch(this,uri,(s,d,t)->updateProgress(task,s,d,t));activate(result,task);}catch(Exception e){main.post(()->{if(task==operation)failed(e.getMessage());});}});}
+ boolean connectedForDownload(){return session!=null&&session.connected();}
+ void download(){if(busy())return;if(session==null||!session.connected()){failed(getString(R.string.setup_relogin));return;}try{File source=new Installation(this).child("steam");if(!source.isDirectory()&&!source.mkdirs())throw new IOException("Cannot create Steam download directory");long existing=0;File[] files=source.listFiles();if(files!=null)for(File file:files)if(file.isFile())existing+=file.length();if(source.getUsableSpace()<Math.max(0,estimatedInstall-existing)+512L*1024*1024)throw new IOException(getString(R.string.setup_storage));beginForeground();stage="downloading";error="";fraction=0;changed();session.download(source);}catch(Exception e){failed(e.getMessage());}}
+ private void beginPrepare(){long task=++operation;stage="verifying";changed();job=worker.submit(()->{try{File source=new Installation(this).child("steam");GameInstaller.Result result=GameInstaller.steam(this,source,(s,d,t)->updateProgress(task,s,d,t));activate(result,task);}catch(Exception e){main.post(()->{if(task==operation)failed(e.getMessage());});}});}
+ private void updateProgress(long task,String value,long progress,long maximum){if(task!=operation)return;long now=SystemClock.uptimeMillis();if(now-lastProgress<200&&progress<maximum&&value.equals(stage))return;lastProgress=now;main.post(()->{if(task!=operation)return;stage=value;done=progress;total=maximum;fraction=maximum>0?(float)progress/maximum:0;changed();});}
+ private synchronized void activate(GameInstaller.Result result,long task)throws Exception{if(task!=operation||Thread.currentThread().isInterrupted()){GameInstaller.discard(this,result);return;}try{Installation install=new Installation(this);boolean firstKorean=result.edition.equals("korean")&&!install.read().optString("edition").equals("korean");install.activate(result.root,result.archive,result.edition,result.backend);if(firstKorean)getSharedPreferences("display",MODE_PRIVATE).edit().putString("language","ko").commit();}catch(Exception e){GameInstaller.discard(this,result);throw e;}main.post(()->{if(task!=operation)return;stage="ready";stopForegroundWork();changed();});}
+ synchronized void cancel(){operation++;if(job!=null)job.cancel(true);job=null;disconnect();stage="choose";done=total=0;stopForegroundWork();changed();}
+ private void beginForeground(){Intent intent=new Intent(this,InstallService.class).setAction("install");if(Build.VERSION.SDK_INT>=26)startForegroundService(intent);else startService(intent);foreground=true;notification();if(wakeLock==null){wakeLock=getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,getPackageName()+":game-install");wakeLock.setReferenceCounted(false);}wakeLock.acquire(6L*60*60*1000);}
+ private void notification(){NotificationManager manager=getSystemService(NotificationManager.class);if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel("game-install",getString(R.string.setup_install_channel),NotificationManager.IMPORTANCE_LOW));Intent open=new Intent(this,InstallActivity.class).putExtra("manage",true);PendingIntent target=PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);PendingIntent cancel=PendingIntent.getService(this,1,new Intent(this,InstallService.class).setAction("cancel"),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);Notification.Builder builder=Build.VERSION.SDK_INT>=26?new Notification.Builder(this,"game-install"):new Notification.Builder(this);builder.setSmallIcon(android.R.drawable.stat_sys_download).setContentTitle(getString(R.string.app_name)).setContentText(InstallActivity.stageLabel(this,stage)).setOngoing(true).setContentIntent(target).addAction(new Notification.Action.Builder(null,getString(R.string.setup_cancel),cancel).build());if(total>0)builder.setProgress(1000,(int)(fraction*1000),false);else builder.setProgress(0,0,true);startForeground(2052410,builder.build());}
+ private void stopForegroundWork(){if(wakeLock!=null&&wakeLock.isHeld())wakeLock.release();if(foreground){foreground=false;stopForeground(STOP_FOREGROUND_REMOVE);}stopSelf();}
+ @Override public int onStartCommand(Intent intent,int flags,int id){if(intent!=null&&"cancel".equals(intent.getAction()))cancel();return START_NOT_STICKY;}
+ @Override public boolean onUnbind(Intent intent){observer=null;if(!foreground){disconnect();stopSelf();}return true;}
+ @Override public void onRebind(Intent intent){super.onRebind(intent);}
+ @Override public void onTimeout(int startId,int fgsType){cancel();failed("Android paused this transfer. Open installation to resume.");}
+ @Override public void onDestroy(){observer=null;disconnect();if(job!=null)job.cancel(true);worker.shutdownNow();if(wakeLock!=null&&wakeLock.isHeld())wakeLock.release();super.onDestroy();}
+}

@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="setup_unofficial">Unofficial Android port</string>
+    <string name="setup_intro">Sign in to Steam once to verify game ownership. After installation, play completely offline without expiry or periodic sign-in.</string>
+    <string name="setup_user">Steam account name</string>
+    <string name="setup_password">Password</string>
+    <string name="setup_login">Sign in to Steam</string>
+    <string name="setup_cancel">Cancel</string>
+    <string name="setup_guard">Enter your Steam Guard code.</string>
+    <string name="setup_guard_wrong">That code was not accepted. Enter a new Steam Guard code.</string>
+    <string name="setup_submit">Continue</string>
+    <string name="setup_mobile">Approve this sign-in in the Steam mobile app.</string>
+    <string name="setup_choose">Choose how to install</string>
+    <string name="setup_obb">Import an AVIF OBB</string>
+    <string name="setup_obb_info">About 5 GB. Create the OBB on a PC, then select it on this device.</string>
+    <string name="setup_steam">Download from Steam</string>
+    <string name="setup_steam_info">No PC needed. Original files use approximately %1$s GB plus cache. Download size is shown when available.</string>
+    <string name="setup_guide">PC conversion guide</string>
+    <string name="setup_guide_body">On your PC, run the OBB builder with your owned Steam game folder. It creates an AVIF OBB of approximately 5 GB. Copy that file to Downloads on this device, then select Import an AVIF OBB. Original and Korean-patched OBBs are detected automatically.</string>
+    <string name="setup_connecting">Connecting to Steam…</string>
+    <string name="setup_authenticating">Signing in…</string>
+    <string name="setup_ownership">Checking game ownership…</string>
+    <string name="setup_downloading">Downloading game…</string>
+    <string name="setup_verifying">Verifying files…</string>
+    <string name="setup_preparing">Preparing game data…</string>
+    <string name="setup_importing">Importing OBB…</string>
+    <string name="setup_ready">Installation complete</string>
+    <string name="setup_play">Play</string>
+    <string name="setup_retry">Try again</string>
+    <string name="setup_missing">Game data is missing. Your ownership confirmation is preserved; choose an installation method to repair it.</string>
+    <string name="setup_failure">Installation could not be completed</string>
+    <string name="setup_patch">Apply a Korean patch ZIP</string>
+    <string name="setup_patch_info">Choose your supported Korean patch 1.2 ZIP. Folder layout does not matter. Game files are not downloaded with the patch.</string>
+    <string name="setup_relogin">Sign in to Steam to download. Your existing offline installation is unaffected.</string>
+    <string name="setup_storage">Not enough free storage.</string>
+    <string name="setup_install_channel">Game installation</string>
+    <string name="setup_offline">Ready for offline play. Steam sign-in is not required to launch the installed game.</string>
+    <string name="setup_guide_link">Get the PC builder</string>
+    <string name="setup_qr">Sign in with QR</string>
+    <string name="setup_qr_guide">Scan this code with the Steam mobile app and approve the sign-in. The code refreshes automatically.</string>
+    <string name="setup_manage">Game data and installation</string>
+</resources>

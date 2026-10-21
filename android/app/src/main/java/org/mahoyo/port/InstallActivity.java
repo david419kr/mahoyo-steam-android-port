@@ -1,0 +1,68 @@
+package org.mahoyo.port;
+import android.Manifest;
+import android.app.*;
+import android.content.*;
+import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
+import android.os.*;
+import android.text.InputType;
+import android.view.*;
+import android.widget.*;
+import org.json.JSONObject;
+import java.util.Locale;
+/** First-run installer. A ready installation goes directly to the player without Steam initialization. */
+public final class InstallActivity extends Activity implements InstallService.Observer {
+ private static final int OBB=501,PATCH=502;
+ private Installation installation;private InstallService service;private boolean bound=false,owned=false,ready=false;private String screen="";
+ private LinearLayout panel;private TextView progressText,steamInfo;private ProgressBar progress;private EditText username,password,guard;private ImageView qrView;private String shownQr="";
+ private final ServiceConnection connection=new ServiceConnection(){@Override public void onServiceConnected(ComponentName name,IBinder binder){service=((InstallService.LocalBinder)binder).service();screen="";service.observe(InstallActivity.this);}@Override public void onServiceDisconnected(ComponentName name){service=null;screen="";render();}};
+ @Override public void onCreate(Bundle state){super.onCreate(state);installation=new Installation(this);immersive();
+  try{JSONObject record=installation.read();owned=record.optBoolean("owned");ready=owned&&record.optBoolean("ready")&&installation.dataAvailable();if(ready&&!getIntent().getBooleanExtra("manage",false)){installation.syncLanguage(record);play();return;}}catch(Exception error){showFatal(error.getMessage());return;}
+  FrameLayout root=new FrameLayout(this);root.setBackgroundColor(0xff0b1423);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(24),dp(22),dp(24),dp(28));FrameLayout center=new FrameLayout(this);center.addView(panel,new FrameLayout.LayoutParams(Math.min(getResources().getDisplayMetrics().widthPixels,dp(700)),-2,Gravity.TOP|Gravity.CENTER_HORIZONTAL));scroll.addView(center);root.addView(scroll,new FrameLayout.LayoutParams(-1,-1));setContentView(root);root.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{if(r-l!=or-ol){FrameLayout.LayoutParams params=(FrameLayout.LayoutParams)panel.getLayoutParams();params.width=Math.min(r-l,dp(700));panel.setLayoutParams(params);}});
+  bound=bindService(new Intent(this,InstallService.class),connection,BIND_AUTO_CREATE);render();
+ }
+ private void immersive(){Window window=getWindow();WindowManager.LayoutParams attrs=window.getAttributes();attrs.layoutInDisplayCutoutMode=Build.VERSION.SDK_INT>=30?WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS:WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;window.setAttributes(attrs);if(Build.VERSION.SDK_INT>=30)window.setDecorFitsSystemWindows(false);window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);}
+ static String stageLabel(Context context,String stage){int id;switch(stage){case "connecting":id=R.string.setup_connecting;break;case "authenticating":id=R.string.setup_authenticating;break;case "ownership":id=R.string.setup_ownership;break;case "downloading":id=R.string.setup_downloading;break;case "verifying":id=R.string.setup_verifying;break;case "preparing":id=R.string.setup_preparing;break;case "importing":id=R.string.setup_importing;break;case "mobile":id=R.string.setup_mobile;break;case "qr":id=R.string.setup_qr;break;case "guard":id=R.string.setup_guard;break;case "ready":id=R.string.setup_ready;break;default:id=R.string.setup_choose;}return context.getString(id);}
+ @Override public void changed(){runOnUiThread(this::render);}
+ private void render(){if(panel==null)return;String stage=service==null?"choose":service.stage;
+  if(screen.equals(stage)&&!stage.equals("error")&&!stage.equals("guard")){updateProgress();return;}
+  try{JSONObject record=installation.read();owned=record.optBoolean("owned");ready=owned&&record.optBoolean("ready")&&installation.dataAvailable();}catch(Exception e){showFatal(e.getMessage());return;}
+  screen=stage;panel.removeAllViews();progress=null;progressText=null;steamInfo=null;qrView=null;shownQr="";
+  TextView title=text(getString(R.string.app_name),26,0xffedf3fa);title.setTypeface(null,Typeface.BOLD);panel.addView(title);panel.addView(text(getString(R.string.setup_unofficial),14,0xff8eafce));space(18);
+  if(service==null){panel.addView(text(getString(R.string.setup_preparing),16,0xffdce6f3));return;}
+  if(stage.equals("error")){panel.addView(text(getString(R.string.setup_failure),19,0xffedf3fa));panel.addView(text(service.error,14,0xffc5d2e2));space(12);button(R.string.setup_retry,()->{service.stage="choose";screen="";render();});if(ready)button(R.string.setup_play,this::play);return;}
+  if(service.busy()){
+   panel.addView(text(stageLabel(this,stage),18,0xffedf3fa));
+   if(stage.equals("qr")){panel.addView(text(getString(R.string.setup_qr_guide),15,0xffb7cce1));qrView=new ImageView(this);qrView.setScaleType(ImageView.ScaleType.FIT_CENTER);LinearLayout.LayoutParams qrParams=new LinearLayout.LayoutParams(-1,dp(240));qrParams.topMargin=dp(12);panel.addView(qrView,qrParams);}
+   else if(stage.equals("guard")){if(service.incorrect)panel.addView(text(getString(R.string.setup_guard_wrong),14,0xffd5b887));guard=input(getString(R.string.setup_guard),InputType.TYPE_CLASS_TEXT);button(R.string.setup_submit,()->service.submitGuard(guard.getText().toString()));}
+   else if(!stage.equals("mobile")){progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);panel.addView(progress,new LinearLayout.LayoutParams(-1,dp(12)));progressText=text("",14,0xffb8c9dd);panel.addView(progressText);}
+   space(18);button(R.string.setup_cancel,()->service.cancel());updateProgress();return;
+  }
+  if(!owned){loginForm();return;}
+  if(ready){panel.addView(text(getString(R.string.setup_offline),15,0xffb7cce1));button(R.string.setup_play,this::play);space(20);}else{panel.addView(text(getString(R.string.setup_missing),15,0xffb7cce1));}
+  panel.addView(text(getString(R.string.setup_choose),20,0xffedf3fa));space(8);
+  button(R.string.setup_obb,()->{service.chooseObb();Intent choose=new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(choose,OBB);});panel.addView(text(getString(R.string.setup_obb_info),14,0xff9cb2ca));button(R.string.setup_guide,this::guide);space(18);
+  button(R.string.setup_steam,()->{if(!service.busy()&&service!=null){if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},11);if(!serviceConnected()){loginFormScreen();return;}service.download();}});
+  steamInfo=text("",14,0xff9cb2ca);panel.addView(steamInfo);updateProgress();
+  try{if(ready&&installation.read().optString("backend").equals("steam")){space(18);button(R.string.setup_patch,()->{service.chooseObb();Intent choose=new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/zip").addCategory(Intent.CATEGORY_OPENABLE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivityForResult(choose,PATCH);});panel.addView(text(getString(R.string.setup_patch_info),14,0xff9cb2ca));}}catch(Exception e){showFatal(e.getMessage());}
+ }
+ private boolean serviceConnected(){return service!=null&&service.connectedForDownload();}
+ private void loginFormScreen(){screen="login";panel.removeAllViews();panel.addView(text(getString(R.string.setup_unofficial),18,0xffedf3fa));panel.addView(text(getString(R.string.setup_relogin),15,0xffb7cce1));loginForm();}
+ private void loginForm(){button(R.string.setup_qr,()->{if(service!=null)service.loginQr();});space(12);panel.addView(text(getString(R.string.setup_intro),15,0xffb7cce1));space(12);username=input(getString(R.string.setup_user),InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);password=input(getString(R.string.setup_password),InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);password.setSaveEnabled(false);button(R.string.setup_login,()->{if(service==null||username.getText().toString().trim().isEmpty()||password.length()==0)return;char[] secret=new char[password.length()];password.getText().getChars(0,password.length(),secret,0);String account=username.getText().toString();password.setText("");service.login(account,secret);});}
+ private void updateProgress(){if(service==null)return;if(qrView!=null&&!service.qrChallenge.equals(shownQr)){try{shownQr=service.qrChallenge;com.google.zxing.common.BitMatrix matrix=SteamQr.encode(shownQr,dp(240));int w=matrix.getWidth(),h=matrix.getHeight();int[] pixels=new int[w*h];for(int y=0;y<h;y++)for(int x=0;x<w;x++)pixels[y*w+x]=matrix.get(x,y)?Color.BLACK:Color.WHITE;qrView.setImageBitmap(android.graphics.Bitmap.createBitmap(pixels,w,h,android.graphics.Bitmap.Config.ARGB_8888));}catch(Exception error){qrView.setImageDrawable(null);showFatal(error.getMessage());}}if(progress!=null){progress.setIndeterminate(service.total<=0);if(service.total>0){progress.setMax(1000);progress.setProgress((int)(Math.min(1,service.fraction)*1000));}}if(progressText!=null)progressText.setText(service.total>0?String.format(Locale.getDefault(),"%.1f%% · %.2f / %.2f GB",service.fraction*100,service.done/1e9,service.total/1e9):service.done>0?String.format(Locale.getDefault(),"%.2f GB",service.done/1e9):"");if(steamInfo!=null)steamInfo.setText(getString(R.string.setup_steam_info,String.format(Locale.getDefault(),"%.1f",service.estimatedInstall/1e9))+(service.estimatedDownload>0?String.format(Locale.getDefault(),"\n↓ %.2f GB",service.estimatedDownload/1e9):""));}
+ private void guide(){new AlertDialog.Builder(this).setTitle(R.string.setup_guide).setMessage(R.string.setup_guide_body).setPositiveButton(android.R.string.ok,null).setNeutralButton(R.string.setup_guide_link,(dialog,n)->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/david419kr/mahoyo-steam-android-port/releases")))).show();}
+ private void play(){try{if(!installation.ready()||!installation.dataAvailable())throw new IllegalStateException(getString(R.string.setup_missing));installation.syncLanguage(installation.read());if(service!=null)service.disconnect();startActivity(new Intent(this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();}catch(Exception error){showFatal(error.getMessage());}}
+ private void showFatal(String message){new AlertDialog.Builder(this).setTitle(R.string.setup_failure).setMessage(message).setPositiveButton(android.R.string.ok,(d,n)->finish()).show();}
+ private EditText input(String hint,int type){EditText field=new EditText(this);field.setTextColor(0xffedf3fa);field.setHintTextColor(0xff91a6bf);field.setHint(hint);field.setInputType(type);field.setTextSize(16);field.setSingleLine(true);LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,dp(52));params.topMargin=dp(10);panel.addView(field,params);return field;}
+ private TextView text(String value,int size,int color){TextView view=new TextView(this);view.setText(value);view.setTextSize(size);view.setTextColor(color);view.setPadding(0,dp(6),0,dp(6));view.setLineSpacing(dp(3),1);return view;}
+ private void button(int label,Runnable action){Button button=new Button(this);button.setText(label);button.setTextSize(15);button.setTextColor(Color.WHITE);button.setAllCaps(false);button.setStateListAnimator(null);button.setBackgroundTintList(null);GradientDrawable fill=new GradientDrawable();fill.setColor(0xff284563);fill.setCornerRadius(dp(7));button.setBackground(fill);LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,dp(48));params.topMargin=dp(10);params.bottomMargin=dp(4);panel.addView(button,params);button.setOnClickListener(v->action.run());}
+ private void space(int size){panel.addView(new android.view.View(this),new LinearLayout.LayoutParams(1,dp(size)));}
+ private int dp(float value){return Math.round(value*getResources().getDisplayMetrics().density);}
+ @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null||service==null)return;Uri uri=data.getData();try{getContentResolver().takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);}catch(SecurityException ignored){}if(request==OBB)service.importObb(uri);else if(request==PATCH)service.importPatch(uri);}
+ @Override public void onConfigurationChanged(Configuration config){super.onConfigurationChanged(config);immersive();}
+ @Override protected void onDestroy(){if(service!=null)service.observe(null);if(bound)unbindService(connection);super.onDestroy();}
+}

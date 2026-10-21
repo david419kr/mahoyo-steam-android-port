@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="setup_unofficial">비공식 Android 포트</string>
+    <string name="setup_intro">Steam에 한 번 로그인하여 게임 소유권을 확인합니다. 설치 후에는 만료나 주기적인 재인증 없이 완전히 오프라인으로 실행됩니다.</string>
+    <string name="setup_user">Steam 계정 이름</string>
+    <string name="setup_password">비밀번호</string>
+    <string name="setup_login">Steam 로그인</string>
+    <string name="setup_cancel">취소</string>
+    <string name="setup_guard">Steam Guard 코드를 입력해 주세요.</string>
+    <string name="setup_guard_wrong">코드가 확인되지 않았습니다. 새 Steam Guard 코드를 입력해 주세요.</string>
+    <string name="setup_submit">계속</string>
+    <string name="setup_mobile">Steam 모바일 앱에서 이번 로그인을 승인해 주세요.</string>
+    <string name="setup_choose">설치 방법 선택</string>
+    <string name="setup_obb">AVIF OBB 가져오기</string>
+    <string name="setup_obb_info">약 5GB. PC에서 OBB를 만든 뒤 이 기기에서 파일을 선택합니다.</string>
+    <string name="setup_steam">Steam에서 바로 설치</string>
+    <string name="setup_steam_info">PC 없이 설치합니다. 원본 파일 약 %1$sGB와 캐시 공간이 필요합니다. 다운로드 용량은 확인 후 별도로 표시합니다.</string>
+    <string name="setup_guide">PC 변환 방법</string>
+    <string name="setup_guide_body">PC에서 OBB 제작 도구에 소유한 Steam 게임 폴더를 지정하여 실행하세요. 약 5GB의 AVIF OBB가 생성됩니다. 완성 파일을 이 기기의 다운로드 폴더로 복사한 뒤 AVIF OBB 가져오기에서 선택하세요. 원본판과 한글패치판 OBB를 자동으로 구분합니다.</string>
+    <string name="setup_connecting">Steam에 연결 중…</string>
+    <string name="setup_authenticating">로그인 중…</string>
+    <string name="setup_ownership">게임 소유권 확인 중…</string>
+    <string name="setup_downloading">게임 다운로드 중…</string>
+    <string name="setup_verifying">파일 검증 중…</string>
+    <string name="setup_preparing">게임 데이터 준비 중…</string>
+    <string name="setup_importing">OBB 가져오는 중…</string>
+    <string name="setup_ready">설치 완료</string>
+    <string name="setup_play">게임 실행</string>
+    <string name="setup_retry">다시 시도</string>
+    <string name="setup_missing">게임 데이터가 없습니다. 소유권 확인 기록은 유지되어 있으니 설치 방법을 선택하여 복구해 주세요.</string>
+    <string name="setup_failure">설치를 완료하지 못했습니다</string>
+    <string name="setup_patch">한글패치 ZIP 적용</string>
+    <string name="setup_patch_info">게임 1.1용 한글패치 1.2 ZIP을 선택하세요. 내부 폴더 배치는 상관없습니다. 패치 적용 과정에서 게임 원본은 다운로드하지 않습니다.</string>
+    <string name="setup_relogin">다운로드하려면 Steam에 로그인해 주세요. 기존에 설치된 게임의 오프라인 실행에는 영향이 없습니다.</string>
+    <string name="setup_storage">저장공간이 부족합니다.</string>
+    <string name="setup_install_channel">게임 설치</string>
+    <string name="setup_offline">오프라인 실행 준비가 완료되었습니다. 설치된 게임을 실행할 때 Steam 로그인이 필요하지 않습니다.</string>
+    <string name="setup_guide_link">PC 제작 도구 받기</string>
+    <string name="setup_qr">QR로 로그인</string>
+    <string name="setup_qr_guide">Steam 모바일 앱으로 QR을 스캔하고 로그인을 승인하세요. 코드는 자동으로 갱신됩니다.</string>
+    <string name="setup_manage">게임 데이터·설치 관리</string>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="setup_unofficial">非官方Android移植版</string>
+    <string name="setup_intro">首次登入Steam驗證遊戲所有權。安裝後可永久離線遊玩，無需定期登入或重新驗證。</string>
+    <string name="setup_user">Steam帳號名稱</string>
+    <string name="setup_password">密碼</string>
+    <string name="setup_login">登入Steam</string>
+    <string name="setup_cancel">取消</string>
+    <string name="setup_guard">請輸入Steam Guard驗證碼。</string>
+    <string name="setup_guard_wrong">驗證碼無效，請輸入新的驗證碼。</string>
+    <string name="setup_submit">繼續</string>
+    <string name="setup_mobile">請在Steam手機應用程式中批准這次登入。</string>
+    <string name="setup_choose">選擇安裝方式</string>
+    <string name="setup_obb">匯入AVIF OBB</string>
+    <string name="setup_obb_info">約5GB。在PC上製作OBB後，在本裝置選擇檔案。</string>
+    <string name="setup_steam">從Steam直接下載</string>
+    <string name="setup_steam_info">無需PC。原始檔案約需%1$sGB，另需快取空間。下載流量將於查詢後顯示。</string>
+    <string name="setup_guide">PC轉換指南</string>
+    <string name="setup_guide_body">在PC執行OBB製作工具並指定您擁有的Steam遊戲資料夾。製作約5GB的AVIF OBB後，將其複製至本裝置的下載資料夾，再選擇匯入AVIF OBB。程式會自動識別原版或韓語修補版。</string>
+    <string name="setup_connecting">正在連線Steam…</string>
+    <string name="setup_authenticating">正在登入…</string>
+    <string name="setup_ownership">正在驗證遊戲所有權…</string>
+    <string name="setup_downloading">正在下載遊戲…</string>
+    <string name="setup_verifying">正在驗證檔案…</string>
+    <string name="setup_preparing">正在準備遊戲資料…</string>
+    <string name="setup_importing">正在匯入OBB…</string>
+    <string name="setup_ready">安裝完成</string>
+    <string name="setup_play">開始遊戲</string>
+    <string name="setup_retry">重試</string>
+    <string name="setup_missing">找不到遊戲資料。所有權驗證紀錄仍然有效，請選擇安裝方式進行修復。</string>
+    <string name="setup_failure">無法完成安裝</string>
+    <string name="setup_patch">套用韓語修補ZIP</string>
+    <string name="setup_patch_info">選擇支援的韓語修補1.2 ZIP。無需特定資料夾結構，不會下載遊戲本體。</string>
+    <string name="setup_relogin">下載需要登入Steam。已安裝遊戲的離線執行不受影響。</string>
+    <string name="setup_storage">可用儲存空間不足。</string>
+    <string name="setup_install_channel">遊戲安裝</string>
+    <string name="setup_offline">已可離線遊玩。啟動已安裝遊戲無需登入Steam。</string>
+    <string name="setup_guide_link">取得PC製作工具</string>
+    <string name="setup_qr">掃碼登入</string>
+    <string name="setup_qr_guide">使用Steam手機應用程式掃描QR碼並批准登入。QR碼會自動更新。</string>
+    <string name="setup_manage">遊戲資料與安裝</string>
+</resources>
