@@ -3,6 +3,7 @@
 #include "language_assets.h"
 #include "language_text.h"
 #include "steam11_script_prefixes.h"
+#include "steam11_korean_geometry.h"
 #include "image_header.h"
 #include "vm/machine.h"
 #include "save_store.h"
@@ -354,7 +355,7 @@ struct Runtime final:mahoyo::vm::Host {
                 std::string trailing;if(file>>trailing)throw mahoyo::vm::Error("Trailing exact layout metadata");
             }
             const auto geometryPath=root/"meta"/"native-composite-geometry.tsv";
-            if(std::filesystem::exists(geometryPath)){std::ifstream file(geometryPath);if(!file)throw mahoyo::vm::Error("Cannot read native bitmap geometry metadata");compositeGeometry=mahoyo::bitmap_geometry::readRecipes(file,"1a9bdcf53a9e6ff181c9312d1c9186cf97bee2db873e39f29ad6b81c1b8b540b","abef1143c161fc1573f7c6478b9f0024cb32a766e72a5da087b54a3a8b9e0f2f");}
+            if(std::filesystem::exists(geometryPath)){std::ifstream file(geometryPath);if(!file)throw mahoyo::vm::Error("Cannot read native bitmap geometry metadata");compositeGeometry=mahoyo::bitmap_geometry::readRecipes(file,mahoyo::bitmap_geometry::Steam11PE,mahoyo::bitmap_geometry::Steam11Authority);}
             nativeImageResources=readNativeImageResources(root/"meta"/"native-image-resources.tsv");
             effectClips=mahoyo::effects::load(root/"meta"/"effects.tsv");mahoyo::effects::loadWindows(effectClips,root/"meta"/"effects-window.tsv");mahoyo::effects::loadProperties(effectClips,root/"meta"/"effects-properties.tsv");
             std::filesystem::file_time_type latest=std::filesystem::file_time_type::min();
@@ -396,6 +397,7 @@ struct Runtime final:mahoyo::vm::Host {
     bool bitmapLayoutPresent(const std::string& key)const{auto name=key;auto dot=name.rfind('.');if(dot!=std::string::npos)name.resize(dot);return imageLayouts.count(name)!=0;}
     std::optional<mahoyo::bitmap_geometry::Resize> bitmapResize(const Layer& l,std::optional<mahoyo::bitmap_geometry::Size> saved){
         const auto size=intrinsicSize(l);const auto key=bitmapKey(l);
+        if(saved)if(auto resize=mahoyo::language::koreanCanvasResize(key,*saved,{size[0],size[1]}))return resize;
         // Korean single images can differ from the original canvas. Accept only
         // the two declared sizes, in either direction; arbitrary save geometry
         // must still follow the strict Native pair migration contract below.
@@ -1122,7 +1124,9 @@ struct Runtime final:mahoyo::vm::Host {
         auto name=lower(voice.name);if(name.size()<=3||name.compare(name.size()-3,3,".hw")!=0)return false;
         for(size_t i=0;i+3<name.size();++i)if(!((name[i]>='a'&&name[i]<='z')||(name[i]>='0'&&name[i]<='9')||name[i]=='_'||name[i]=='-'))return false;
         if(packed.active())return packed.contains(historyVoicePath(voice));
-        std::error_code error;return std::filesystem::is_regular_file(root/historyVoicePath(voice),error)&&!error;
+        std::error_code error;
+        if(std::filesystem::is_regular_file(root/".steam-ready",error)&&!error)return audioLoops.count(name)!=0;
+        error.clear();return std::filesystem::is_regular_file(root/historyVoicePath(voice),error)&&!error;
     }
     bool historyGroupStart(size_t index)const{return index==0||!historyMeta.rows[index].known||!historyMeta.rows[index-1].known||historyMeta.rows[index].startsGroup||historyMeta.rows[index-1].endsGroup;}
     std::string historyJson(bool preview=false){
@@ -1335,6 +1339,8 @@ struct Runtime final:mahoyo::vm::Host {
     }
     void loadGame(int slot) {
         if(slot<1||slot>12)throw mahoyo::save::Error("Invalid save slot");
+        std::error_code missing;
+        if(!std::filesystem::exists(savePath(slot),missing)&&!missing){notice="No saved game was found.";return;}
         const auto document=mahoyo::save::read(savePath(slot));auto candidate=std::make_unique<Machine>(*this);candidate->loadState(document.vm);
         std::map<int,Layer> restored;
         for(const auto& s:document.layers){if(!s.image.empty()&&!safeName(s.image))throw mahoyo::save::Error("Invalid saved image path");Layer l{s.id,s.z,s.image,s.kind,s.color,s.x,s.y,s.w,s.h,s.alpha};l.baseAlpha=s.alpha;l.crop=s.crop;l.hasCrop=s.hasCrop;restored.emplace(l.id,l);}
@@ -1414,7 +1420,7 @@ struct Runtime final:mahoyo::vm::Host {
                 }
             }
             if(hostSchema>=20){std::vector<int> activeIds;for(const auto& e:restoredEffects)activeIds.push_back(e.id);std::set<int> layerIds;for(const auto& pair:restored)layerIds.insert(pair.first);restoredHost20=mahoyo::host_state20::read(data,activeIds,layerIds);}
-            if(hostSchema>=23){restoredLanguage=mahoyo::language::readTextState(data,document.history.size());if(restoredLanguage.edition!=languageAssets.edition()||!mahoyo::language::supported(restoredLanguage.edition,restoredLanguage.language))throw mahoyo::save::Error("Saved game edition/language mismatch");}
+            if(hostSchema>=23){restoredLanguage=mahoyo::language::readTextState(data,document.history.size());if((restoredLanguage.edition!="vanilla"&&restoredLanguage.edition!="korean")||!mahoyo::language::supported(restoredLanguage.edition,restoredLanguage.language))throw mahoyo::save::Error("Saved game edition/language mismatch");}
             std::string trailing;if(data>>trailing)throw mahoyo::save::Error("Unexpected saved effect data");
         }
         validateParents(restored);
@@ -1452,7 +1458,8 @@ struct Runtime final:mahoyo::vm::Host {
             for(const auto& item:restoredHistory)restoredLanguage.history.push_back({item,""});
         }
         const bool restoredParagraphItalic=mahoyo::text::endingItalic(restoredText);
-        if(languageAssets.edition()=="korean")candidate->rebindModuleStrings(mahoyo::language::scriptPrefixes());
+        // Cross-edition loads preserve PC/stack only when every module's code is identical.
+        if(languageAssets.edition()=="korean"||(hostSchema>=23&&restoredLanguage.edition!=languageAssets.edition()))candidate->rebindModuleStrings(mahoyo::language::scriptPrefixes());
         int restoredArchive=0,restoredCheckpoint=0;
         if(candidate->variable(500)==1&&candidate->variable(26)>0){restoredArchive=candidate->variable(26);restoredCheckpoint=candidate->variable(459);if(!catalog().find(restoredArchive)||restoredCheckpoint<0||restoredCheckpoint>13)throw mahoyo::save::Error("Invalid saved Archive context");}
         flushShared();

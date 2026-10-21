@@ -22,6 +22,8 @@ def prepare(source):
     icon=resource(source/'WoH.exe',3,1)
     if hashlib.sha256(icon).hexdigest()!='2927a56db178640ca0afd60c88b08dc2691ec18ba2f3e4dd15e233d780a2588e':raise ValueError('Unsupported launcher icon')
     path=ROOT/'android/app/src/main/res/drawable/launcher_icon.png';path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(icon)
+    from prepare_steam_profile import prepare as steam_profile
+    steam_profile(source,output/'dialogueAssets/steam-profile')
     print('Prepared owned-source artwork, cursor, layouts and color table.')
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source',type=Path,required=True);prepare(p.parse_args().source)

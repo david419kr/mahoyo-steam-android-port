@@ -12,6 +12,7 @@ import android.widget.*;
 
 final class SettingsPanel extends LinearLayout {
     private DisplayPrefs prefs;
+    private MenuSwipeDismiss dismissSwipe;
     private LinearLayout content;
     private FrameLayout pages;
     private ScrollView scroll;
@@ -22,7 +23,7 @@ final class SettingsPanel extends LinearLayout {
     private static final int INK=0xffe5eefb, ACCENT=0xff759fc9;
     SettingsPanel(android.content.Context context,int initialTab,Runnable close,Runnable reload){
         super(context);this.close=close;this.reload=reload;prefs=new DisplayPrefs(context);tab=Math.max(0,Math.min(2,initialTab));
-        LinearLayout root=this;root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff0b1423);
+        LinearLayout root=this;root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff0b1423);root.setClickable(true);
         LinearLayout header=new LinearLayout(getContext());header.setGravity(16);header.setPadding(dp(12),dp(2),dp(16),dp(2));root.addView(header);
         Button back=button("‹");back.setContentDescription(tr("뒤로"));header.addView(back,new LinearLayout.LayoutParams(dp(48),dp(48)));back.setOnClickListener(v->close.run());
         TextView title=label("설정",20);title.setTypeface(null,Typeface.BOLD);header.addView(title,new LinearLayout.LayoutParams(0,dp(48),1));title.setGravity(16);
@@ -30,6 +31,7 @@ final class SettingsPanel extends LinearLayout {
         displayTab=button("화면");gameTab=button("게임");tabs.addView(displayTab,new LinearLayout.LayoutParams(0,-1,1));tabs.addView(gameTab,new LinearLayout.LayoutParams(0,-1,1));displayTab.setOnClickListener(v->selectTab(0));gameTab.setOnClickListener(v->selectTab(1));helpTab=button("도움말");tabs.addView(helpTab,new LinearLayout.LayoutParams(0,-1,1));helpTab.setOnClickListener(v->selectTab(2));
         pages=new FrameLayout(getContext());root.addView(pages,new LinearLayout.LayoutParams(-1,0,1));createPage();
     }
+    void swipeDismiss(Runnable done){dismissSwipe=new MenuSwipeDismiss(this,ReaderGesture.SETTINGS,()->scroll==null||!scroll.canScrollVertically(-1),done);}
     int currentTab(){return tab;}
     private void createPage(){
         scroll=new ScrollView(getContext());scroll.setFillViewport(false);pages.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
@@ -46,8 +48,10 @@ final class SettingsPanel extends LinearLayout {
         scroll.animate().translationX(0).alpha(1).setDuration(200).setInterpolator(new DecelerateInterpolator()).start();
         outgoing.animate().translationX(-distance).alpha(0).setDuration(160).withEndAction(()->pages.removeView(outgoing)).start();
     }
-    @Override protected void onDetachedFromWindow(){if(pages!=null)for(int i=0;i<pages.getChildCount();++i)pages.getChildAt(i).animate().cancel();super.onDetachedFromWindow();}
+    @Override protected void onDetachedFromWindow(){if(dismissSwipe!=null)dismissSwipe.dispose();if(pages!=null)for(int i=0;i<pages.getChildCount();++i)pages.getChildAt(i).animate().cancel();super.onDetachedFromWindow();}
     @Override public boolean dispatchTouchEvent(MotionEvent e){
+        boolean claimed=dismissSwipe!=null&&dismissSwipe.claimed();
+        if(dismissSwipe!=null&&dismissSwipe.touch(e,!hitsSeekBar(this,e.getRawX(),e.getRawY()))){if(!claimed){swipe.cancel();MotionEvent cancel=MotionEvent.obtain(e);cancel.setAction(MotionEvent.ACTION_CANCEL);super.dispatchTouchEvent(cancel);cancel.recycle();}return true;}
         int action=e.getActionMasked();
         if(action==MotionEvent.ACTION_DOWN)swipe.start(e.getX(),e.getY(),hitsSeekBar(getRootView(),e.getRawX(),e.getRawY()));
         if(action==MotionEvent.ACTION_CANCEL||action==MotionEvent.ACTION_POINTER_DOWN)swipe.cancel();
@@ -76,6 +80,7 @@ final class SettingsPanel extends LinearLayout {
         }else if(tab==1){
             language();textSpeed();autoDelay();
             volume("음악","bgm");volume("음성","voice");volume("효과음","se");
+            Button installation=button(getContext().getString(R.string.setup_manage));installation.setOnClickListener(v->getContext().startActivity(new android.content.Intent(getContext(),InstallActivity.class).putExtra("manage",true)));content.addView(installation,new LinearLayout.LayoutParams(-1,dp(48)));
             TextView hint=label("하단 분리와 자동 배치는 화면 탭에서 선택할 수 있습니다. 대화창을 위아래로 밀어 이전 문장을 읽고, 탭하여 진행합니다.",14);hint.setTextColor(0xffa7b9d0);hint.setPadding(0,dp(18),0,dp(18));content.addView(hint);
         }else{
             content.addView(ReaderHelpDialog.guide(getContext()));Button open=button("다음 실행시 도움말 다시 보기");open.setOnClickListener(v->{prefs.values.edit().putBoolean("hideReaderHelp",false).apply();Toast.makeText(getContext(),UiText.key(getContext(),"help_reset_done"),Toast.LENGTH_SHORT).show();});content.addView(open,new LinearLayout.LayoutParams(-1,dp(48)));

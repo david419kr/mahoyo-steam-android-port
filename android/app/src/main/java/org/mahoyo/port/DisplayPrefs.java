@@ -10,7 +10,7 @@ final class DisplayPrefs {
     boolean cover(boolean event){return values.getBoolean(event?"eventCover":"bgCover",true);}
     boolean ambient(){return values.getBoolean("ambient",true);}
     int filter(){return values.getInt("filter",0);}
-    int dialogueMode(){return Math.max(0,Math.min(2,values.getInt("dialogue",0)));}
+    int dialogueMode(){return Math.max(0,Math.min(2,values.getInt("dialogue",2)));}
     boolean separateDialogue(){return dialogueMode()==1;}
     // A 10:7 or taller usable area leaves a practical detached reading panel.
     boolean separateDialogue(int width,int height){return dialogueMode()==1 || dialogueMode()==2 && width>0 && height>0 && height>=width*.70f;}

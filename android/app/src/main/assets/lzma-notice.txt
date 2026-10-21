@@ -1,0 +1,4 @@
+LZMA decoder and ARM64 assembly
+Igor Pavlov — Public domain
+https://github.com/ip7z/7zip
+Source revision: b88c6bc09339de32f7d18bbab900686b244f42ba

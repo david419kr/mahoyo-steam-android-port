@@ -22,17 +22,14 @@ class ObbCliTests(unittest.TestCase):
             self.assertIn('images/ko/face.mzp.composite.png',members)
             self.assertNotIn('images/ko/face.mzp.png',members)
 
-    def test_both_menus_state_final_sizes_without_chroma_jargon(self):
-        for language,expected in [('en',('over 20 GB','approximately 5 GB')),('ko',('20GB 이상','약 5GB'))]:
-            rows=[];self.assertEqual(cli.select_mode(language,lambda prompt:'2',rows.append),'avif')
-            text='\n'.join(rows)
-            for part in expected:self.assertIn(part,text)
-            self.assertNotIn('4:4:4',text)
+    def test_public_builder_is_avif_only_and_does_not_prompt(self):
+        for language,expected in [('en','approximately 5 GB'),('ko','약 5GB')]:
+            rows=[]
+            self.assertEqual(cli.select_mode(language,lambda prompt:self.fail('Unexpected mode prompt'),rows.append),'avif')
+            text='\n'.join(rows);self.assertIn(expected,text);self.assertNotIn('1)',text);self.assertNotIn('4:4:4',text)
 
-    def test_empty_or_invalid_choice_does_not_select_a_default(self):
-        inputs=iter(['','bad','1']);rows=[]
-        self.assertEqual(cli.select_mode('en',lambda prompt:next(inputs),rows.append),'original')
-        self.assertEqual(rows.count('Enter 1 or 2.'),2)
+    def test_original_mode_is_no_longer_accepted(self):
+        with self.assertRaises(SystemExit):cli.main(['--mode','original'])
 
     def test_guidance_language_and_explicit_mode_reach_pipeline(self):
         for korean in (False,True):
@@ -49,7 +46,7 @@ class ObbCliTests(unittest.TestCase):
     def test_output_inside_source_is_rejected_without_source_writes(self):
         with tempfile.TemporaryDirectory() as folder:
             source=Path(folder);output=io.StringIO()
-            self.assertEqual(cli.main([str(source),'--mode','original','--output',str(source/'out')],stream=output),1)
+            self.assertEqual(cli.main([str(source),'--mode','avif','--output',str(source/'out')],stream=output),1)
             self.assertFalse((source/'out').exists())
 
     def test_progress_is_readable_in_redirected_output(self):

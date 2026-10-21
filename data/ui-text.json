@@ -106,6 +106,7 @@
     ["confirm_overwrite", [], "Overwrite slot %d?", "スロット %d を上書きしますか？", "슬롯 %d을 덮어쓸까요?", "覆盖存档位 %d？", "覆寫存檔位 %d？"],
     ["confirm_load", [], "Load slot %d?", "スロット %d をロードしますか？", "슬롯 %d을 불러올까요?", "读取存档位 %d？", "讀取存檔位 %d？"],
     ["saved_notice", ["Saved"], "Saved", "保存しました", "저장했습니다", "已保存", "已儲存"],
+    ["no_saved_game", ["No saved game was found."], "No saved game was found.", "セーブデータがありません。", "저장된 게임이 없습니다.", "没有可用的存档。", "沒有可用的存檔。"],
     ["loaded_notice", ["Loaded"], "Loaded", "読み込みました", "불러왔습니다", "已读取", "已讀取"],
     ["next", ["次へ"], "Next", "次へ", "다음", "下一步", "下一步"],
     ["game_data_error", [], "Game data could not be read: %s", "ゲームデータを読み込めませんでした：%s", "게임 데이터를 읽을 수 없습니다: %s", "无法读取游戏数据：%s", "無法讀取遊戲資料：%s"],
@@ -121,7 +122,7 @@
     ["help_right", [], "→ Swipe right · Save", "→ 右にスワイプ · セーブ", "→ 왼쪽에서 오른쪽으로 · 저장", "→ 向右滑动 · 保存", "→ 向右滑動 · 儲存"],
     ["help_left", [], "← Swipe left · Load", "← 左にスワイプ · ロード", "← 오른쪽에서 왼쪽으로 · 불러오기", "← 向左滑动 · 读取", "← 向左滑動 · 讀取"],
     ["help_hold", [], "Hold for 1 second · Skip until you release", "1秒間長押し · 指を離すまでスキップ", "1초 이상 길게 누르기 · 손을 뗄 때까지 스킵", "长按1秒 · 松手即停止快进", "長按1秒 · 鬆手即停止快進"],
-    ["help_scroll", [], "In a scrollable dialogue panel, first reach the top or bottom, then swipe farther to open History or Settings. Save and Load also have tabs and horizontal swipes.", "文章パネルをスクロールできる場合は、上端／下端まで移動してからさらにスワイプすると履歴／設定が開きます。セーブ／ロード画面もタブや左右スワイプで切り替えられます。", "대화창에 스크롤이 있으면 맨 위/맨 아래까지 스크롤한 뒤 더 밀어야 이력/설정이 열립니다. 저장/불러오기 화면에서도 탭이나 좌우 스와이프로 서로 전환할 수 있습니다.", "对话框可滚动时，先滚动到顶部或底部，再继续滑动即可打开历史记录或设置。保存与读取界面也可通过标签或左右滑动切换。", "對話框可捲動時，先捲動至頂部或底部，再繼續滑動即可開啟歷史紀錄或設定。儲存與讀取畫面也可透過分頁或左右滑動切換。"],
+    ["help_scroll", [], "In scrollable dialogue or menus, reach the scroll edge before pulling farther. Release toward a menu to open it, or reverse to cancel. Swipe in the opposite direction to close each menu.", "文章やメニューをスクロールできる場合は、端まで移動してからさらにスワイプします。開く方向へ動かして離すと開き、戻す方向で離すと取り消します。各メニューは逆方向のスワイプで閉じられます。", "대화창이나 메뉴에 스크롤이 있으면 끝까지 스크롤한 뒤 더 밀어 주세요. 여는 방향으로 움직이다 손을 떼면 열리고, 되돌리다 떼면 취소됩니다. 각 메뉴는 반대 방향 스와이프로 닫습니다.", "对话框或菜单可滚动时，先滚动到边缘，再继续滑动。朝打开方向移动后松手即可打开，反向移动后松手则取消。反向滑动可关闭各菜单。", "對話框或選單可捲動時，先捲動至邊緣，再繼續滑動。朝開啟方向移動後放手即可開啟，反向移動後放手則取消。反向滑動可關閉各選單。"],
     ["help_reset_done", [], "Help will appear on the next launch.", "次回起動時にヘルプを表示します。", "다음 실행 시 도움말을 표시합니다.", "下次启动时将显示帮助。", "下次啟動時將顯示說明。"]
   ]
 }

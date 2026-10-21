@@ -14,6 +14,7 @@ final class IconDrawable extends Drawable {
             case "stop":canvas.drawRoundRect(5,5,19,19,1,1,paint);break;
             case "repeat":p.moveTo(5,8);p.lineTo(18,8);p.lineTo(15,5);p.moveTo(18,8);p.lineTo(15,11);p.moveTo(19,16);p.lineTo(6,16);p.lineTo(9,19);p.moveTo(6,16);p.lineTo(9,13);canvas.drawPath(p,paint);break;
             case "fit":for(int x:new int[]{4,20})for(int y:new int[]{4,20}){int sx=x==4?1:-1,sy=y==4?1:-1;p.moveTo(x,y+5*sy);p.lineTo(x,y);p.lineTo(x+5*sx,y);}canvas.drawPath(p,paint);break;
+            case "help":canvas.drawCircle(12,12,9,paint);p.moveTo(9,8);p.cubicTo(9,4.5f,16,4.5f,16,8);p.cubicTo(16,10.5f,12,10.5f,12,14);canvas.drawPath(p,paint);canvas.drawCircle(12,17,.6f,paint);break;
             case "lock":canvas.drawRoundRect(5,10,19,21,2,2,paint);canvas.drawArc(8,2,16,16,180,180,false,paint);canvas.drawLine(12,14,12,17,paint);break;
             case "sound":p.moveTo(3,9);p.lineTo(7,9);p.lineTo(12,5);p.lineTo(12,19);p.lineTo(7,15);p.lineTo(3,15);p.close();canvas.drawPath(p,paint);canvas.drawArc(10,5,23,19,-65,130,false,paint);canvas.drawArc(12,8,20,16,-65,130,false,paint);break;
             case "back":canvas.drawLine(4,12,20,12,paint);p.moveTo(11,5);p.lineTo(4,12);p.lineTo(11,19);canvas.drawPath(p,paint);break;

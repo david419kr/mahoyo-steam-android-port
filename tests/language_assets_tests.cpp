@@ -1,6 +1,7 @@
 #include "../runtime/language_text.h"
 #include "language_assets.h"
 #include "runtime_api.h"
+#include "save_store.h"
 #include <chrono>
 #include <iostream>
 #include <set>
@@ -9,13 +10,13 @@ namespace fs=std::filesystem;
 static int checks=0;
 static void check(bool good){++checks;if(!good)throw std::runtime_error("Language check "+std::to_string(checks));}
 static void write(const fs::path& path,const std::string& value){fs::create_directories(path.parent_path());std::ofstream f(path,std::ios::binary);f<<value;check(bool(f));}
-static std::string program(bool image=false){
+static std::string program(bool image=false,const std::string& imageName="fake"){
     std::vector<uint32_t> code;
     auto push=[&](uint32_t value){code.push_back(0);code.push_back(value);};
     std::vector<std::pair<size_t,std::string>> strings;
     auto string=[&](const std::string& value){code.push_back(3);strings.push_back({code.size(),value});code.push_back(0);};
     push(0);code.push_back(0x153);
-    if(image){for(int value:{0,0,0,0,0,0,-1,0,0})push(value);string("CC");for(int value:{0,0,255,1000,50,50})push(value);string("fake");push(0);code.push_back(0x240);}
+    if(image){for(int value:{0,0,0,0,0,0,-1,0,0})push(value);string("CC");for(int value:{0,0,255,1000,50,50})push(value);string(imageName);push(0);code.push_back(0x240);}
     for(int n:{1,1,0,0})push(n);
     code.push_back(3);size_t ptr=code.size();code.push_back(0);code.push_back(0x140);code.push_back(0x1b);
     size_t suffix=0;for(const auto& item:strings){code[item.first]=uint32_t(code.size()*4+suffix);suffix+=item.second.size()+1;}
@@ -57,6 +58,35 @@ int main(){
             woh_command(handle,"language","zh-Hant");auto loaded=std::string(woh_command(handle,"load","2"));
             check(loaded.find("TRADITIONAL")!=std::string::npos);check(loaded.find("\"language\":\"zh-Hant\"")!=std::string::npos);
             woh_destroy(handle);
+        }
+        {
+            const auto game=owned/"edition-switch";
+            for(const auto& pair:std::vector<std::pair<std::string,std::string>>{{"ja","JAPANESE"},{"en","ENGLISH"},{"zc","SIMPLIFIED"},{"zt","TRADITIONAL"}})write(game/("text/script_text_"+pair.first+".ctd"),pair.second+"\n");
+            write(game/"scripts/1_0.chs",program(true,"img0001"));write(game/"images/img0001.mzp.png","fixture");write(game/"images/ko/img0001.mzp.png","fixture");
+            write(game/"meta/image-dimensions.tsv","WOH_IMAGE_DIMENSIONS1\nimg0001.mzp 1022 764\n");
+            auto value=[](const std::string& json,const std::string& key){auto at=json.find("\""+key+"\":");check(at!=std::string::npos);return std::stod(json.substr(at+key.size()+3));};
+            auto probe=woh_create_configured(game.string().c_str(),"vanilla","en");woh_command(probe,"textSpeed","0");const auto original=std::string(woh_command(probe,"action","start"));
+            check(original.find("ENGLISH")!=std::string::npos);check(value(original,"w")==1022&&value(original,"h")==764);woh_command(probe,"save","9");woh_destroy(probe);
+            const auto index=std::string("WOHLANGASSETS1\nko script_text_en.ctd text/ko/script_text_en.ctd 0 0\nko img0001.mzp images/ko/img0001.mzp.png 1020 900\n");
+            write(game/"meta/game-edition.txt","WOHEDITION1\nkorean\n");write(game/"meta/language-assets.tsv",index);write(game/"text/ko/script_text_en.ctd","KOREAN\n");
+            probe=woh_create_configured(game.string().c_str(),"korean","ko");auto loaded=std::string(woh_command(probe,"load","9"));
+            if(loaded.find("\"notice\":\"Loaded\"")==std::string::npos)throw std::runtime_error("Vanilla save after Korean patch: "+loaded);
+            check(loaded.find("KOREAN")!=std::string::npos);check(value(loaded,"w")==1020&&value(loaded,"h")==900);
+            for(const auto* key:{"modulePc","instructions","textLine"})check(value(original,key)==value(loaded,key));
+            woh_command(probe,"save","10");woh_destroy(probe);
+            write(game/"meta/game-edition.txt","WOHEDITION1\nvanilla\n");fs::remove(game/"meta/language-assets.tsv");
+            probe=woh_create_configured(game.string().c_str(),"vanilla","en");loaded=woh_command(probe,"load","10");
+            if(loaded.find("\"notice\":\"Loaded\"")==std::string::npos)throw std::runtime_error("Korean save after original data import: "+loaded);
+            check(loaded.find("ENGLISH")!=std::string::npos);check(value(loaded,"w")==1022&&value(loaded,"h")==764);
+            for(const auto* key:{"modulePc","instructions","textLine"})check(value(original,key)==value(loaded,key));
+            const auto valid=mahoyo::save::read(owned/"savedata/slot10.whs");
+            for(const auto& replacement:std::vector<std::pair<std::string,std::string>>{{"LANGUAGETEXT1 korean ko","LANGUAGETEXT1 other ko"},{"LANGUAGETEXT1 korean ko","LANGUAGETEXT1 korean en"},{"BITMAPGEOMETRY1 1\n0 1020 900","BITMAPGEOMETRY1 1\n0 1021 900"}}){
+                auto bad=valid;std::string footer(bad.hostExtra.begin(),bad.hostExtra.end());auto at=footer.find(replacement.first);check(at!=std::string::npos);footer.replace(at,replacement.first.size(),replacement.second);bad.hostExtra.assign(footer.begin(),footer.end());mahoyo::save::writeAtomic(owned/"savedata/slot11.whs",bad);
+                auto rejected=std::string(woh_command(probe,"load","11"));check(rejected.find("\"notice\":\"Loaded\"")==std::string::npos);check(rejected.find("ENGLISH")!=std::string::npos);
+                for(const auto* key:{"modulePc","instructions","textLine","w","h"})check(value(loaded,key)==value(rejected,key));
+            }
+            auto incompatible=program(true,"img0001");incompatible.at(44)^=1;write(game/"scripts/1_0.chs",incompatible);auto rejected=std::string(woh_command(probe,"load","10"));check(rejected.find("changes executable code")!=std::string::npos);
+            for(const auto* key:{"modulePc","instructions","textLine","w","h"})check(value(loaded,key)==value(rejected,key));write(game/"scripts/1_0.chs",program(true,"img0001"));woh_destroy(probe);
         }
         write(root/"meta/game-edition.txt","WOHEDITION1\nkorean\n");
         write(root/"meta/language-assets.tsv","WOHLANGASSETS1\nko\tscript_text_en.ctd\ttext/ko/script_text_en.ctd\t0\t0\nko\t1_0.chs\tscripts/ko/1_0.chs\t0\t0\nko\ttitle_titlelogo_en.cbg\timages/ko/title_titlelogo_en.cbg.png\t952\t303\n");

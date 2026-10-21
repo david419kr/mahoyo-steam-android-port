@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Locale;
 
 final class GameLanguage {
-    static boolean korean(Context context){return LanguagePolicy.koreanPackage(context.getPackageName());}
+    static boolean korean(Context context){if("org.mahoyo.port.unofficial".equals(context.getPackageName()))return "korean".equals(context.getSharedPreferences("installation",Context.MODE_PRIVATE).getString("activeEdition","vanilla"));return LanguagePolicy.koreanPackage(context.getPackageName());}
     static String edition(Context context){return korean(context)?"korean":"vanilla";}
     static String preference(Context context){return LanguagePolicy.preference(korean(context),context.getSharedPreferences("display",Context.MODE_PRIVATE).getString("language","auto"));}
     static Locale primarySystemLocale(Context context){
