@@ -217,11 +217,12 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
         float[] end=ReaderGesture.offset(readerPullAction,readerPullCommit?Float.MAX_VALUE:0,root.getWidth(),root.getHeight());
         view.animate().translationX(end[0]).translationY(end[1]).setDuration(readerPullCommit?220:160).setInterpolator(new android.view.animation.DecelerateInterpolator()).withEndAction(()->{
             if(readerPullCommit&&!destroyed&&!paused&&readerPullOpen){
-                if(readerPullAction==ReaderGesture.SETTINGS){settingsOpen=true;startActivity(new Intent(this,SettingsActivity.class),android.app.ActivityOptions.makeCustomAnimation(this,0,0).toBundle());overridePendingTransition(0,0);}
+                if(readerPullAction==ReaderGesture.SETTINGS){settingsOpen=true;long serial=readerPullSerial;Intent next=new Intent(this,SettingsActivity.class).putExtra("previewReady",new android.os.ResultReceiver(ui){@Override protected void onReceiveResult(int code,Bundle data){settingsPreviewReady(serial);}});startActivity(next,android.app.ActivityOptions.makeCustomAnimation(this,0,0).toBundle());overridePendingTransition(0,0);}
                 else{readerPullOpeningSession=true;if(readerPullAction==ReaderGesture.HISTORY)history(true,readerPullSerial);else slots(readerPullAction==ReaderGesture.SAVE?"save":"load",()->{},()->true,true,readerPullSerial);}
             }else discardReaderPull(true);
         }).start();
     }
+    private void settingsPreviewReady(long serial){if(settingsOpen&&readerPullOpen&&readerPullAction==ReaderGesture.SETTINGS&&serial==readerPullSerial)discardReaderPull(false);}
     private void clearReaderPullState(){
         View view=readerPullView();if(view!=null)view.animate().cancel();readerPullOpen=false;readerPullCompleting=false;readerPullCommit=false;readerPullOpeningSession=false;readerPullSerial++;if(readerPullLayer!=null)root.removeView(readerPullLayer);readerPullLayer=null;readerPullPanel=null;readerPullDialog=null;readerGesture.cancel();
     }
