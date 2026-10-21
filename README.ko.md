@@ -6,6 +6,8 @@
 
 다양한 화면 크기와 화면비를 가진 휴대폰·태블릿·폴더블폰을 고려한 네이티브 Android 포트입니다. **PC 없이 휴대폰에서 Steam 게임을 직접 설치하고, 설치 후에는 완전히 오프라인으로 플레이할 수 있습니다.**
 
+**[최신 APK 다운로드](https://github.com/david419kr/mahoyo-steam-android-port/releases/latest/download/mahoyo-unofficial.apk)**
+
 ## 준비물
 
 - **마법사의 밤**을 소유한 Steam 계정

@@ -6,6 +6,8 @@
 
 画面サイズや縦横比の異なるスマートフォン・タブレット・折りたたみ端末に対応した、ネイティブAndroid移植版です。**PCなしでSteamのゲームを端末に直接インストールし、その後は完全にオフラインで遊べます。**
 
+**[最新APKをダウンロード](https://github.com/david419kr/mahoyo-steam-android-port/releases/latest/download/mahoyo-unofficial.apk)**
+
 ## 必要なもの
 
 - **魔法使いの夜**を所有するSteamアカウント
