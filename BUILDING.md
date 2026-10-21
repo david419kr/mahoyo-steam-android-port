@@ -48,7 +48,7 @@ $env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'
   -Gradle 'C:\Tools\gradle-8.14\bin\gradle.bat'
 ```
 
-The script checks out JavaSteam at the commit in `dependencies/steam.json`, applies the checksum-verified Android download backpressure patch recorded there, then builds it as a source dependency. The patch bounds pending chunks instead of buffering an entire download; setup accepts only that exact dependency change and rejects unrelated local edits. APK artwork, icon, layout/color tables, and the small original-HFA runtime profile are generated from the supplied game into ignored build directories. A fresh clone needs Git and network access for dependency setup. No private development directory is required.
+The script checks out JavaSteam at the commit in `dependencies/steam.json`, applies the checksum-verified Android download patches recorded there, then builds it as a source dependency. The patches bound pending chunks, use platform AES/Adler32, and enable the bundled native LZMA decoder while retaining chunk integrity checks. Setup verifies both patched files and rejects unrelated local edits. The small public-domain decoder sources and their upstream hashes are tracked in `dependencies/lzma/`. APK artwork, icon, layout/color tables, and the small original-HFA runtime profile are generated from the supplied game into ignored build directories. A fresh clone needs Git and network access for dependency setup. No private development directory is required.
 
 Outputs:
 

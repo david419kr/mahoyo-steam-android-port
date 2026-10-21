@@ -79,6 +79,7 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
     }}
     private suspend fun connectToSteam():SteamClient {
         Security.removeProvider("BC");Security.addProvider(BouncyCastleProvider())
+        `in`.dragonbra.javasteam.steam.cdn.DepotChunk.vzipDecoder = SteamChunkCodec::decodeVzip
         val steam=SteamClient(SteamConfiguration.create{it.withProtocolTypes(ProtocolTypes.WEB_SOCKET);it.withConnectionFactory{_,_->AndroidSteamConnection()}})
         client=steam
         val callbacks=CallbackManager(steam)
@@ -173,7 +174,7 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
             check(requestCode!=0L){"PINNED_MANIFEST_UNAVAILABLE"}
             // Upstream's completion future is not completed on every failure path.
             val finished=CompletableDeferred<Unit>();val lastActivity=AtomicLong(android.os.SystemClock.elapsedRealtime())
-            val transfer=DepotDownloader(requireNotNull(client),licenses,debug=false,useLanCache=false,maxDownloads=4,maxDecompress=2,androidEmulation=true,parentJob=scope.coroutineContext[Job],autoStartDownload=false,skipLargeFileAllocation=true)
+            val transfer=DepotDownloader(requireNotNull(client),licenses,debug=false,useLanCache=false,maxDownloads=8,maxDecompress=minOf(4,maxOf(2,Runtime.getRuntime().availableProcessors()/2)),androidEmulation=true,parentJob=scope.coroutineContext[Job],autoStartDownload=false,skipLargeFileAllocation=true)
             downloader=transfer
             transfer.addListener(object:IDownloadListener{
                 override fun onStatusUpdate(message:String){lastActivity.set(android.os.SystemClock.elapsedRealtime())}

@@ -24,6 +24,7 @@ External dependencies retain their own licenses. This notice does not replace th
 | Protocol Buffers Java | https://github.com/protocolbuffers/protobuf | BSD-3-Clause |
 | Bouncy Castle | https://www.bouncycastle.org/ | MIT |
 | XZ for Java | https://tukaani.org/xz/java.html | 0BSD |
+| LZMA decoder (7-Zip) | https://github.com/ip7z/7zip | Public domain; source and hashes in `dependencies/lzma` |
 | zstd-jni | https://github.com/luben/zstd-jni | BSD-2-Clause; upstream Zstandard notices |
 | OkHttp / Okio | https://github.com/square/okhttp / https://github.com/square/okio | Apache-2.0 |
 

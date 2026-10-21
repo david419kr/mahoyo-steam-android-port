@@ -7,7 +7,7 @@
   "androidDownloaderPatch": {
     "path": "javasteam-depotdownloader/src/main/kotlin/in/dragonbra/javasteam/depotdownloader/DepotDownloader.kt",
     "baseSha256": "5bd88af622d78a7050b55bc55e8a2990f793813a935a8ee57f6e4ff255f2609b",
-    "patchedSha256": "41d46eaae0c83ef50ab9042b70b8063c07e32bf5265dec7dba9bc21799edc86c",
+    "patchedSha256": "d3c490f6cc0b5ea24fe518bd45bf121f008d013bebb615766f0c0f1a1e4f7444",
     "replacements": [
       {
         "before": "MutableSharedFlow<NetworkChunkItem>(extraBufferCapacity = Int.MAX_VALUE)",
@@ -32,8 +32,40 @@
       {
         "before": "decompressJob = scope.launch {",
         "after": "decompressJob = scope.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {"
+      },
+      {
+        "before": "val writeOffset = file.chunks.filter { it.offset < chunk.offset }.sumOf { it.uncompressedLength.toLong() }",
+        "after": "val writeOffset = chunk.offset"
       }
     ],
     "reason": "Bound temporary chunks; suspend instead of dropping work and subscribe before producers run."
+  },
+  "androidCodecPatch": {
+    "path": "src/main/java/in/dragonbra/javasteam/steam/cdn/DepotChunk.kt",
+    "baseSha256": "2f5ca456e6b90de1de49fb035fbe7a80cca2530a54809e2475d84c9c60d444d0",
+    "patchedSha256": "3689bf7cf4b4dda8461c76e71569c4f5391d7dc658c6ad098b2e948f6456df5e",
+    "replacements": [
+      {
+        "before": "object DepotChunk {",
+        "after": "object DepotChunk {\n\n    /** Optional platform decoder; length and Adler validation remain below. */\n    @Volatile\n    var vzipDecoder: ((ByteArray, Int, ByteArray) -> Int)? = null"
+      },
+      {
+        "before": "Cipher.getInstance(\"AES/ECB/NoPadding\", CryptoHelper.SEC_PROV)",
+        "after": "Cipher.getInstance(\"AES/ECB/NoPadding\")"
+      },
+      {
+        "before": "Cipher.getInstance(\"AES/CBC/PKCS7Padding\", CryptoHelper.SEC_PROV)",
+        "after": "Cipher.getInstance(\"AES/CBC/PKCS5Padding\")"
+      },
+      {
+        "before": "                MemoryStream(buffer, 0, written).use { decryptedStream ->\n                    writtenDecompressed = VZipUtil.decompress(",
+        "after": "                val platformDecoder = vzipDecoder\n                if (platformDecoder != null) {\n                    writtenDecompressed = platformDecoder(buffer, written, destination)\n                } else MemoryStream(buffer, 0, written).use { decryptedStream ->\n                    writtenDecompressed = VZipUtil.decompress("
+      },
+      {
+        "before": "        val dataCrc = Adler32.calculate(destination.sliceArray(0 until writtenDecompressed))",
+        "after": "        val checksum = java.util.zip.Adler32()\n        checksum.update(destination, 0, writtenDecompressed)\n        // Steam uses seed zero; java.util.zip.Adler32 uses seed one.\n        val value = checksum.value\n        val a = ((value and 65535L) + 65520L) % 65521L\n        val b = ((value ushr 16) + 65521L - writtenDecompressed % 65521L) % 65521L\n        val dataCrc = ((b shl 16) or a).toInt()"
+      }
+    ],
+    "reason": "Use platform AES and Adler32; allow a bounded native VZip decoder while retaining final chunk integrity checks."
   }
 }
