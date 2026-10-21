@@ -1,0 +1,434 @@
+{
+  "schema": 1,
+  "components": [
+    {
+      "coordinate": "androidx.annotation:annotation-jvm:1.9.1",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://android.googlesource.com/platform/frameworks/support/",
+      "notices": [
+        "runtime/androidx-annotation-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "androidx.startup:startup-runtime:1.2.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://android.googlesource.com/platform/frameworks/support/",
+      "notices": [
+        "runtime/androidx-startup-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "androidx.tracing:tracing:1.0.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://android.googlesource.com/platform/frameworks/support/",
+      "notices": [
+        "runtime/Apache-2.0.txt"
+      ]
+    },
+    {
+      "coordinate": "com.android.tools:desugar_jdk_libs:2.1.5",
+      "configuration": "coreLibraryDesugaring",
+      "license": "GPL-2.0-only WITH Classpath-exception-2.0 AND Apache-2.0 AND BSD-3-Clause",
+      "project": "https://github.com/google/desugar_jdk_libs",
+      "notices": [
+        "runtime/desugar-jdk-libs-LICENSE.txt",
+        "runtime/desugar-jdk-libs-ASSEMBLY_EXCEPTION.txt",
+        "runtime/desugar-jdk-libs-ADDITIONAL_LICENSE_INFO.txt",
+        "runtime/desugar-jdk-libs-SOURCE-NOTICES.txt"
+      ]
+    },
+    {
+      "coordinate": "com.android.tools:desugar_jdk_libs_configuration:2.1.5",
+      "configuration": "coreLibraryDesugaring",
+      "license": "BSD-3-Clause",
+      "project": "https://r8.googlesource.com/r8",
+      "notices": [
+        "runtime/r8-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "com.github.luben:zstd-jni:1.5.7-4",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "BSD-2-Clause AND BSD-3-Clause",
+      "project": "https://github.com/luben/zstd-jni",
+      "notices": [
+        "runtime/zstd-jni-LICENSE.txt",
+        "runtime/zstd-LICENSE.txt",
+        "runtime/xxhash-NOTICE.txt"
+      ]
+    },
+    {
+      "coordinate": "com.google.protobuf:protobuf-java:4.31.1",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "BSD-3-Clause",
+      "project": "https://github.com/protocolbuffers/protobuf",
+      "notices": [
+        "runtime/protobuf-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "com.google.zxing:core:3.5.3",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/zxing/zxing",
+      "notices": [
+        "runtime/Apache-2.0.txt",
+        "runtime/zxing-NOTICE.txt"
+      ]
+    },
+    {
+      "coordinate": "com.squareup.okhttp3:okhttp-android:5.1.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/square/okhttp",
+      "notices": [
+        "runtime/okhttp-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "com.squareup.okhttp3:okhttp-coroutines:5.1.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/square/okhttp",
+      "notices": [
+        "runtime/okhttp-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "com.squareup.okio:okio-jvm:3.16.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/square/okio",
+      "notices": [
+        "runtime/okio-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.github.icedland.iced:iced-x86:1.21.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "MIT",
+      "project": "https://github.com/icedland/iced",
+      "notices": [
+        "runtime/iced-x86-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.github.joshuatam:javasteam-depotdownloader:1.8.0.1-26-SNAPSHOT",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "MIT",
+      "project": "https://github.com/joshuatam/JavaSteam",
+      "notices": [
+        "runtime/javasteam-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.github.joshuatam:javasteam:1.8.0.1-26-SNAPSHOT",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "MIT",
+      "project": "https://github.com/joshuatam/JavaSteam",
+      "notices": [
+        "runtime/javasteam-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-client-cio-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-client-core-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-client-websockets-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-events-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-http-cio-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-http-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-io-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-network-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-network-tls-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-serialization-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-sse-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-utils-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-websocket-serialization-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "io.ktor:ktor-websockets-jvm:3.2.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/ktorio/ktor",
+      "notices": [
+        "runtime/ktor-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.apache.commons:commons-lang3:3.18.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://commons.apache.org/proper/commons-lang/",
+      "notices": [
+        "runtime/commons-lang3-LICENSE.txt",
+        "runtime/commons-lang3-NOTICE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.bouncycastle:bcprov-jdk18on:1.81",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "MIT",
+      "project": "https://www.bouncycastle.org/",
+      "notices": [
+        "runtime/bouncycastle-LICENSE.html"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.2.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/JetBrains/kotlin",
+      "notices": [
+        "runtime/kotlin-LICENSE.txt",
+        "runtime/kotlin-NOTICE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/JetBrains/kotlin",
+      "notices": [
+        "runtime/kotlin-LICENSE.txt",
+        "runtime/kotlin-NOTICE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlin:kotlin-stdlib:2.2.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/JetBrains/kotlin",
+      "notices": [
+        "runtime/kotlin-LICENSE.txt",
+        "runtime/kotlin-NOTICE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/Kotlin/kotlinx.coroutines",
+      "notices": [
+        "runtime/coroutines-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/Kotlin/kotlinx.coroutines",
+      "notices": [
+        "runtime/coroutines-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.10.2",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/Kotlin/kotlinx.coroutines",
+      "notices": [
+        "runtime/coroutines-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-io-bytestring-jvm:0.7.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/Kotlin/kotlinx-io",
+      "notices": [
+        "runtime/kotlinx-io-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.7.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/Kotlin/kotlinx-io",
+      "notices": [
+        "runtime/kotlinx-io-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.9.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/Kotlin/kotlinx.serialization",
+      "notices": [
+        "runtime/kotlinx-serialization-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.9.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/Kotlin/kotlinx.serialization",
+      "notices": [
+        "runtime/kotlinx-serialization-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.jetbrains:annotations:23.0.0",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "Apache-2.0",
+      "project": "https://github.com/JetBrains/java-annotations",
+      "notices": [
+        "runtime/jetbrains-annotations-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.slf4j:slf4j-api:2.0.17",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "MIT",
+      "project": "https://www.slf4j.org/",
+      "notices": [
+        "runtime/slf4j-LICENSE.txt"
+      ]
+    },
+    {
+      "coordinate": "org.tukaani:xz:1.10",
+      "configuration": "releaseRuntimeClasspath",
+      "license": "0BSD",
+      "project": "https://tukaani.org/xz/java.html",
+      "notices": [
+        "runtime/xz-COPYING.txt"
+      ]
+    }
+  ],
+  "native": [
+    {
+      "component": "LZMA decoder and ARM64 assembly",
+      "revision": "b88c6bc09339de32f7d18bbab900686b244f42ba",
+      "license": "LicenseRef-Public-Domain",
+      "notices": [
+        "runtime/lzma-NOTICE.txt"
+      ]
+    }
+  ],
+  "desugarSource": {
+    "version": "2.1.5",
+    "commit": "73170c345e6a762fc6a1f0301bb15218850023ef",
+    "archive": "desugar-jdk-libs-2.1.5-source.zip",
+    "sha256": "cf0b48cb046b6517ed8e2a816c125116a907e13e48e341882ba6f4016a155d9f",
+    "upstream": "https://codeload.github.com/google/desugar_jdk_libs/zip/73170c345e6a762fc6a1f0301bb15218850023ef",
+    "binarySha256": "d8044befae095781b9a80bf1faa92edc30382d75d437476784c1bf991598a976"
+  },
+  "data": [
+    {
+      "component": "Public Suffix List data packaged by OkHttp 5.1.0",
+      "license": "MPL-2.0",
+      "notices": [
+        "runtime/MPL-2.0.txt",
+        "runtime/public-suffix-list-NOTICE.txt"
+      ],
+      "source": "https://github.com/david419kr/mahoyo-steam-android-port/releases/download/v0.6.3/public-suffix-list-5.1.0-source.txt",
+      "upstream": "https://raw.githubusercontent.com/square/okhttp/parent-5.1.0/okhttp/src/jvmTest/resources/okhttp3/internal/publicsuffix/public_suffix_list.dat",
+      "sourceSha256": "986879fc41f0a5cc65f5e7d88fa68f6f0d9c366bb620418b8b8045f61a134077",
+      "binarySha256": "c75ab827afd7ffff59a51b14729c25dbfc3b45237eb40ccf02bec7b7d44304a4"
+    }
+  ]
+}

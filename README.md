@@ -53,3 +53,7 @@ In **Settings → Display**, choose the original 16:9 view or an adaptive layout
 Saves are kept on this device. Uninstalling the app or clearing its storage removes its installed data and saves.
 
 This is an unofficial project, not affiliated with the game’s publisher or Valve. Game files are downloaded using your own Steam account.
+
+## License
+
+Original project source code is [MIT licensed](LICENSE). [Third-party components](THIRD_PARTY_NOTICES.md) retain their own licenses. Game content, translations and the demonstration screenshot are not covered by the project license.

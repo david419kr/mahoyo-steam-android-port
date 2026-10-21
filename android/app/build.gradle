@@ -17,6 +17,36 @@ def stageRuntimeProfile = tasks.register('stageRuntimeProfile', Sync) {
     into(stagedProfile.map { it.dir('steam-profile') })
 }
 
+def projectRoot = rootProject.projectDir.parentFile
+def licenseAssets = layout.buildDirectory.dir('generated/licenseAssets')
+def stageLicenseAssets = tasks.register('stageLicenseAssets', Sync) {
+    inputs.files(providers.provider { configurations.getByName('releaseRuntimeClasspath') })
+    inputs.files(providers.provider { configurations.getByName('coreLibraryDesugaring') })
+    inputs.files(new File(projectRoot, 'LICENSE'), new File(projectRoot, 'THIRD_PARTY_NOTICES.md'))
+    inputs.dir(new File(projectRoot, 'licenses'))
+    from(new File(projectRoot, 'licenses/runtime')) { into 'licenses/runtime' }
+    from(new File(projectRoot, 'licenses/runtime-components.json')) { into 'licenses' }
+    from(new File(projectRoot, 'licenses/DESUGAR_SOURCE.md')) { into 'licenses' }
+    from(new File(projectRoot, 'LICENSE'))
+    from(new File(projectRoot, 'THIRD_PARTY_NOTICES.md'))
+    into licenseAssets
+    doFirst {
+        def inventory = new groovy.json.JsonSlurper().parse(new File(projectRoot, 'licenses/runtime-components.json'))
+        def actual = ['releaseRuntimeClasspath', 'coreLibraryDesugaring'].collectMany { name ->
+            configurations.getByName(name).resolvedConfiguration.resolvedArtifacts.collect { a -> [coordinate:a.moduleVersion.id.toString(), configuration:name] }
+        }.collect { it.configuration + ':' + it.coordinate }.toSet()
+        def declared = inventory.components.collect { it.configuration + ':' + it.coordinate }.toSet()
+        if (actual != declared) throw new GradleException("Update third-party license inventory: missing=${actual - declared}, obsolete=${declared - actual}")
+        (inventory.components + inventory.native + inventory.data).each { component ->
+            if (!component.license || !component.notices) throw new GradleException('Missing third-party license declaration')
+            component.notices.each { name ->
+                def file = new File(projectRoot, 'licenses/' + name)
+                if (!file.isFile() || !file.length()) throw new GradleException('Missing license notice: ' + name)
+            }
+        }
+    }
+}
+
 android {
     namespace 'org.mahoyo.port'
     compileSdk 35
@@ -48,9 +78,10 @@ android {
     compileOptions { coreLibraryDesugaringEnabled true; sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     sourceSets.main.assets.srcDir(uiAssetsDirectory)
     sourceSets.main.assets.srcDir(stagedProfile)
+    sourceSets.main.assets.srcDir(licenseAssets)
 }
 
-tasks.named('preBuild').configure { dependsOn generateUiAssets; dependsOn stageRuntimeProfile }
+tasks.named('preBuild').configure { dependsOn generateUiAssets; dependsOn stageRuntimeProfile; dependsOn stageLicenseAssets }
 
 dependencies {
     implementation 'io.github.icedland.iced:iced-x86:1.21.0'

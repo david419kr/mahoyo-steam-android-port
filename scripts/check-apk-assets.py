@@ -14,7 +14,14 @@ def check(path):
         'assets/steam-profile/source-profile.json': ROOT / 'data/steam11-source-profile.json',
         'assets/lzma-notice.txt': ROOT / 'android/app/src/main/assets/lzma-notice.txt',
         'assets/iced-x86-notice.txt': ROOT / 'android/app/src/main/assets/iced-x86-notice.txt',
+        'assets/THIRD_PARTY_NOTICES.md': ROOT / 'THIRD_PARTY_NOTICES.md',
+        'assets/LICENSE': ROOT / 'LICENSE',
+        'assets/licenses/DESUGAR_SOURCE.md': ROOT / 'licenses/DESUGAR_SOURCE.md',
+        'assets/licenses/runtime-components.json': ROOT / 'licenses/runtime-components.json',
     }
+    for notice in (ROOT / 'licenses/runtime').rglob('*'):
+        if notice.is_file():
+            owned['assets/licenses/runtime/' + notice.relative_to(ROOT / 'licenses/runtime').as_posix()] = notice
     dependency_assets = {
         'assets/PublicSuffixDatabase.list',
         'assets/dexopt/baseline.prof',

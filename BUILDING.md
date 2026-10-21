@@ -32,6 +32,8 @@ The script checks out JavaSteam at the commit in `dependencies/steam.json`, appl
 
 The APK contains the project's custom icon and interface, not original game artwork, text, palettes or extracted engine tables. After an authenticated Steam download, the application reads those resources from the user's installed game files. Data-only metadata interpretation runs in a bounded reader; it never loads or executes the Windows game. The build verifies an explicit APK asset allowlist to catch accidental bundling.
 
+The public build and synthetic checks do not require Unicorn, Capstone, pefile, Steamless, or a game installation. Python dependencies are limited to Pillow and NumPy for the image/codec checks. Third-party license texts and notices are copied into the APK; `stageLicenseAssets` checks the resolved runtime and desugaring dependencies against `licenses/runtime-components.json`. Update that inventory and the applicable notices when changing dependency versions. Preserve the desugared Java library source access described in `licenses/DESUGAR_SOURCE.md` when distributing an APK.
+
 Outputs:
 
 - `android/app/build/outputs/apk/release/app-release.apk` — unified `org.mahoyo.port.unofficial` application
