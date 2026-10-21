@@ -13,6 +13,7 @@ public final class SourceProbe extends Instrumentation {
   if("missing-data".equals(args.getString("mode"))){checkMissingData(result);finish(Activity.RESULT_OK,result);return;}
   if("password-ui".equals(args.getString("mode"))){result.putString("stream",PasswordFieldCheck.run(this));finish(Activity.RESULT_OK,result);return;}
   if("steam-codec".equals(args.getString("mode"))){result.putString("stream",SteamCodecCheck.run());finish(Activity.RESULT_OK,result);return;}
+  if("hfa-history".equals(args.getString("mode"))){result.putString("stream",HfaHistoryCheck.run(getTargetContext()));finish(Activity.RESULT_OK,result);return;}
   if("recycle-offline-save".equals(args.getString("mode"))){String leaf=args.getString("fixture","");if(!leaf.matches("offline-save-validation-[a-f0-9-]{36}"))throw new IOException("Not an isolated save fixture");OfflineSaveCheck.recyclePermissions(new File(getTargetContext().getExternalFilesDir(null),leaf));result.putString("stream","Isolated fixture permissions prepared for recycling.\n");finish(Activity.RESULT_OK,result);return;}
   String source=args.getString("source");if(source==null)throw new IllegalArgumentException("Pass -e source with an owned Steam folder");
   File root=new File(getTargetContext().getExternalFilesDir(null),"game");SteamResources.prepare(getTargetContext(),new File(source),root,message->{Bundle status=new Bundle();status.putString("stream",message+"\n");sendStatus(0,status);});

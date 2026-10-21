@@ -21,7 +21,22 @@ static std::string replayPair(const std::string& s){auto replay=replayObject(s);
 static void historyAsset(Fixture& f,const std::string& name){auto path=f.game/"audio"/(name+".hw.ogg");fs::create_directories(path.parent_path());f.extraFiles.push_back(path);std::ofstream(path,std::ios::binary)<<"not decoded: private history asset placeholder";}
 static mahoyo::history::State savedHistory(const mahoyo::save::Document& document){std::string extra(document.hostExtra.begin(),document.hostExtra.end());auto at=extra.find("HISTORYMETA1 ");check(at!=std::string::npos,"WH17 footer exists");std::istringstream input(extra.substr(at));return mahoyo::history::read(input,document.history.size());}
 static mahoyo::save::Document withHistory(mahoyo::save::Document document,const mahoyo::history::State& state){std::string extra(document.hostExtra.begin(),document.hostExtra.end());const auto clockFooter=extra.substr(extra.find("WAITBASELINE1 "));extra.resize(extra.find("HISTORYMETA1 "));std::ostringstream out;mahoyo::history::write(out,state,document.history.size());extra+=out.str()+clockFooter;document.hostExtra.assign(extra.begin(),extra.end());return document;}
+static void historyHfaVoiceAvailability(){
+    const std::string loops="a10_first.hw\t44100\t44100\t1\t0\t0\t44100\n";
+    for(bool hfa:{false,true}){
+        Program p;historyVoice(p,"a10_first");historyText(p,"VOICE");historyVoice(p,"a11_absent");historyText(p,"MISSING");p.op(0xf4);
+        Fixture f(std::move(p),false,{},{},loops);
+        if(hfa){std::ofstream marker(f.game/".steam-ready");marker<<"{\"schema\":1}";f.extraFiles.push_back(f.game/".steam-ready");}
+        f.command("textSpeed","0");f.command("action","start");auto state=f.command("history");
+        check(boolean(historyRow(state,0),"available")==hfa,"raw HFA voice uses prepared archive inventory; unpacked data still requires a file");
+        state=f.command("historyReplay",(historyTokenValue(state,"historyRevision")+" 0 1").c_str());
+        check((replayObject(state)!="null")==hfa,"HFA-backed history voice can enter the ordinary replay path");
+        f.command("historyClose",historyTokenValue(state,"historyRevision").c_str());f.command("advance");state=f.command("history");
+        check(!boolean(historyRow(state,1),"available"),"unknown HFA voice names remain unavailable");f.passed=true;
+    }
+}
 static void historyMetadataNativeRowsAndReplay(){
+    historyHfaVoiceAvailability();
     Program p;p.bgm(1,75);p.sound190(3,0,"fx",40,64);historyVoice(p,"A10_first");historyText(p,"@x@iA@n");p.op(0x142);p.op(0x142);historyVoice(p,"a11_second",true);historyText(p,"<猫|ねこ>B");historyText(p,"SAME");historyText(p,"");historyText(p,"SAME");historyText(p,"SAME");p.op(0xf4);
     Fixture f(std::move(p));historyAsset(f,"a10_first");historyAsset(f,"a11_second");auto map=f.game/"meta/music-map.tsv";fs::create_directories(map.parent_path());f.extraFiles.push_back(map);std::ofstream(map)<<"1\tm00.hw\n";woh_destroy(f.handle);f.handle=woh_create(f.game.string().c_str());f.command("textSpeed","0");auto playing=f.command("action","start");check(waiting(playing,"input"),"history fixture reaches its real input");auto voiceBefore=audioChannel(playing,"voice"),seBefore=audioChannel(playing,"se3"),bgmBefore=audioChannel(playing,"bgm");
     auto state=f.command("history");auto rev=historyTokenValue(state,"historyRevision");check(audioChannel(state,"voice")==voiceBefore&&audioChannel(state,"se3")==seBefore,"opening history preserves normal voice and SE");

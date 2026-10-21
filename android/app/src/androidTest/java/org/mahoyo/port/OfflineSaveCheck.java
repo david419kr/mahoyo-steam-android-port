@@ -62,7 +62,7 @@ final class OfflineSaveCheck {
         if(!state.getString("scene").equals("play"))throw new IOException("Expected gameplay state");
         return state.getString("module")+":"+state.getLong("modulePc")+":"+state.getLong("textLine")+":"+state.getString("language")+":"+state.getJSONArray("text").getJSONObject(0).getString("text");
     }
-    private static void copy(Path source,Path target)throws Exception{
+    static void copy(Path source,Path target)throws Exception{
         long bytes=0;int count=0;
         try(java.util.stream.Stream<Path> paths=Files.walk(source)){
             for(Path path:(Iterable<Path>)paths::iterator){

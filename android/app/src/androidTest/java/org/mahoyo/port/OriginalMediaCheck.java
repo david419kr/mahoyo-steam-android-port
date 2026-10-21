@@ -23,7 +23,7 @@ final class OriginalMediaCheck {
         }
         return "Archive media: "+tracks+" audio/video tracks decoded through Android MediaCodec, including localized openings. No full media cache or audible playback was used.\n";
     }
-    private static boolean decode(GameAsset asset,String prefix,boolean required)throws Exception{
+    static boolean decode(GameAsset asset,String prefix,boolean required)throws Exception{
         MediaExtractor extractor=new MediaExtractor();MediaCodec codec=null;boolean started=false;
         try{
             asset.source(extractor);MediaFormat format=null;

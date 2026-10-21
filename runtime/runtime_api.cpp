@@ -1124,7 +1124,9 @@ struct Runtime final:mahoyo::vm::Host {
         auto name=lower(voice.name);if(name.size()<=3||name.compare(name.size()-3,3,".hw")!=0)return false;
         for(size_t i=0;i+3<name.size();++i)if(!((name[i]>='a'&&name[i]<='z')||(name[i]>='0'&&name[i]<='9')||name[i]=='_'||name[i]=='-'))return false;
         if(packed.active())return packed.contains(historyVoicePath(voice));
-        std::error_code error;return std::filesystem::is_regular_file(root/historyVoicePath(voice),error)&&!error;
+        std::error_code error;
+        if(std::filesystem::is_regular_file(root/".steam-ready",error)&&!error)return audioLoops.count(name)!=0;
+        error.clear();return std::filesystem::is_regular_file(root/historyVoicePath(voice),error)&&!error;
     }
     bool historyGroupStart(size_t index)const{return index==0||!historyMeta.rows[index].known||!historyMeta.rows[index-1].known||historyMeta.rows[index].startsGroup||historyMeta.rows[index-1].endsGroup;}
     std::string historyJson(bool preview=false){
