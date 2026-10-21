@@ -1,5 +1,4 @@
 param(
- [Parameter(Mandatory=$true)][string]$Source,
  [string]$SdkRoot=$env:ANDROID_SDK_ROOT,
  [string]$Gradle='gradle',
  [string]$Python='',
@@ -10,11 +9,8 @@ $root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if(!$Python){$Python=Join-Path $root '.venv/Scripts/python.exe'}
 if(!$SdkRoot){$SdkRoot=$env:ANDROID_HOME}
 if(!$SdkRoot){throw 'Pass -SdkRoot or set ANDROID_SDK_ROOT.'}
-$Source=(Resolve-Path -LiteralPath $Source).Path
 $SdkRoot=(Resolve-Path -LiteralPath $SdkRoot).Path
 & (Join-Path $PSScriptRoot 'prepare-steam.ps1')
-& $Python -B (Join-Path $root 'tools/prepare_apk_assets.py') --source $Source
-if($LASTEXITCODE){throw 'Owned-source asset preparation failed.'}
 if(!$SigningKey){$SigningKey=Join-Path $root '.local/signing/port-release.jks'}
 $SigningKey=[IO.Path]::GetFullPath($SigningKey)
 if(!(Test-Path -LiteralPath $SigningKey)){
@@ -41,4 +37,6 @@ if($manifest -match 'android:(testOnly|debuggable).*0xffffffff'){throw 'Release 
 $badging=& (Join-Path $tools 'aapt2.exe') dump badging $apk
 if(($badging|Select-String '^package:').Line -notmatch "name='org\.mahoyo\.port\.unofficial'"){throw 'Unexpected application package.'}
 Write-Output "APK: $apk"
+& $Python -B (Join-Path $root 'scripts/check-apk-assets.py') $apk
+if($LASTEXITCODE){throw 'APK asset allowlist verification failed.'}
 Get-FileHash -LiteralPath $apk -Algorithm SHA256

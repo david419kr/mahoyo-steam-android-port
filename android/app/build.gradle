@@ -10,8 +10,9 @@ def generateUiAssets = tasks.register('generateUiAssets') {
 
 def stagedProfile = layout.buildDirectory.dir('generated/installedProfileAssets')
 def stageRuntimeProfile = tasks.register('stageRuntimeProfile', Sync) {
-    from(layout.buildDirectory.dir('generated/dialogueAssets/steam-profile')) {
-        exclude 'window-atlas-*.png', 'color*-rgb.bin', 'language-messages.tsv'
+    from(new File(rootProject.projectDir.parentFile, 'data')) {
+        include 'steam11-source-profile.json'
+        rename 'steam11-source-profile.json', 'source-profile.json'
     }
     into(stagedProfile.map { it.dir('steam-profile') })
 }
@@ -52,6 +53,7 @@ android {
 tasks.named('preBuild').configure { dependsOn generateUiAssets; dependsOn stageRuntimeProfile }
 
 dependencies {
+    implementation 'io.github.icedland.iced:iced-x86:1.21.0'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20260719'
     implementation 'io.github.joshuatam:javasteam:1.8.0.1-26-SNAPSHOT'

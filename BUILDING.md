@@ -8,16 +8,13 @@ The Windows build scripts require:
 - JDK **21**; set `JAVA_HOME` (Android Studio's JBR works). The Android app targets Java 17 bytecode; the pinned JavaSteam source build needs JDK 21.
 - Gradle **8.14** on PATH, or pass its `gradle.bat` path with `-Gradle`.
 - Android SDK platform **35**, build-tools **36.0.0**, NDK **29.0.13113456**, and SDK CMake **3.22.1**.
-- A supported Steam game 1.1 installation.
-- [Steamless](https://github.com/atom0s/Steamless) CLI and plugins, supplied separately. Only a copied executable is unpacked for reading; the game program is not started.
 
 ## Setup
 
 Run from the repository root. Paths below are examples, not required installation locations.
 
 ```powershell
-.\scripts\setup.ps1 -Python python `
-  -SteamlessDirectory 'C:\Tools\Steamless'
+.\scripts\setup.ps1 -Python python
 ```
 
 Setup creates `.venv/` and `.deps/`; neither is committed.
@@ -27,12 +24,13 @@ Setup creates `.venv/` and `.deps/`; neither is committed.
 ```powershell
 $env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'
 .\scripts\build-android.ps1 `
-  -Source 'D:\Games\WITCH ON THE HOLY NIGHT' `
   -SdkRoot 'C:\Android\Sdk' `
   -Gradle 'C:\Tools\gradle-8.14\bin\gradle.bat'
 ```
 
-The script checks out JavaSteam at the commit in `dependencies/steam.json`, applies the checksum-verified Android download patches recorded there, then builds it as a source dependency. The patches bound pending chunks, use platform AES/Adler32, and enable the bundled native LZMA decoder while retaining chunk integrity checks. Setup verifies both patched files and rejects unrelated local edits. The small public-domain decoder sources and their upstream hashes are tracked in `dependencies/lzma/`. APK artwork, icon, layout/color tables, and the small original-HFA runtime profile are generated from the supplied game into ignored build directories. A fresh clone needs Git and network access for dependency setup. No private development directory is required.
+The script checks out JavaSteam at the commit in `dependencies/steam.json`, applies the checksum-verified Android download patches recorded there, then builds it as a source dependency. The patches bound pending chunks, use platform AES/Adler32, and enable the bundled native LZMA decoder while retaining chunk integrity checks. Setup verifies both patched files and rejects unrelated local edits. The public-domain decoder sources and their upstream hashes are tracked in `dependencies/lzma/`. A fresh clone needs Git and network access for dependency setup. No game installation or private development directory is needed to build the APK.
+
+The APK contains the project's custom icon and interface, not original game artwork, text, palettes or extracted engine tables. After an authenticated Steam download, the application reads those resources from the user's installed game files. Data-only metadata interpretation runs in a bounded reader; it never loads or executes the Windows game. The build verifies an explicit APK asset allowlist to catch accidental bundling.
 
 Outputs:
 

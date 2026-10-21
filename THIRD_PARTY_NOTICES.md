@@ -1,6 +1,6 @@
 # Third-party components
 
-Game media, executable files, translations, extracted artwork are not included in this repository. Build tools read a user-supplied Steam installation.
+Original game media, executable files, translations and extracted artwork are not bundled in the application. The README demonstration photo is retained separately. The application reads original data from the user's Steam installation after download.
 
 External dependencies retain their own licenses. This notice does not replace them.
 
@@ -11,8 +11,8 @@ External dependencies retain their own licenses. This notice does not replace th
 | NumPy | https://numpy.org/ | BSD-3-Clause and bundled library notices |
 | pefile | https://github.com/erocarrera/pefile | MIT |
 | Capstone | https://www.capstone-engine.org/ | BSD-3-Clause |
+| iced-x86 Java | https://github.com/icedland/iced | MIT; included APK notice |
 | Unicorn | https://www.unicorn-engine.org/ | GPL-2.0; see upstream component notices |
-| Steamless | https://github.com/atom0s/Steamless | Upstream CC BY-NC-ND 4.0 notice; supply separately |
 | Android Gradle Plugin / Gradle | https://developer.android.com/build / https://gradle.org/ | Upstream licenses |
 | JavaSteam and depot downloader | https://github.com/joshuatam/JavaSteam | MIT; source pinned in `dependencies/steam.json` |
 | Kotlin and kotlinx.coroutines | https://github.com/JetBrains/kotlin / https://github.com/Kotlin/kotlinx.coroutines | Apache-2.0 |

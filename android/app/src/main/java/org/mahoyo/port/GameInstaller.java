@@ -21,10 +21,10 @@ final class GameInstaller {
   StringBuilder result=new StringBuilder();for(byte b:digest.digest())result.append(String.format(Locale.ROOT,"%02x",b&255));return result.toString();
  }
  static void verifySteam(Context context,File source,Progress progress)throws Exception{
-  JSONObject profile=SteamResources.assetJson(context,"steam-profile/source-profile.json",1024*1024),runtime=SteamResources.assetJson(context,"steam-profile/profile.json",1024*1024);JSONArray rows=profile.getJSONArray("archives");Set<String> expected=new HashSet<>();long total=0,done=0;
+  JSONObject profile=SteamResources.assetJson(context,"steam-profile/source-profile.json",1024*1024);JSONArray rows=profile.getJSONArray("archives");Set<String> expected=new HashSet<>();long total=0,done=0;
   for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);expected.add(row.getString("name"));total+=row.getLong("bytes");}
   File[] archives=source.listFiles(f->f.isFile()&&f.getName().toLowerCase(Locale.ROOT).endsWith(".hfa"));Set<String> actual=new HashSet<>();if(archives!=null)for(File f:archives)actual.add(f.getName());if(!actual.equals(expected))throw new IOException("Unsupported or incomplete Steam game archives");
-  File exe=new File(source,"WoH.exe");if(!exe.isFile()||!digest(exe,(s,d,t)->{},0,exe.length()).equals(runtime.getString("steamExeSha256")))throw new IOException("Unsupported Steam game version");
+  File exe=new File(source,"WoH.exe");if(!exe.isFile()||!digest(exe,(s,d,t)->{},0,exe.length()).equals(SteamPe.SOURCE_SHA))throw new IOException("Unsupported Steam game version");
   for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);File file=new File(source,row.getString("name"));if(file.length()!=row.getLong("bytes")||!digest(file,progress,done,total).equals(row.getString("sha256")))throw new IOException("Unsupported or corrupt Steam file: "+file.getName());done+=file.length();progress.update("verifying",done,total);}
  }
  static Result steam(Context context,File source,Progress progress)throws Exception{
