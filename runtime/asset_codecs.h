@@ -14,6 +14,7 @@ struct Entry {std::string name;uint64_t offset,length;};
 std::vector<Entry> hfaIndex(Bytes index,uint64_t fileSize);
 ImageInfo imageInfo(Bytes data);
 Image decodeImage(Bytes data,Rect crop={});
+Image decodeComposed(Bytes primary,Bytes patch,Rect crop={},uint32_t sample=1);
 std::vector<uint8_t> decodeMzx(Bytes data,bool invert=false);
 std::vector<uint8_t> decodeLenzu(Bytes data);
 }

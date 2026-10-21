@@ -99,6 +99,31 @@ std::vector<uint8_t> decodeLenzu(Bytes data){
 }
 ImageInfo imageInfo(Bytes data){if(prefix(data,"mrgd00",6)){Mzp m(data);return {m.width,m.height};}if(prefix(data,"CompressedBG_MT\0",16)){auto w=le(data,16),h=le(data,20),stripe=le(data,24),depth=le(data,28);require(w&&h&&stripe&&(depth==8||depth==24||depth==32),"Invalid CBG geometry");allocation(uint64_t(w)*h,MaxPixels);return {w,h};}throw Error("Unknown native image format");}
 Image decodeImage(Bytes data,Rect crop){if(prefix(data,"mrgd00",6))return decodeMzp(data,crop);if(prefix(data,"CompressedBG_MT\0",16))return decodeCbg(data,crop);throw Error("Unknown native image format");}
+Image decodeComposed(Bytes primary,Bytes patch,Rect crop,uint32_t sample){
+ require(sample>0,"Invalid native image sample");auto size=imageInfo(primary);crop=cropRect(size.width,size.height,crop);
+ ImageInfo patchSize{};if(patch.size)patchSize=imageInfo(patch);
+ auto strip=[&](Rect area){
+  auto image=decodeImage(primary,area);
+  Rect p{area.left,area.top,std::min(area.right,patchSize.width),std::min(area.bottom,patchSize.height)};
+  if(patch.size&&p.left<p.right&&p.top<p.bottom){auto overlay=decodeImage(patch,p);for(uint32_t y=0;y<overlay.height;++y)for(uint32_t x=0;x<overlay.width;++x){auto src=(size_t(y)*overlay.width+x)*4,dst=(size_t(y)*image.width+x)*4;if(overlay.rgba[src+3])std::memcpy(image.rgba.data()+dst,overlay.rgba.data()+src,4);}}
+  return image;
+ };
+ if(sample==1)return strip(crop);
+ uint32_t width=crop.right-crop.left,height=crop.bottom-crop.top,w=uint32_t((uint64_t(width)+sample-1)/sample),h=uint32_t((uint64_t(height)+sample-1)/sample);
+ auto out=canvas({0,0,w,h});
+ // Carry one output row across bounded source strips; never allocate a full atlas before sampling.
+ using Sum=std::array<uint64_t,7>;allocation(uint64_t(w)*sizeof(Sum),16ULL*1024*1024);std::vector<Sum> sums(w);
+ allocation(uint64_t(width)*4,16ULL*1024*1024);uint32_t rows=uint32_t(16ULL*1024*1024/(uint64_t(width)*4)),stride=128,first=128;
+ if(prefix(primary,"mrgd00",6)){Mzp m(primary);stride=m.th-2*m.border;first=m.th-(m.ny>1?m.border:0);}else if(prefix(primary,"CompressedBG_MT\0",16)){stride=le(primary,24);first=stride;}
+ for(uint32_t top=0;top<height;){uint64_t sourceTop=uint64_t(crop.top)+top,next=sourceTop<first?first:uint64_t(first)+((sourceTop-first)/stride+1)*stride;uint32_t bottom=top+uint32_t(std::min<uint64_t>({rows,height-top,next-sourceTop}));auto block=strip({crop.left,crop.top+top,crop.right,crop.top+bottom});
+  for(uint32_t y=top;y<bottom;++y){
+   for(uint32_t x=0;x<w;++x){auto& sum=sums[x];uint32_t left=uint32_t(uint64_t(x)*sample),right=uint32_t(std::min<uint64_t>(uint64_t(left)+sample,width));for(uint32_t sx=left;sx<right;++sx){auto* p=block.rgba.data()+(size_t(y-top)*width+sx)*4;sum[3]+=p[3];for(int c=0;c<3;++c){sum[size_t(c)]+=uint64_t(p[c])*p[3];sum[size_t(c)+4]+=p[c];}}}
+   if((uint64_t(y)+1)%sample==0||y+1==height){uint32_t oy=y/sample;uint64_t countY=uint64_t(y)+1-uint64_t(oy)*sample;
+    for(uint32_t x=0;x<w;++x){auto& sum=sums[x];uint64_t count=countY*std::min<uint64_t>(sample,uint64_t(width)-uint64_t(x)*sample);auto* p=out.rgba.data()+(size_t(oy)*w+x)*4;for(int c=0;c<3;++c)p[c]=uint8_t(sum[3]?(sum[size_t(c)]+sum[3]/2)/sum[3]:(sum[size_t(c)+4]+count/2)/count);p[3]=uint8_t((sum[3]+count/2)/count);sum.fill(0);}
+   }
+  }top=bottom;
+ }return out;
+}
 std::vector<Entry> hfaIndex(Bytes index,uint64_t fileSize){
  require(prefix(index,"HUNEXGGEFA10",12),"Not HFA");auto count=le(index,12);uint64_t start=16+uint64_t(count)*128;require(start<=fileSize&&uint64_t(count)*128<=64ULL*1024*1024&&start<=index.size,"Invalid HFA index size");std::vector<Entry> out;out.reserve(count);std::vector<std::pair<uint64_t,uint64_t>> ranges;
  for(uint32_t i=0;i<count;++i){auto row=index.slice(16+size_t(i)*128,128);auto end=static_cast<const uint8_t*>(std::memchr(row.data,0,96));require(end&&end>row.data,"Invalid HFA resource name");std::string name(reinterpret_cast<const char*>(row.data),size_t(end-row.data));require(name.find_first_of("/\\:\r\n")==std::string::npos&&name!="."&&name!="..","Unsafe HFA resource name");uint64_t offset=start+le(row,96),size=le(row,100);require(offset<=fileSize&&size<=fileSize-offset,"HFA resource outside file");out.push_back({std::move(name),offset,size});if(size)ranges.emplace_back(offset,offset+size);}
