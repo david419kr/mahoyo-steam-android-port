@@ -18,11 +18,9 @@ from edition_assets import detect_source, infer_edition, prepare_edition
 from prepare_assets import _atomic_bytes, _json_bytes
 from prepare_runtime_metadata import TARGET, VERSION as METADATA_VERSION, generate, native_image
 
-MODES={
-    'en':('Choose a packaging mode','1) Original quality\n   No additional lossy compression · Final size: over 20 GB · Less processing time',
-          '2) AVIF compression\n   Final size: approximately 5 GB · Takes longer to create','Select [1/2]: '),
-    'ko':('패키징 방식 선택','1) 원본 화질 유지\n   추가 손실 압축 없음 · 최종 용량 20GB 이상 · 상대적으로 빠른 제작',
-          '2) AVIF 고효율 압축\n   최종 용량 약 5GB · 제작 시간이 오래 걸림','선택 [1/2]: ')}
+MODE_INFO={
+    'en':'AVIF compression · Final size: approximately 5 GB · Creation takes time.\nThe APK also supports importing older original-quality OBB files.',
+    'ko':'AVIF 고효율 압축 · 최종 용량 약 5GB · 제작 시간이 오래 걸립니다.\n기존에 만든 원본 화질 OBB도 앱에서 가져올 수 있습니다.'}
 STAGES={
     'verify':('Checking source files','원본 파일 확인'),'cache':('Checking cached assets','완료된 자산 확인'),
     'convert':('Converting assets','자산 변환'),'compose':('Composing character images','캐릭터 이미지 합성'),
@@ -50,11 +48,8 @@ def check_dependencies(mode):
 
 
 def select_mode(language,read=input,write=print):
-    title,original,avif,prompt=MODES[language];write('\n'+title+'\n\n'+original+'\n\n'+avif+'\n')
-    while True:
-        value=read(prompt).strip()
-        if value in ('1','2'):return 'original' if value=='1' else 'avif'
-        write('1 또는 2를 입력해 주세요.' if language=='ko' else 'Enter 1 or 2.')
+    write('\n'+MODE_INFO[language]+'\n')
+    return 'avif'
 
 
 class Progress:
@@ -142,7 +137,7 @@ def _members(game):
 
 def pipeline(source,output,cache,mode,*,workers=2,progress=None,verified=None):
     source,output=outside(source,output);_,cache=outside(source,cache)
-    if mode not in ('original','avif') or not 1<=workers<=16:raise ValueError('Invalid packaging mode/worker count')
+    if mode != 'avif' or not 1<=workers<=16:raise ValueError('Invalid packaging mode/worker count')
     reject_links(output)
     if not cache.is_relative_to(output):reject_links(cache)
     verified=verified if verified is not None else detect_source(source,progress=progress)
@@ -182,7 +177,7 @@ def pipeline(source,output,cache,mode,*,workers=2,progress=None,verified=None):
         after=(source/name).stat()
         if (before.st_size,before.st_mtime_ns,before.st_ctime_ns)!=(after.st_size,after.st_mtime_ns,after.st_ctime_ns):raise ValueError('Input changed during preparation: '+name)
     from resumable_obb import build
-    package='org.mahoyo.port'+('.kr' if edition=='korean' else '')
+    package='org.mahoyo.port.unofficial'
     target=output/edition/mode/f'main.1.{package}.obb'
     estimated=sum(m.size for m in members.values())+16*1024*1024
     partial=target.with_suffix('.obb.partial')
@@ -194,13 +189,13 @@ def pipeline(source,output,cache,mode,*,workers=2,progress=None,verified=None):
 
 def main(argv=None,*,read=input,stream=sys.stdout):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('source',nargs='?',type=Path);parser.add_argument('--mode',choices=['original','avif']);parser.add_argument('--output',type=Path,default=Path.cwd()/'output');parser.add_argument('--cache',type=Path);parser.add_argument('--workers',type=int,default=min(8,max(1,(os.cpu_count() or 2)//2)))
+    parser.add_argument('source',nargs='?',type=Path);parser.add_argument('--mode',choices=['avif']);parser.add_argument('--output',type=Path,default=Path.cwd()/'output');parser.add_argument('--cache',type=Path);parser.add_argument('--workers',type=int,default=min(8,max(1,(os.cpu_count() or 2)//2)))
     args=parser.parse_args(argv);language='en';log=None;locks=ExitStack()
     try:
         source=args.source or Path(read('Game folder / 게임 폴더: ').strip().strip('"'));source=source.resolve(strict=True)
         language='ko' if infer_edition(source)=='korean' else 'en'
         print('마법사의 밤 · OBB 작성 도구' if language=='ko' else 'WITCH ON THE HOLY NIGHT · OBB Builder',file=stream)
-        mode=args.mode or select_mode(language,read,lambda text:print(text,file=stream))
+        mode=select_mode(language,read,lambda text:print(text,file=stream))
         _,output=outside(source,args.output);_,cache=outside(source,args.cache or output/'.work')
         check_dependencies(mode)
         from cache_lock import exclusive
@@ -211,7 +206,7 @@ def main(argv=None,*,read=input,stream=sys.stdout):
         progress=Progress(language,stream);verified=detect_source(source,progress=progress)
         # Conservative measured bounds include raw PNGs, composed SCGs, output and selected encodings.
         cache.mkdir(parents=True,exist_ok=True);output.mkdir(parents=True,exist_ok=True)
-        required=65*1024**3 if mode=='original' else 75*1024**3
+        required=75*1024**3
         reject_links(cache);existing=0;seen=set()
         for parent,_,files in os.walk(cache):
             for name in files:
