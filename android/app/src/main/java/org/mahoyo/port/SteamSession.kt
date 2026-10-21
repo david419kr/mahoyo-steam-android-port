@@ -63,6 +63,7 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
     private val licenseList=CompletableDeferred<LicenseListCallback>()
     private var guard: CompletableFuture<String>?=null
     private fun post(action:()->Unit){main.post{if(scope.isActive)action()}}
+    private fun report(error:Exception){if(scope.isActive)post{listener.failed(if(error is CancellationException)AuthQrRetry.INTERRUPTED else error.message?:error.javaClass.simpleName)}}
     fun login(username: String,password: CharArray){scope.launch{
         try {
             val steam=connectToSteam()
@@ -74,20 +75,20 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
             post{listener.status("authenticating")}
             val auth=try{withTimeout(300000){val session=steam.authentication.beginAuthSessionViaCredentials(details,scope).await();details.password=null;credentials(session)}}finally{details.password=null}
             verifyOwnership(steam,auth)
-        }catch(error:Exception){password.fill('\u0000');if(scope.isActive)post{listener.failed(error.message?:error.javaClass.simpleName)}}
+        }catch(error:Exception){password.fill('\u0000');report(error)}
     }}
     private suspend fun connectToSteam():SteamClient {
         Security.removeProvider("BC");Security.addProvider(BouncyCastleProvider())
-        val steam=SteamClient(SteamConfiguration.create{it.withProtocolTypes(ProtocolTypes.WEB_SOCKET)})
+        val steam=SteamClient(SteamConfiguration.create{it.withProtocolTypes(ProtocolTypes.WEB_SOCKET);it.withConnectionFactory{_,_->AndroidSteamConnection()}})
         client=steam
         val callbacks=CallbackManager(steam)
         callbacks.subscribe(ConnectedCallback::class.java){connected.complete(Unit)}
         callbacks.subscribe(LoggedOnCallback::class.java){loggedOn.complete(it)}
         callbacks.subscribe(LicenseListCallback::class.java){licenseList.complete(it)}
         callbacks.subscribe(DisconnectedCallback::class.java){
-            val error=IllegalStateException("Steam disconnected")
+            val error=IllegalStateException(AuthQrRetry.DISCONNECTED)
             connected.completeExceptionally(error);loggedOn.completeExceptionally(error);licenseList.completeExceptionally(error)
-            post{listener.failed("Steam disconnected. Sign in again to continue.")}
+            post{listener.failed(AuthQrRetry.DISCONNECTED)}
         }
         scope.launch{while(isActive)callbacks.runWaitCallbacks(200)}
         post{listener.status("connecting")};steam.connect();withTimeout(60000){connected.await()}
@@ -125,8 +126,9 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
                 post{listener.qr(qr.challengeUrl)}
                 approval(qr,true)
             }
+            post{listener.status("authenticating")}
             verifyOwnership(steam,auth)
-        }catch(error:Exception){if(scope.isActive)post{listener.failed(error.message?:error.javaClass.simpleName)}}
+        }catch(error:Exception){report(error)}
     }}
     private suspend fun approval(session:AuthSession,waitFirst:Boolean):AuthPollResult{
         if(waitFirst)delay(AuthTiming.pollMillis(session.pollingInterval))
@@ -185,7 +187,7 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
             while(withTimeoutOrNull(15000){finished.await();true}!=true){check(android.os.SystemClock.elapsedRealtime()-lastActivity.get()<300000){"Download stopped responding. Sign in again to resume the saved files."}}
             transfer.close();downloader=null
             post{listener.downloaded()}
-        }catch(error:Exception){downloader?.close();downloader=null;if(scope.isActive)post{listener.failed(error.message?:error.javaClass.simpleName)}}
+        }catch(error:Exception){downloader?.close();downloader=null;report(error)}
     }}
     override fun close(){verified=false;guard?.cancel(true);guard=null;downloader?.close();downloader=null;client?.disconnect();client=null;scope.cancel()}
 }

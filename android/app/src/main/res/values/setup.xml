@@ -41,4 +41,5 @@
     <string name="setup_manage">Game data and installation</string>
     <string name="setup_transfer_info">%1$.1f%% · This session: %2$.2f GB received / %3$.2f GB unpacked · %4$.1f MB/s\nTotal installation: %5$.2f GB</string>
     <string name="setup_manifest_unavailable">Steam did not grant access to the fixed game 1.1 manifest. You can retry or import a supported OBB. Your existing installation is unaffected.</string>
+    <string name="setup_connection_lost">The Steam connection or request ended. Please sign in again to continue. Your existing installation remains available offline.</string>
 </resources>

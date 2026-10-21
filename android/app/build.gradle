@@ -63,6 +63,7 @@ dependencies {
     implementation 'io.github.joshuatam:javasteam-depotdownloader:1.8.0.1-26-SNAPSHOT'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
     implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.squareup.okhttp3:okhttp:5.1.0'
     implementation 'com.google.protobuf:protobuf-java:4.31.1'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.81'
     implementation 'org.tukaani:xz:1.10'
