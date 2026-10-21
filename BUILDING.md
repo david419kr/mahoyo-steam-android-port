@@ -10,20 +10,6 @@ The Windows build scripts require:
 - Android SDK platform **35**, build-tools **36.0.0**, NDK **29.0.13113456**, and SDK CMake **3.22.1**.
 - A supported Steam game 1.1 installation.
 - [Steamless](https://github.com/atom0s/Steamless) CLI and plugins, supplied separately. Only a copied executable is unpacked for reading; the game program is not started.
-- [vcpkg](https://github.com/microsoft/vcpkg) ARM64 Android packages for libavif **1.3.0#1**, dav1d **1.5.1#1**, and libyuv **1916**.
-
-Optional FFmpeg/ffprobe executables are needed for AVIF-mode OBB video conversion, not for APK compilation. Keep the supplied tools' license files alongside them.
-
-## Codec packages
-
-A versioned vcpkg manifest is provided in `dependencies/`. With vcpkg and the Android NDK configured:
-
-```powershell
-$env:ANDROID_NDK_HOME = 'C:\Android\Sdk\ndk\29.0.13113456'
-& C:\Tools\vcpkg\vcpkg.exe install --x-manifest-root=dependencies --x-install-root=.deps/vcpkg-installed --triplet arm64-android
-```
-
-Then pass that vcpkg checkout's `packages` directory to setup. Setup checks package versions, ARM64 object format, and pinned API headers; it records hashes of locally built libraries in ignored `.deps/` for the CMake integrity check. Compiler-dependent binary hashes do not need to match another developer's build.
 
 ## Setup
 
@@ -31,12 +17,10 @@ Run from the repository root. Paths below are examples, not required installatio
 
 ```powershell
 .\scripts\setup.ps1 -Python python `
-  -SteamlessDirectory 'C:\Tools\Steamless' `
-  -MediaDirectory 'C:\Tools\ffmpeg\bin' `
-  -AvifPackages 'C:\Tools\vcpkg\packages'
+  -SteamlessDirectory 'C:\Tools\Steamless'
 ```
 
-`MediaDirectory` may be omitted for APK-only builds. The FFmpeg directory should contain `ffmpeg.exe`, `ffprobe.exe`, and the distribution notices. Setup creates `.venv/` and `.deps/`; neither is committed.
+Setup creates `.venv/` and `.deps/`; neither is committed.
 
 ## Build
 

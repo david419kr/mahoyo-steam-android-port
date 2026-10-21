@@ -53,7 +53,3 @@ In **Settings → Display**, choose the original 16:9 view or an adaptive layout
 Saves are kept on this device. Uninstalling the app or clearing its storage removes its installed data and saves.
 
 This is an unofficial project, not affiliated with the game’s publisher or Valve. Game files are downloaded using your own Steam account.
-
-## Advanced: import an OBB
-
-A PC-converted AVIF OBB (about **5 GB**) can also be imported from the installation screen after Steam ownership verification. Importing makes a copy, so leave space for both files. See the [PC conversion guide](OBB-BUILDER.md).

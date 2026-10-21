@@ -30,8 +30,6 @@ final class InstallFailureCheck {
             JSONObject active=check.installation.read();File root=check.installation.dataRoot(active);
             JSONObject marker=new JSONObject(new String(Files.readAllBytes(new File(root,SteamResources.MARKER).toPath()),StandardCharsets.UTF_8));
             byte[] dll=Files.readAllBytes(new File(marker.getString("patch"),"mahoyo_kr.dll").toPath());
-            Uri badObb=check.zip("obb",null);
-            check.reject(()->GameInstaller.obb(context,badObb,(s,d,t)->{}),false,"invalid OBB format");
             Uri missing=check.zip("missing",dll);
             check.reject(()->GameInstaller.patch(context,missing,(s,d,t)->{}),false,"missing patch files");
             Uri wrong=check.zip("wrong",dll);
@@ -81,8 +79,7 @@ final class InstallFailureCheck {
         ContentValues values=new ContentValues();values.put(MediaStore.MediaColumns.DISPLAY_NAME,"mahoyo-validation-"+kind+"-"+UUID.randomUUID()+".zip");values.put(MediaStore.MediaColumns.MIME_TYPE,"application/zip");values.put(MediaStore.MediaColumns.RELATIVE_PATH,"Download/");values.put(MediaStore.MediaColumns.IS_PENDING,1);
         Uri uri=context.getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI,values);if(uri==null)throw new IOException("Cannot create owned fixture");fixtures.add(uri);
         try(OutputStream out=context.getContentResolver().openOutputStream(uri);ZipOutputStream zip=new ZipOutputStream(out)){
-            if(kind.equals("obb")){entry(zip,"_obb/index.tsv",new byte[0]);entry(zip,"_obb/info.json","{\"format\":\"invalid\"}".getBytes(StandardCharsets.UTF_8));}
-            else {entry(zip,"NESTED/PATCH_KR/MAHOYO_KR.DLL",kind.equals("wrong")?new byte[]{1,2}:dll);if(kind.equals("duplicate"))entry(zip,"other/mahoyo_kr.dll",new byte[]{7});}
+            {entry(zip,"NESTED/PATCH_KR/MAHOYO_KR.DLL",kind.equals("wrong")?new byte[]{1,2}:dll);if(kind.equals("duplicate"))entry(zip,"other/mahoyo_kr.dll",new byte[]{7});}
         }
         ContentValues published=new ContentValues();published.put(MediaStore.MediaColumns.IS_PENDING,0);context.getContentResolver().update(uri,published,null,null);return uri;
     }

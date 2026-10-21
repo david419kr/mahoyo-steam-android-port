@@ -1,4 +1,4 @@
-"""Record actual prepared PNG dimensions for AVIF runtime metadata."""
+"""Record prepared bitmap dimensions for runtime metadata."""
 from pathlib import Path
 import argparse,struct
 def write(source,overlay):

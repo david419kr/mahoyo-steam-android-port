@@ -50,7 +50,7 @@ File source=first.downloadSource(),media=new File(source,"data00000.hfa");Files.
 Installation restart=new Installation(context(base));check(restart.downloadSource().equals(source));
 restart.preservePartialSteamFiles(source);check(media.length()==128L*1024*1024);try(RandomAccessFile file=new RandomAccessFile(media,"r")){check(file.read()==42);file.seek(file.length()-1);check(file.read()==0);}
 File game=restart.child("game-steam-11111111-2222-3333-4444-555555555555");game.mkdirs();Files.writeString(new File(game,"assets.json").toPath(),"{}");File marker=new File(game,SteamResources.MARKER);Files.writeString(marker.toPath(),new JSONObject().put("schema",1).put("source",source.getPath()).toString());
-File save=new File(game.getParentFile(),"savedata/slot1.whs");save.getParentFile().mkdirs();Files.write(save.toPath(),new byte[]{77});restart.activate(game,null,"vanilla","steam");
+File save=new File(game.getParentFile(),"savedata/slot1.whs");save.getParentFile().mkdirs();Files.write(save.toPath(),new byte[]{77});restart.activate(game,"vanilla");
 check(!new File(context(base).getFilesDir(),"download.json").exists());
 Installation after=new Installation(context(base));check(after.ready());check(after.dataRoot(after.read()).equals(game));File second=after.downloadSource();check(!second.equals(source));
 File checkpoint=new File(context(base).getFilesDir(),"download.json");Files.writeString(checkpoint.toPath(),DownloadRecord.create(source.getName()).toString());check(!new Installation(context(base)).downloadSource().equals(source));

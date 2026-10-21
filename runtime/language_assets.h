@@ -1,5 +1,5 @@
 #pragma once
-#include "packed_assets.h"
+#include "resource_path.h"
 #include <array>
 #include <filesystem>
 #include <fstream>
@@ -43,7 +43,7 @@ public:
             std::ifstream file(marker);std::string magic,extra;
             if(!std::getline(file,magic)||magic!="WOHEDITION1"||!std::getline(file,edition_)||std::getline(file,extra))throw std::runtime_error("Invalid edition marker");
         }
-        if((edition_!="vanilla"&&edition_!="korean")||(!expected.empty()&&expected!=edition_))throw std::runtime_error("Game/OBB edition mismatch");
+        if((edition_!="vanilla"&&edition_!="korean")||(!expected.empty()&&expected!=edition_))throw std::runtime_error("Game edition mismatch");
         const auto index=root/"meta/language-assets.tsv";
         if(std::filesystem::exists(index)){
             if(std::filesystem::file_size(index)>4*1024*1024)throw std::runtime_error("Language asset index budget");
@@ -51,7 +51,7 @@ public:
             if(!std::getline(file,line)||line!="WOHLANGASSETS1")throw std::runtime_error("Invalid language asset index");
             while(std::getline(file,line)){
                 std::istringstream row(line);std::string locale,name,path,extra;int w,h;
-                if(!(row>>locale>>name>>path>>w>>h)||row>>extra||locale!="ko"||!logicalName(name)||!mahoyo::packed::safe(path)||w<0||h<0||w>65535||h>65535||(w==0)!=(h==0))throw std::runtime_error("Invalid language asset row");
+                if(!(row>>locale>>name>>path>>w>>h)||row>>extra||locale!="ko"||!logicalName(name)||!mahoyo::resource::safe(path)||w<0||h<0||w>65535||h>65535||(w==0)!=(h==0))throw std::runtime_error("Invalid language asset row");
                 auto wanted=defaultPath(name);auto slash=wanted.find('/');if(slash==std::string::npos)throw std::runtime_error("Unknown language asset type");wanted.insert(slash+1,"ko/");
                 const bool composite=ends(name,".mzp")&&w>0&&path=="images/ko/"+name+".composite.png";
                 if((path!=wanted&&!composite)||!korean.emplace(name,Record{path,{w,h}}).second)throw std::runtime_error("Duplicate/unsafe language asset");

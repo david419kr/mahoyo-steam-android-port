@@ -10,20 +10,16 @@
     <string name="setup_guard_wrong">コードを確認できませんでした。新しいコードを入力してください。</string>
     <string name="setup_submit">続ける</string>
     <string name="setup_mobile">Steamモバイルアプリで今回のログインを承認してください。</string>
-    <string name="setup_choose">インストール方法を選択</string>
-    <string name="setup_obb">AVIF OBBを取り込む</string>
-    <string name="setup_obb_info">約5GB。PCで作成したOBBを選択します。取り込み時にコピーを作成するため、元のOBBとは別に同じ容量の空きが必要です。</string>
+    <string name="setup_choose">ゲームのインストール</string>
     <string name="setup_steam">Steamからダウンロード</string>
     <string name="setup_steam_info">PCは不要です。元データ約%1$sGBとキャッシュ容量が必要です。通信量は確認後に表示します。</string>
-    <string name="setup_guide">PC変換ガイド</string>
-    <string name="setup_guide_body">PCのOBB作成ツールに所有するSteamゲームのフォルダーを指定します。約5GBのAVIF OBBを作成後、この端末のダウンロードフォルダーへコピーし、AVIF OBBを取り込むから選択してください。通常版と韓国語パッチ版を自動判定します。</string>
     <string name="setup_connecting">Steamに接続中…</string>
     <string name="setup_authenticating">ログイン中…</string>
     <string name="setup_ownership">ゲームの所有権を確認中…</string>
     <string name="setup_downloading">ゲームをダウンロード中…</string>
     <string name="setup_verifying">ファイルを検証中…</string>
     <string name="setup_preparing">ゲームデータを準備中…</string>
-    <string name="setup_importing">OBBを取り込み中…</string>
+    <string name="setup_importing">パッチを適用中…</string>
     <string name="setup_ready">インストール完了</string>
     <string name="setup_play">プレイ</string>
     <string name="setup_retry">再試行</string>
@@ -35,14 +31,13 @@
     <string name="setup_storage">空き容量が不足しています。</string>
     <string name="setup_install_channel">ゲームのインストール</string>
     <string name="setup_offline">ゲームのインストールが完了しました。オフラインでプレイできます。</string>
-    <string name="setup_guide_link">PC作成ツールを入手</string>
     <string name="setup_qr">QRコードでログイン</string>
     <string name="setup_qr_guide">Steamモバイルアプリでコードを読み取り、ログインを承認してください。コードは自動更新されます。</string>
     <string name="setup_manage">ゲームデータ・インストール管理</string>
     <string name="setup_transfer_info">%1$.1f%% · ダウンロード %2$.2f GB / 展開 %3$.2f GB · %4$.1f MB/s\nインストール全体 %5$.2f GB</string>
-    <string name="setup_manifest_unavailable">Steam がゲーム1.1の固定 manifest へのアクセスを許可しませんでした。再試行するか、対応する OBB を取り込んでください。既存のインストールには影響しません。</string>
+    <string name="setup_manifest_unavailable">Steamのゲームファイルにアクセスできません。再度ログインしてお試しください。</string>
     <string name="setup_connection_lost">Steam の接続またはリクエストが終了しました。続行するには再度ログインしてください。既存のインストールは引き続きオフラインで実行できます。</string>
- <string name="setup_back_install">インストール方法に戻る</string>
+ <string name="setup_back_install">インストール画面に戻る</string>
     <string name="setup_available">空き容量: %1$.1fGB</string>
     <string name="setup_password_show">パスワードを表示</string>
     <string name="setup_password_hide">パスワードを非表示</string>
@@ -58,7 +53,6 @@
     <string name="setup_steam_authenticator">Steam認証アプリを開く</string>
     <string name="setup_steam_app_missing">Steamアプリをインストールして再試行してください。</string>
     <string name="setup_qr_lan_page_title">SteamログインQR</string>
-    <string name="setup_advanced">上級者向け · PCで変換したファイル</string>
     <string name="setup_steam_installed">Steamからインストール済み</string>
     <string name="setup_patch_installed">韓国語パッチ適用済み</string>
 </resources>

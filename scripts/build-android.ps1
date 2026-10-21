@@ -15,7 +15,6 @@ $SdkRoot=(Resolve-Path -LiteralPath $SdkRoot).Path
 & (Join-Path $PSScriptRoot 'prepare-steam.ps1')
 & $Python -B (Join-Path $root 'tools/prepare_apk_assets.py') --source $Source
 if($LASTEXITCODE){throw 'Owned-source asset preparation failed.'}
-if(!(Test-Path -LiteralPath (Join-Path $root '.deps/android/arm64-v8a/lib/libavif.a'))){throw 'Run setup.ps1 -AvifPackages first.'}
 if(!$SigningKey){$SigningKey=Join-Path $root '.local/signing/port-release.jks'}
 $SigningKey=[IO.Path]::GetFullPath($SigningKey)
 if(!(Test-Path -LiteralPath $SigningKey)){

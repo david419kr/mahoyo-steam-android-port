@@ -12,7 +12,7 @@ final class OriginalMediaCheck {
     static String run(Context context)throws Exception{
         Installation install=new Installation(context);if(!install.ready()||!install.dataAvailable())throw new IOException("A real owned installation is required");
         JSONObject record=install.read();if(!record.getString("backend").equals("steam"))throw new IOException("Original Steam backend required");
-        return run(new GameResources(context,install.dataRoot(record),install.archive(record),record.getString("edition")),record.getString("edition"));
+        return run(new GameResources(context,install.dataRoot(record)),record.getString("edition"));
     }
     static String run(GameResources resources,String edition)throws Exception{
         int tracks=0;

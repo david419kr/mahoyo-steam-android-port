@@ -1,5 +1,4 @@
 #include "runtime_api.h"
-#include "packed_assets.h"
 #include "language_assets.h"
 #include "language_text.h"
 #include "steam11_script_prefixes.h"
@@ -212,7 +211,6 @@ double nativeAngle(double hundredths) {
 }
 struct Runtime final:mahoyo::vm::Host {
     std::filesystem::path root;
-    mahoyo::packed::Assets packed;
     mahoyo::language::Assets languageAssets;
     std::unique_ptr<Machine> machine;
     mahoyo::shared::State sharedState;bool sharedLoaded=false,sharedWritePending=false;
@@ -321,7 +319,6 @@ struct Runtime final:mahoyo::vm::Host {
     uint64_t prepareWaitClock(){const auto captured=waitClock.age(tick);waitClock.prepared(captured,tick);return waitClock.age(tick);}
     explicit Runtime(const char* path,const char* edition=nullptr,const char* language=nullptr):root(path?path:"") {
         try {
-            packed.open(root);
             languageAssets.open(root,edition?edition:"",language?language:"");
             const auto messagesPath=root/"meta/language-messages.tsv";
             if(std::filesystem::exists(messagesPath)){
@@ -372,7 +369,7 @@ struct Runtime final:mahoyo::vm::Host {
         return readBytes(root/std::filesystem::u8path(languageAssets.path(lower(name))));
     }
     std::string resourceName(std::string name)const {
-        name=lower(name);return languageAssets.localize(name,[&](const std::string& candidate){auto relative=mahoyo::language::defaultPath(candidate);return !relative.empty()&&(packed.active()?packed.contains(relative):std::filesystem::is_regular_file(root/std::filesystem::u8path(relative)));});
+        name=lower(name);return languageAssets.localize(name,[&](const std::string& candidate){auto relative=mahoyo::language::defaultPath(candidate);return !relative.empty()&&std::filesystem::is_regular_file(root/std::filesystem::u8path(relative));});
     }
     std::string menuMessage(const std::string& key,const std::string& fallback)const{
         auto row=menuMessages.find(key);if(row==menuMessages.end())return fallback;auto value=row->second.find(languageAssets.current());return value==row->second.end()?fallback:value->second;
@@ -383,8 +380,7 @@ struct Runtime final:mahoyo::vm::Host {
         name=resourceName(name);if(auto overlay=languageAssets.overlay(name);overlay&&overlay->size[0]>0)return overlay->size;auto cached=imageSizes.find(name);if(cached!=imageSizes.end())return cached->second;
         unsigned char header[32]{};size_t bytes=0;
         auto relative=languageAssets.path(name);
-        if(packed.active())bytes=packed.header(relative,header,sizeof(header));
-        else{std::ifstream file(root/std::filesystem::u8path(relative),std::ios::binary);file.read(reinterpret_cast<char*>(header),sizeof(header));bytes=static_cast<size_t>(file.gcount());}
+        {std::ifstream file(root/std::filesystem::u8path(relative),std::ios::binary);file.read(reinterpret_cast<char*>(header),sizeof(header));bytes=static_cast<size_t>(file.gcount());}
         auto size=mahoyo::image_header::size(header,bytes);
         if(size[0]>0) {
             imageSizes.emplace(name,size);return size;
@@ -1123,7 +1119,6 @@ struct Runtime final:mahoyo::vm::Host {
         if(!voice.active||voice.name.empty()||voice.backend!=0)return false;
         auto name=lower(voice.name);if(name.size()<=3||name.compare(name.size()-3,3,".hw")!=0)return false;
         for(size_t i=0;i+3<name.size();++i)if(!((name[i]>='a'&&name[i]<='z')||(name[i]>='0'&&name[i]<='9')||name[i]=='_'||name[i]=='-'))return false;
-        if(packed.active())return packed.contains(historyVoicePath(voice));
         std::error_code error;
         if(std::filesystem::is_regular_file(root/".steam-ready",error)&&!error)return audioLoops.count(name)!=0;
         error.clear();return std::filesystem::is_regular_file(root/historyVoicePath(voice),error)&&!error;

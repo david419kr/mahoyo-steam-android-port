@@ -38,7 +38,7 @@ final class SteamResources {
   else if(name.startsWith("video/"))name=name.substring(6);
   if(name.startsWith("ko/"))name=name.substring(3);
   name=localize(name,language);HfaIndex.Entry entry=entry(name,language);
-  if(entry==null){if(!ObbIndex.safe(requested))throw new IOException("Unsafe Steam resource path");File local=new File(root,requested).getCanonicalFile();if(!local.getPath().startsWith(root.getPath()+File.separator)||!local.isFile())throw new IOException("Missing Steam resource: "+requested);return GameAsset.loose(local);}
+  if(entry==null){if(!AssetBounds.safe(requested))throw new IOException("Unsafe Steam resource path");File local=new File(root,requested).getCanonicalFile();if(!local.getPath().startsWith(root.getPath()+File.separator)||!local.isFile())throw new IOException("Missing Steam resource: "+requested);return GameAsset.loose(local);}
   if(name.endsWith(".mzp")){String[] recipe=recipes.get(name);if(recipe!=null){HfaIndex.Entry primary=entry(recipe[0],language);if(primary==null)throw new IOException("Native primary image missing");if(!recipe[1].isEmpty()){HfaIndex.Entry patch=entry(recipe[1],language);if(patch==null)throw new IOException("Native patch image missing");return GameAsset.composite(raw(primary),raw(patch));}return raw(primary);}}
   if(name.endsWith(".hw")){byte[] header=entry.prefix(68);if(HfaIndex.unsigned(header,0)!=64||header[4]!='h'||header[5]!='w'||header[64]!='O'||header[65]!='g'||header[66]!='g'||header[67]!='S'||HfaIndex.unsigned(header,8)!=entry.length-64)throw new IOException("Invalid HW audio wrapper");return raw(entry.slice(64,entry.length-64));}
   return raw(entry);

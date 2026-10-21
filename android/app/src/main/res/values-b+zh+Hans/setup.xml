@@ -10,20 +10,16 @@
     <string name="setup_guard_wrong">验证码无效，请输入新的验证码。</string>
     <string name="setup_submit">继续</string>
     <string name="setup_mobile">请在Steam手机应用中批准此次登录。</string>
-    <string name="setup_choose">选择安装方式</string>
-    <string name="setup_obb">导入AVIF OBB</string>
-    <string name="setup_obb_info">约5GB。选择在PC上制作的OBB。导入时会创建副本，因此除原OBB外还需与OBB大小相同的可用空间。</string>
+    <string name="setup_choose">安装游戏</string>
     <string name="setup_steam">从Steam直接下载</string>
     <string name="setup_steam_info">无需PC。原始文件约需%1$sGB，另需缓存空间。下载流量将在查询后显示。</string>
-    <string name="setup_guide">PC转换指南</string>
-    <string name="setup_guide_body">在PC上运行OBB制作工具并指定您拥有的Steam游戏文件夹。制作约5GB的AVIF OBB后，将其复制到本设备的下载文件夹，再选择导入AVIF OBB。程序会自动识别原版或韩语补丁版。</string>
     <string name="setup_connecting">正在连接Steam…</string>
     <string name="setup_authenticating">正在登录…</string>
     <string name="setup_ownership">正在验证游戏所有权…</string>
     <string name="setup_downloading">正在下载游戏…</string>
     <string name="setup_verifying">正在验证文件…</string>
     <string name="setup_preparing">正在准备游戏数据…</string>
-    <string name="setup_importing">正在导入OBB…</string>
+    <string name="setup_importing">正在应用补丁…</string>
     <string name="setup_ready">安装完成</string>
     <string name="setup_play">开始游戏</string>
     <string name="setup_retry">重试</string>
@@ -35,14 +31,13 @@
     <string name="setup_storage">可用存储空间不足。</string>
     <string name="setup_install_channel">游戏安装</string>
     <string name="setup_offline">游戏安装已完成。可以离线游玩。</string>
-    <string name="setup_guide_link">获取PC制作工具</string>
     <string name="setup_qr">扫码登录</string>
     <string name="setup_qr_guide">使用Steam手机应用扫描二维码并批准登录。二维码会自动刷新。</string>
     <string name="setup_manage">游戏数据与安装</string>
     <string name="setup_transfer_info">%1$.1f%% · 下载 %2$.2f GB / 解压 %3$.2f GB · %4$.1f MB/s\n完整安装 %5$.2f GB</string>
-    <string name="setup_manifest_unavailable">Steam 未授予游戏 1.1 固定 manifest 的访问权限。您可以重试或导入兼容的 OBB。现有安装不受影响。</string>
+    <string name="setup_manifest_unavailable">无法访问Steam游戏文件。请重新登录后重试。</string>
     <string name="setup_connection_lost">Steam 连接或请求已中断。请重新登录后继续。现有安装仍可离线运行。</string>
- <string name="setup_back_install">返回安装选项</string>
+ <string name="setup_back_install">返回安装页面</string>
     <string name="setup_available">可用存储空间：%1$.1fGB</string>
     <string name="setup_password_show">显示密码</string>
     <string name="setup_password_hide">隐藏密码</string>
@@ -58,7 +53,6 @@
     <string name="setup_steam_authenticator">打开Steam令牌</string>
     <string name="setup_steam_app_missing">请安装Steam手机应用后重试。</string>
     <string name="setup_qr_lan_page_title">Steam登录QR</string>
-    <string name="setup_advanced">高级选项 · 使用PC转换的文件</string>
     <string name="setup_steam_installed">已从Steam安装</string>
     <string name="setup_patch_installed">韩语补丁已应用</string>
 </resources>

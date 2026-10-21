@@ -10,20 +10,16 @@
     <string name="setup_guard_wrong">驗證碼無效，請輸入新的驗證碼。</string>
     <string name="setup_submit">繼續</string>
     <string name="setup_mobile">請在Steam手機應用程式中批准這次登入。</string>
-    <string name="setup_choose">選擇安裝方式</string>
-    <string name="setup_obb">匯入AVIF OBB</string>
-    <string name="setup_obb_info">約5GB。選擇在PC上製作的OBB。匯入時會建立副本，因此除原OBB外還需與OBB大小相同的可用空間。</string>
+    <string name="setup_choose">安裝遊戲</string>
     <string name="setup_steam">從Steam直接下載</string>
     <string name="setup_steam_info">無需PC。原始檔案約需%1$sGB，另需快取空間。下載流量將於查詢後顯示。</string>
-    <string name="setup_guide">PC轉換指南</string>
-    <string name="setup_guide_body">在PC執行OBB製作工具並指定您擁有的Steam遊戲資料夾。製作約5GB的AVIF OBB後，將其複製至本裝置的下載資料夾，再選擇匯入AVIF OBB。程式會自動識別原版或韓語修補版。</string>
     <string name="setup_connecting">正在連線Steam…</string>
     <string name="setup_authenticating">正在登入…</string>
     <string name="setup_ownership">正在驗證遊戲所有權…</string>
     <string name="setup_downloading">正在下載遊戲…</string>
     <string name="setup_verifying">正在驗證檔案…</string>
     <string name="setup_preparing">正在準備遊戲資料…</string>
-    <string name="setup_importing">正在匯入OBB…</string>
+    <string name="setup_importing">正在套用修補…</string>
     <string name="setup_ready">安裝完成</string>
     <string name="setup_play">開始遊戲</string>
     <string name="setup_retry">重試</string>
@@ -35,14 +31,13 @@
     <string name="setup_storage">可用儲存空間不足。</string>
     <string name="setup_install_channel">遊戲安裝</string>
     <string name="setup_offline">遊戲安裝已完成。可以離線遊玩。</string>
-    <string name="setup_guide_link">取得PC製作工具</string>
     <string name="setup_qr">掃碼登入</string>
     <string name="setup_qr_guide">使用Steam手機應用程式掃描QR碼並批准登入。QR碼會自動更新。</string>
     <string name="setup_manage">遊戲資料與安裝</string>
     <string name="setup_transfer_info">%1$.1f%% · 下載 %2$.2f GB / 解壓 %3$.2f GB · %4$.1f MB/s\n完整安裝 %5$.2f GB</string>
-    <string name="setup_manifest_unavailable">Steam 未授予遊戲 1.1 固定 manifest 的存取權限。您可以重試或匯入相容的 OBB。現有安裝不受影響。</string>
+    <string name="setup_manifest_unavailable">無法存取Steam遊戲檔案。請重新登入後重試。</string>
     <string name="setup_connection_lost">Steam 連線或請求已中斷。請重新登入後繼續。現有安裝仍可離線執行。</string>
- <string name="setup_back_install">返回安裝選項</string>
+ <string name="setup_back_install">返回安裝畫面</string>
     <string name="setup_available">可用儲存空間：%1$.1fGB</string>
     <string name="setup_password_show">顯示密碼</string>
     <string name="setup_password_hide">隱藏密碼</string>
@@ -58,7 +53,6 @@
     <string name="setup_steam_authenticator">開啟Steam驗證器</string>
     <string name="setup_steam_app_missing">請安裝Steam手機應用後重試。</string>
     <string name="setup_qr_lan_page_title">Steam登入QR</string>
-    <string name="setup_advanced">進階選項 · 使用PC轉換的檔案</string>
     <string name="setup_steam_installed">已從Steam安裝</string>
     <string name="setup_patch_installed">韓語修補已套用</string>
 </resources>

@@ -31,7 +31,7 @@ final class HfaHistoryCheck {
             if(!voice.getBoolean("available"))throw new IOException("Real HFA voice is disabled in history: "+voice+" marker="+new File(game,".steam-ready").isFile()+" map="+new String(Files.readAllBytes(new File(game,"meta/audio-loop-map.tsv").toPath()),StandardCharsets.UTF_8).contains("a40_4_1_0026.hw"));
             JSONObject replay=state(handle,"historyReplay",history.getString("historyRevision")+" 0 1").getJSONObject("historyReplay");
             String path=replay.getJSONArray("clips").getJSONObject(0).getString("path");
-            GameResources resources=new GameResources(context,game,null,edition);OriginalMediaCheck.decode(resources.file(path),"audio/",true);
+            GameResources resources=new GameResources(context,game);OriginalMediaCheck.decode(resources.file(path),"audio/",true);
             return "Owned HFA history voice is available, creates a replay request, and resolves/decodes through Android MediaCodec. No player save slots modified. Recyclable fixture: "+fixture+"\n";
         }finally{if(handle!=0)NativeBridge.destroy(handle);OfflineSaveCheck.recyclePermissions(fixture);}
     }

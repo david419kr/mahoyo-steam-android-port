@@ -56,7 +56,6 @@
     ["retry", ["다시 확인"], "Check again", "再確認", "다시 확인", "重新检查", "重新檢查"],
     ["error", ["오류", "エラー"], "Error", "エラー", "오류", "错误", "錯誤"],
     ["language_save_failed", [], "The language setting could not be saved.", "言語設定を保存できませんでした。", "언어 설정을 저장하지 못했습니다.", "无法保存语言设置。", "無法儲存語言設定。"],
-    ["missing_data", [], "Game resources are required.\n\nPlace %s in:\n%s", "ゲームデータが必要です。\n\n%s を次の場所に置いてください。\n%s", "게임 리소스가 필요합니다.\n\n%s 파일을 아래 폴더에 넣어 주세요.\n%s", "需要游戏资源。\n\n请将 %s 放入：\n%s", "需要遊戲資源。\n\n請將 %s 放入：\n%s"],
     ["return_title_question", ["タイトルに戻りますか？"], "Return to the title screen?", "タイトルに戻りますか？", "타이틀 화면으로 돌아갈까요?", "返回标题画面？", "返回標題畫面？"],
     ["runtime", ["호환 런타임"], "Game runtime", "ゲームランタイム", "게임 런타임", "游戏运行环境", "遊戲執行環境"],
     ["browse", ["閲覧"], "Browse", "閲覧", "감상", "鉴赏", "鑑賞"],
