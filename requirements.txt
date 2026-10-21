@@ -1,0 +1,5 @@
+Pillow==12.3.0
+numpy==2.3.5
+pefile==2024.8.26
+capstone==5.0.7
+unicorn==2.1.4
