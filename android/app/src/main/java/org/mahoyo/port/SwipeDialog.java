@@ -20,6 +20,6 @@ abstract class SwipeDialog extends Dialog {
     View pullView(){return getWindow().getDecorView();}
     void commitPull(){pullPreview=false;Window window=getWindow();window.setWindowAnimations(0);window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE|WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);View decor=window.getDecorView();decor.setTranslationX(0);decor.setTranslationY(0);decor.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);}
     void swipeDismiss(int action,java.util.function.BooleanSupplier edge){dismissSwipe=new MenuSwipeDismiss(pullView(),action,edge,()->{getWindow().setWindowAnimations(0);cancel();});}
-    @Override public boolean dispatchTouchEvent(MotionEvent e){boolean claimed=dismissSwipe!=null&&dismissSwipe.claimed();if(dismissSwipe!=null&&dismissSwipe.touch(e,!pullPreview)){if(!claimed){MotionEvent cancel=MotionEvent.obtain(e);cancel.setAction(MotionEvent.ACTION_CANCEL);super.dispatchTouchEvent(cancel);cancel.recycle();}return true;}return super.dispatchTouchEvent(e);}
+    @Override public boolean dispatchTouchEvent(MotionEvent e){boolean claimed=dismissSwipe!=null&&dismissSwipe.claimed();if(dismissSwipe!=null&&dismissSwipe.touch(e,!pullPreview)){if(!claimed){getWindow().setFormat(PixelFormat.TRANSLUCENT);MotionEvent cancel=MotionEvent.obtain(e);cancel.setAction(MotionEvent.ACTION_CANCEL);super.dispatchTouchEvent(cancel);cancel.recycle();}return true;}return super.dispatchTouchEvent(e);}
     @Override public void dismiss(){if(dismissSwipe!=null)dismissSwipe.dispose();super.dismiss();}
 }

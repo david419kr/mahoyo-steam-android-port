@@ -5,5 +5,5 @@ final class AuthQrRetry {
  private long deadline;private int retries;
  void start(long now){deadline=now+300000;retries=0;}
  void clear(){deadline=0;retries=0;}
- boolean retry(long now,String stage,String message){if(!stage.equals("qr")||deadline<=now||retries>=3||!DISCONNECTED.equals(message)&&!INTERRUPTED.equals(message))return false;retries++;return true;}
+ boolean retry(long now,String stage,String message){if(!stage.equals("qr")&&!stage.equals("connecting")||deadline<=now||retries>=3||!DISCONNECTED.equals(message)&&!INTERRUPTED.equals(message))return false;retries++;return true;}
 }
