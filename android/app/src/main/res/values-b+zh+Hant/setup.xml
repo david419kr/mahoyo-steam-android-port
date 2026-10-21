@@ -34,7 +34,7 @@
     <string name="setup_relogin">下載需要登入Steam。已安裝遊戲的離線執行不受影響。</string>
     <string name="setup_storage">可用儲存空間不足。</string>
     <string name="setup_install_channel">遊戲安裝</string>
-    <string name="setup_offline">已可離線遊玩。啟動已安裝遊戲無需登入Steam。</string>
+    <string name="setup_offline">遊戲安裝已完成。可以離線遊玩。</string>
     <string name="setup_guide_link">取得PC製作工具</string>
     <string name="setup_qr">掃碼登入</string>
     <string name="setup_qr_guide">使用Steam手機應用程式掃描QR碼並批准登入。QR碼會自動更新。</string>
@@ -59,4 +59,5 @@
     <string name="setup_steam_app_missing">請安裝Steam手機應用後重試。</string>
     <string name="setup_qr_lan_page_title">Steam登入QR</string>
     <string name="setup_advanced">進階選項 · 使用PC轉換的檔案</string>
+    <string name="setup_steam_installed">已從Steam安裝</string>
 </resources>

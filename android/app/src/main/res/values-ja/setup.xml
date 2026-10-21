@@ -34,7 +34,7 @@
     <string name="setup_relogin">ダウンロードするにはSteamにログインしてください。既存のオフライン実行には影響しません。</string>
     <string name="setup_storage">空き容量が不足しています。</string>
     <string name="setup_install_channel">ゲームのインストール</string>
-    <string name="setup_offline">オフラインでプレイできます。インストール済みゲームの起動にSteamログインは不要です。</string>
+    <string name="setup_offline">ゲームのインストールが完了しました。オフラインでプレイできます。</string>
     <string name="setup_guide_link">PC作成ツールを入手</string>
     <string name="setup_qr">QRコードでログイン</string>
     <string name="setup_qr_guide">Steamモバイルアプリでコードを読み取り、ログインを承認してください。コードは自動更新されます。</string>
@@ -59,4 +59,5 @@
     <string name="setup_steam_app_missing">Steamアプリをインストールして再試行してください。</string>
     <string name="setup_qr_lan_page_title">SteamログインQR</string>
     <string name="setup_advanced">上級者向け · PCで変換したファイル</string>
+    <string name="setup_steam_installed">Steamからインストール済み</string>
 </resources>
