@@ -3,5 +3,37 @@
   "commit": "433f2ad15c36d5e690a4fe77401ec3f6b960641e",
   "core": "io.github.joshuatam:javasteam:1.8.0.1-26-SNAPSHOT",
   "downloader": "io.github.joshuatam:javasteam-depotdownloader:1.8.0.1-26-SNAPSHOT",
-  "kotlin": "2.2.0"
+  "kotlin": "2.2.0",
+  "androidDownloaderPatch": {
+    "path": "javasteam-depotdownloader/src/main/kotlin/in/dragonbra/javasteam/depotdownloader/DepotDownloader.kt",
+    "baseSha256": "5bd88af622d78a7050b55bc55e8a2990f793813a935a8ee57f6e4ff255f2609b",
+    "patchedSha256": "41d46eaae0c83ef50ab9042b70b8063c07e32bf5265dec7dba9bc21799edc86c",
+    "replacements": [
+      {
+        "before": "MutableSharedFlow<NetworkChunkItem>(extraBufferCapacity = Int.MAX_VALUE)",
+        "after": "MutableSharedFlow<NetworkChunkItem>(extraBufferCapacity = 32)"
+      },
+      {
+        "before": "MutableSharedFlow<DecompressItem>(extraBufferCapacity = Int.MAX_VALUE)",
+        "after": "MutableSharedFlow<DecompressItem>(extraBufferCapacity = 8)"
+      },
+      {
+        "before": "networkChunkFlow.tryEmit(",
+        "after": "networkChunkFlow.emit("
+      },
+      {
+        "before": "decompressFlow.tryEmit(decompressItem)",
+        "after": "decompressFlow.emit(decompressItem)"
+      },
+      {
+        "before": "chunkProcessingJob = scope.launch {",
+        "after": "chunkProcessingJob = scope.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {"
+      },
+      {
+        "before": "decompressJob = scope.launch {",
+        "after": "decompressJob = scope.launch(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {"
+      }
+    ],
+    "reason": "Bound temporary chunks; suspend instead of dropping work and subscribe before producers run."
+  }
 }
