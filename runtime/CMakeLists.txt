@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.22)
+project(MahoyoRuntime LANGUAGES CXX)
+add_subdirectory(vm)
+add_library(woh_runtime STATIC runtime_api.cpp save_store.cpp effects.cpp text.cpp movie.cpp global_shake.cpp layer_shake.cpp window_fade.cpp shared_state.cpp teatime.cpp wave.cpp screen_wave.cpp choices.cpp focus_line.cpp fall_note.cpp particle_overlay.cpp)
+target_compile_features(woh_runtime PUBLIC cxx_std_17)
+target_include_directories(woh_runtime PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(woh_runtime PUBLIC mahoyo_vm)
+set_target_properties(woh_runtime PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  set_source_files_properties(focus_line.cpp fall_note.cpp particle_overlay.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+endif()
