@@ -14,19 +14,32 @@ static void near(float a,float b,String name){check(Math.abs(a-b)<.01f,name);}
 static int move(ReaderGesture g,int action,float distance,float d){return g.move(1000*d+(action==3?distance:action==4?-distance:0),1000*d+(action==1?distance:action==2?-distance:0));}
 public static void main(String[]args){
 for(float d:new float[]{1,2,3})for(int action=1;action<=4;action++){
- ReaderGesture g=new ReaderGesture();float top=200*d,bottom=140*d,budget=action==1?top:action==2?bottom:0,peek=96*d,commit=224*d;
- g.start(1000*d,1000*d,d,top,bottom,true);g.viewportSize(1200*d,800*d);
+ ReaderGesture g=new ReaderGesture();float top=200*d,bottom=140*d,budget=action==1?top:action==2?bottom:0,peek=40*d,commit=100*d;
+ g.start(1000*d,1000*d,d,top,bottom,true);
  check(move(g,action,budget+peek-1,d)==ReaderGesture.NONE,"consume scroll and peek threshold first");
  check(move(g,action,budget+peek,d)==ReaderGesture.PULL&&g.action()==action,"correct axis locks to the matching screen");
- near(g.reveal(),32*d,"initial peek is small");check(!g.committed(),"a peek alone never opens the screen");
- move(g,action,budget+commit-1,d);check(!g.committed(),"commit threshold is exact");move(g,action,budget+commit,d);check(g.committed(),"sufficient continued drag can commit");
- move(g,action,budget+peek,d);check(!g.committed(),"finger reversal withdraws commitment");near(g.reveal(),32*d,"preview follows finger reversal");
+ near(g.reveal(),16*d,"initial peek is small");check(g.committed(),"opening intent commits a short deliberate swipe");
+ move(g,action,budget+commit-1,d);check(g.committed(),"forward intent does not require a long swipe");move(g,action,budget+commit,d);check(g.committed(),"sufficient continued drag can commit");
+ move(g,action,budget+peek,d);check(!g.committed(),"finger reversal withdraws commitment");near(g.reveal(),16*d,"preview follows finger reversal");
  float[] offset=ReaderGesture.offset(action,g.reveal(),1200*d,800*d);
  check(action==1?offset[1]<0:action==2?offset[1]>0:action==3?offset[0]<0:offset[0]>0,"entry edge matches swipe direction");
  float[] full=ReaderGesture.offset(action,Float.MAX_VALUE,1200*d,800*d);near(full[0],0,"fully open x");near(full[1],0,"fully open y");
  g.cancel();check(!g.pulling()&&!g.committed()&&!g.longPress(),"cancellation clears the gesture");
 }
-ReaderGesture g=new ReaderGesture();g.start(100,500,1,0,0,true);g.viewportSize(900,400);g.move(100,333);check(!g.committed(),"short display below adaptive setting threshold");g.move(100,332);check(g.committed(),"short display adaptive setting threshold remains reachable");
+ReaderGesture g=new ReaderGesture();g.start(100,500,1,0,0,true);g.move(100,440);check(g.committed(),"short upward gesture opens settings");g.move(100,446);check(!g.committed(),"final reversal cancels even above initial threshold");g.move(100,440);check(g.committed(),"opening again restores intent");g.move(100,442);check(g.committed(),"two pixel jitter does not reverse intent");
+for(float d:new float[]{1,2,3})for(int action=1;action<=4;action++){
+ MenuCloseGesture c=new MenuCloseGesture();c.start(1000*d,1000*d,d,action,true);
+ float sx=action==3?-1:action==4?1:0,sy=action==1?-1:action==2?1:0;
+ check(!c.move((1000+sx*100)*d,(1000+sy*100)*d,false),"scrollable child owns movement before edge");
+ check(!c.move((1000+sx*139)*d,(1000+sy*139)*d,true),"additional edge distance is required");
+ check(c.move((1000+sx*160)*d,(1000+sy*160)*d,true)&&c.committed(),"reverse entry direction closes at edge");
+ near(c.distance(),60*d,"only movement beyond scroll edge displaces menu");
+ c.move((1000+sx*150)*d,(1000+sy*150)*d,true);check(!c.committed(),"reverse before release keeps menu open");
+ c.move((1000+sx*156)*d,(1000+sy*156)*d,true);check(c.committed(),"closing again restores close intent");
+ c.cancel();check(!c.claimed()&&!c.committed(),"cancel clears dismissal");
+ c.start(0,0,d,action,false);check(!c.move(sx*200*d,sy*200*d,true),"preview or slider cannot dismiss");
+}
+
 g.start(0,0,1,0,0,true);check(g.move(300,300)==0,"diagonal is not navigation");g.start(0,0,1,0,0,false);check(g.move(300,0)==0&&!g.longPress(),"restricted scenes cannot navigate or hold skip");
 g.start(0,0,1,0,0,true);check(g.longPress()&&!g.longPress()&&g.claimed(),"long press owns exactly one gesture");check(g.move(300,0)==0,"hold cannot also navigate");
 g.start(0,0,1,0,0,true);g.move(26,0);check(!g.longPress(),"drag cancels pending hold");g.start(0,0,1,0,0,true);g.move(10,5);check(g.longPress(),"finger jitter permits hold");
@@ -41,7 +54,7 @@ def main():
     OUT.mkdir(parents=True,exist_ok=True)
     source=OUT/'ReaderPullSelfTest.java';source.write_text(TEST,encoding='utf-8')
     jdk=Path(os.environ.get('JAVA_HOME',''))/'bin'
-    subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','-d',str(OUT),str(SOURCE/'ReaderGesture.java'),str(SOURCE/'SettingsRotation.java'),str(SOURCE/'ReaderHelpSession.java'),str(source)],check=True)
+    subprocess.run([str(jdk/'javac.exe'),'-encoding','UTF-8','-d',str(OUT),str(SOURCE/'ReaderGesture.java'),str(SOURCE/'DragIntent.java'),str(SOURCE/'MenuCloseGesture.java'),str(SOURCE/'SettingsRotation.java'),str(SOURCE/'ReaderHelpSession.java'),str(source)],check=True)
     result=subprocess.run([str(jdk/'java.exe'),'-cp',str(OUT),'org.mahoyo.port.ReaderPullSelfTest'],check=True,capture_output=True,text=True)
     (OUT/'result.txt').write_text(result.stdout,encoding='utf-8');print(result.stdout.strip())
     activity=(SOURCE/'MainActivity.java').read_text(encoding='utf-8')

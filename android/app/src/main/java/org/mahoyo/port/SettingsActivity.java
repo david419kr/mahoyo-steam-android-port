@@ -19,7 +19,7 @@ public final class SettingsActivity extends Activity {
         WindowManager.LayoutParams attrs=getWindow().getAttributes();android.view.Display display=getWindowManager().getDefaultDisplay();float rate=0;
         for(android.view.Display.Mode mode:display.getSupportedModes())if(mode.getPhysicalWidth()==display.getMode().getPhysicalWidth()&&mode.getPhysicalHeight()==display.getMode().getPhysicalHeight()&&mode.getRefreshRate()>rate){rate=mode.getRefreshRate();attrs.preferredDisplayModeId=mode.getModeId();}getWindow().setAttributes(attrs);
         getWindow().getDecorView().setSystemUiVisibility(5894);if(android.os.Build.VERSION.SDK_INT>=30)getWindow().setDecorFitsSystemWindows(false);
-        panel=new SettingsPanel(this,state==null?0:state.getInt("tab"),this::finish,this::recreate);setContentView(panel);
+        panel=new SettingsPanel(this,state==null?0:state.getInt("tab"),this::finish,this::recreate);setContentView(panel);panel.swipeDismiss(()->{finish();overridePendingTransition(0,0);});
     }
     @Override protected void onResume(){super.onResume();if(orientation.canDetectOrientation())orientation.enable();}
     @Override protected void onPause(){orientation.disable();super.onPause();}

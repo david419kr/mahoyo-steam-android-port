@@ -12,6 +12,7 @@ import android.widget.*;
 
 final class SettingsPanel extends LinearLayout {
     private DisplayPrefs prefs;
+    private MenuSwipeDismiss dismissSwipe;
     private LinearLayout content;
     private FrameLayout pages;
     private ScrollView scroll;
@@ -30,6 +31,7 @@ final class SettingsPanel extends LinearLayout {
         displayTab=button("화면");gameTab=button("게임");tabs.addView(displayTab,new LinearLayout.LayoutParams(0,-1,1));tabs.addView(gameTab,new LinearLayout.LayoutParams(0,-1,1));displayTab.setOnClickListener(v->selectTab(0));gameTab.setOnClickListener(v->selectTab(1));helpTab=button("도움말");tabs.addView(helpTab,new LinearLayout.LayoutParams(0,-1,1));helpTab.setOnClickListener(v->selectTab(2));
         pages=new FrameLayout(getContext());root.addView(pages,new LinearLayout.LayoutParams(-1,0,1));createPage();
     }
+    void swipeDismiss(Runnable done){dismissSwipe=new MenuSwipeDismiss(this,ReaderGesture.SETTINGS,()->scroll==null||!scroll.canScrollVertically(-1),done);}
     int currentTab(){return tab;}
     private void createPage(){
         scroll=new ScrollView(getContext());scroll.setFillViewport(false);pages.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
@@ -46,8 +48,10 @@ final class SettingsPanel extends LinearLayout {
         scroll.animate().translationX(0).alpha(1).setDuration(200).setInterpolator(new DecelerateInterpolator()).start();
         outgoing.animate().translationX(-distance).alpha(0).setDuration(160).withEndAction(()->pages.removeView(outgoing)).start();
     }
-    @Override protected void onDetachedFromWindow(){if(pages!=null)for(int i=0;i<pages.getChildCount();++i)pages.getChildAt(i).animate().cancel();super.onDetachedFromWindow();}
+    @Override protected void onDetachedFromWindow(){if(dismissSwipe!=null)dismissSwipe.dispose();if(pages!=null)for(int i=0;i<pages.getChildCount();++i)pages.getChildAt(i).animate().cancel();super.onDetachedFromWindow();}
     @Override public boolean dispatchTouchEvent(MotionEvent e){
+        boolean claimed=dismissSwipe!=null&&dismissSwipe.claimed();
+        if(dismissSwipe!=null&&dismissSwipe.touch(e,!hitsSeekBar(this,e.getRawX(),e.getRawY()))){if(!claimed){swipe.cancel();MotionEvent cancel=MotionEvent.obtain(e);cancel.setAction(MotionEvent.ACTION_CANCEL);super.dispatchTouchEvent(cancel);cancel.recycle();}return true;}
         int action=e.getActionMasked();
         if(action==MotionEvent.ACTION_DOWN)swipe.start(e.getX(),e.getY(),hitsSeekBar(getRootView(),e.getRawX(),e.getRawY()));
         if(action==MotionEvent.ACTION_CANCEL||action==MotionEvent.ACTION_POINTER_DOWN)swipe.cancel();

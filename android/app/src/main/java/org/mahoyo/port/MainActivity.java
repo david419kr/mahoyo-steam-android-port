@@ -253,7 +253,7 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
         if(e.getActionMasked()==MotionEvent.ACTION_UP)stopHeldSkip();
         if(readerPullOpen){int action=e.getActionMasked();if(readerPullCompleting)return true;
             if(action==MotionEvent.ACTION_MOVE){readerGesture.move(e.getX(),e.getY());readerPullReveal=readerGesture.reveal();positionReaderPull();}
-            else if(action==MotionEvent.ACTION_UP){boolean commit=readerGesture.committed();readerGesture.cancel();finishReaderPull(commit);}
+            else if(action==MotionEvent.ACTION_UP){readerGesture.move(e.getX(),e.getY());readerPullReveal=readerGesture.reveal();positionReaderPull();boolean commit=readerGesture.committed();readerGesture.cancel();finishReaderPull(commit);}
             else if(action==MotionEvent.ACTION_CANCEL||action==MotionEvent.ACTION_POINTER_DOWN){twoFingerTap.cancel();readerGesture.cancel();finishReaderPull(false);}return true;}
         if(e.getActionMasked()==MotionEvent.ACTION_POINTER_DOWN||e.getActionMasked()==MotionEvent.ACTION_CANCEL)cancelInputHold();
         if(slotUiOpen||errorModalOpen||historyLoading||historyOpen||historyClosing)return true; // Dialog has its own Window; never advance the underlying game during a slot transaction.
@@ -269,7 +269,7 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
         if(action==MotionEvent.ACTION_POINTER_UP)twoFingerTap.pointerUp(e.getPointerId(index));
         if(action==MotionEvent.ACTION_CANCEL){boolean consume=twoFingerTap.multiple();twoFingerTap.cancel();readerGesture.cancel();return consume||super.dispatchTouchEvent(e);}
         if(action==MotionEvent.ACTION_UP){boolean consume=twoFingerTap.multiple();boolean toggle=twoFingerTap.finish(e.getPointerId(index),e.getEventTime());if(consume){if(toggle)toggleMenu();return true;}}
-        if(action==MotionEvent.ACTION_DOWN){holdX=e.getX();holdY=e.getY();boolean eligible=readerGestureEligible(holdX,holdY);readerGesture.start(holdX,holdY,getResources().getDisplayMetrics().density,text.backlogScrollBudget(holdX,holdY),text.forwardScrollBudget(holdX,holdY),eligible);readerGesture.viewportSize(root.getWidth(),root.getHeight());ui.removeCallbacks(startHeldSkip);if(eligible)ui.postDelayed(startHeldSkip,1000);}
+        if(action==MotionEvent.ACTION_DOWN){holdX=e.getX();holdY=e.getY();boolean eligible=readerGestureEligible(holdX,holdY);readerGesture.start(holdX,holdY,getResources().getDisplayMetrics().density,text.backlogScrollBudget(holdX,holdY),text.forwardScrollBudget(holdX,holdY),eligible);ui.removeCallbacks(startHeldSkip);if(eligible)ui.postDelayed(startHeldSkip,1000);}
         if(action==MotionEvent.ACTION_POINTER_DOWN)readerGesture.cancel();
         if(twoFingerTap.multiple()&&action!=MotionEvent.ACTION_DOWN)return true;
         int gesture=action==MotionEvent.ACTION_MOVE?readerGesture.move(e.getX(),e.getY()):ReaderGesture.NONE;
