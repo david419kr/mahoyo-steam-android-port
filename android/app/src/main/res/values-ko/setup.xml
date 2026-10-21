@@ -30,7 +30,7 @@
     <string name="setup_missing">게임 데이터가 없습니다. 게임을 설치해 주세요.</string>
     <string name="setup_failure">설치를 완료하지 못했습니다</string>
     <string name="setup_patch">한글패치 ZIP 적용</string>
-    <string name="setup_patch_info">게임 1.1용 한글패치 1.2 ZIP을 선택하세요. 내부 폴더 배치는 상관없습니다. ZIP 외에 약 2.5GB의 추가 여유 공간이 필요하며 게임 원본은 다운로드하지 않습니다.</string>
+    <string name="setup_patch_info">게임 1.1용 한글패치 1.2 ZIP을 선택하세요. ZIP 내부에서 필요한 파일을 자동 검출합니다. ZIP 외에 약 2.5GB의 추가 여유 공간이 필요합니다.</string>
     <string name="setup_relogin">다운로드하려면 Steam에 로그인해 주세요. 기존에 설치된 게임의 오프라인 실행에는 영향이 없습니다.</string>
     <string name="setup_storage">저장공간이 부족합니다.</string>
     <string name="setup_install_channel">게임 설치</string>

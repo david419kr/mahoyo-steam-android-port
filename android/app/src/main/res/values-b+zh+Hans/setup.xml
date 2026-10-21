@@ -30,7 +30,7 @@
     <string name="setup_missing">未找到游戏数据。请安装游戏。</string>
     <string name="setup_failure">无法完成安装</string>
     <string name="setup_patch">应用韩语补丁ZIP</string>
-    <string name="setup_patch_info">选择游戏1.1的韩语补丁1.2 ZIP，无需特定文件夹结构。除ZIP外还需约2.5GB可用空间，不会下载游戏本体。</string>
+    <string name="setup_patch_info">选择游戏1.1的韩语补丁1.2 ZIP。自动检测ZIP内所需的文件。除ZIP外还需约2.5GB可用空间。</string>
     <string name="setup_relogin">下载需要登录Steam。已安装游戏的离线运行不受影响。</string>
     <string name="setup_storage">可用存储空间不足。</string>
     <string name="setup_install_channel">游戏安装</string>
