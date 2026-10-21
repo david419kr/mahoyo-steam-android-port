@@ -3,6 +3,7 @@
 #include "language_assets.h"
 #include "language_text.h"
 #include "steam11_script_prefixes.h"
+#include "steam11_korean_geometry.h"
 #include "image_header.h"
 #include "vm/machine.h"
 #include "save_store.h"
@@ -396,6 +397,7 @@ struct Runtime final:mahoyo::vm::Host {
     bool bitmapLayoutPresent(const std::string& key)const{auto name=key;auto dot=name.rfind('.');if(dot!=std::string::npos)name.resize(dot);return imageLayouts.count(name)!=0;}
     std::optional<mahoyo::bitmap_geometry::Resize> bitmapResize(const Layer& l,std::optional<mahoyo::bitmap_geometry::Size> saved){
         const auto size=intrinsicSize(l);const auto key=bitmapKey(l);
+        if(saved)if(auto resize=mahoyo::language::koreanCanvasResize(key,*saved,{size[0],size[1]}))return resize;
         // Korean single images can differ from the original canvas. Accept only
         // the two declared sizes, in either direction; arbitrary save geometry
         // must still follow the strict Native pair migration contract below.
@@ -1414,7 +1416,7 @@ struct Runtime final:mahoyo::vm::Host {
                 }
             }
             if(hostSchema>=20){std::vector<int> activeIds;for(const auto& e:restoredEffects)activeIds.push_back(e.id);std::set<int> layerIds;for(const auto& pair:restored)layerIds.insert(pair.first);restoredHost20=mahoyo::host_state20::read(data,activeIds,layerIds);}
-            if(hostSchema>=23){restoredLanguage=mahoyo::language::readTextState(data,document.history.size());if(restoredLanguage.edition!=languageAssets.edition()||!mahoyo::language::supported(restoredLanguage.edition,restoredLanguage.language))throw mahoyo::save::Error("Saved game edition/language mismatch");}
+            if(hostSchema>=23){restoredLanguage=mahoyo::language::readTextState(data,document.history.size());if((restoredLanguage.edition!="vanilla"&&restoredLanguage.edition!="korean")||!mahoyo::language::supported(restoredLanguage.edition,restoredLanguage.language))throw mahoyo::save::Error("Saved game edition/language mismatch");}
             std::string trailing;if(data>>trailing)throw mahoyo::save::Error("Unexpected saved effect data");
         }
         validateParents(restored);
@@ -1452,7 +1454,8 @@ struct Runtime final:mahoyo::vm::Host {
             for(const auto& item:restoredHistory)restoredLanguage.history.push_back({item,""});
         }
         const bool restoredParagraphItalic=mahoyo::text::endingItalic(restoredText);
-        if(languageAssets.edition()=="korean")candidate->rebindModuleStrings(mahoyo::language::scriptPrefixes());
+        // Cross-edition loads preserve PC/stack only when every module's code is identical.
+        if(languageAssets.edition()=="korean"||(hostSchema>=23&&restoredLanguage.edition!=languageAssets.edition()))candidate->rebindModuleStrings(mahoyo::language::scriptPrefixes());
         int restoredArchive=0,restoredCheckpoint=0;
         if(candidate->variable(500)==1&&candidate->variable(26)>0){restoredArchive=candidate->variable(26);restoredCheckpoint=candidate->variable(459);if(!catalog().find(restoredArchive)||restoredCheckpoint<0||restoredCheckpoint>13)throw mahoyo::save::Error("Invalid saved Archive context");}
         flushShared();
