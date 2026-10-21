@@ -2,7 +2,7 @@
 
 An ARM64 Android port of **WITCH ON THE HOLY NIGHT**, using files from a user-owned Steam installation.
 
-The installer has been checked on an ARM64 Android phone with real QR approval and ownership verification, a complete fixed-version Steam download, offline playback, legacy AVIF OBB import, and Korean patch ZIP application. Broader device and interruption testing is still in progress.
+The installer has been checked on an ARM64 Android phone with real QR approval and ownership verification, a complete fixed-version Steam download, offline playback, AVIF OBB import, Korean patch ZIP application, and download resumption after network loss and process termination. Broader account and device testing is still in progress.
 
 ## Features
 

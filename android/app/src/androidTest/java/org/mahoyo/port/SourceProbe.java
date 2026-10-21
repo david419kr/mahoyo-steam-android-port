@@ -7,6 +7,8 @@ public final class SourceProbe extends Instrumentation {
  @Override public void onStart(){Bundle result=new Bundle();try{
   if("installed".equals(args.getString("mode"))){checkInstalled(result);finish(Activity.RESULT_OK,result);return;}
   if("obb".equals(args.getString("mode"))){checkObb(result);finish(Activity.RESULT_OK,result);return;}
+  if("failures".equals(args.getString("mode"))){result.putString("stream",InstallFailureCheck.run(getTargetContext()));finish(Activity.RESULT_OK,result);return;}
+  if("media".equals(args.getString("mode"))){result.putString("stream",OriginalMediaCheck.run(getTargetContext()));finish(Activity.RESULT_OK,result);return;}
   String source=args.getString("source");if(source==null)throw new IllegalArgumentException("Pass -e source with an owned Steam folder");
   File root=new File(getTargetContext().getExternalFilesDir(null),"game");SteamResources.prepare(getTargetContext(),new File(source),root,message->{Bundle status=new Bundle();status.putString("stream",message+"\n");sendStatus(0,status);});
   long handle=NativeBridge.createConfigured(root.getPath(),"vanilla","ja");try{JSONObject state=new JSONObject(NativeBridge.snapshot(handle));if(!state.optString("error").isEmpty())throw new IOException(state.optString("error"));if(!state.optString("scene").equals("title"))throw new IOException("Title bootstrap failed");}finally{NativeBridge.destroy(handle);}
@@ -30,12 +32,13 @@ public final class SourceProbe extends Instrumentation {
  private void checkObb(Bundle output)throws Exception{
   Installation install=new Installation(getTargetContext());if(!install.ready()||!install.dataAvailable())throw new IOException("A real owned, installed game is required");
   JSONObject prior=install.read();File priorRoot=install.dataRoot(prior),priorArchive=install.archive(prior);String priorEdition=prior.getString("edition"),priorBackend=prior.getString("backend");
-  File source=new File(getTargetContext().getExternalFilesDir(null),"probe-legacy.obb");GameInstaller.Result imported=GameInstaller.obb(getTargetContext(),android.net.Uri.fromFile(source),(s,d,t)->{});boolean activated=false;
+  String supplied=args.getString("source");File source=supplied==null?new File(getTargetContext().getExternalFilesDir(null),"probe-legacy.obb"):new File(supplied);GameInstaller.Result imported=GameInstaller.obb(getTargetContext(),android.net.Uri.fromFile(source),(s,d,t)->{});boolean activated=false;
   try{
    install.activate(imported.root,imported.archive,imported.edition,imported.backend);activated=true;if(!install.ready()||!install.dataAvailable())throw new IOException("Imported OBB activation failed");
    GameInstaller.checkRuntime(imported.root,imported.edition);GameResources resources=new GameResources(getTargetContext(),imported.root,imported.archive,imported.edition);
    android.graphics.Bitmap bitmap=resources.file("images/title_bg1.cbg.png").bitmap(new android.graphics.BitmapFactory.Options());if(bitmap==null||bitmap.getWidth()!=1920||bitmap.getHeight()!=1080)throw new IOException("OBB title decode failed");bitmap.recycle();
-   output.putString("stream","Real OBB import, CRC, activation, Native bootstrap and Android title bitmap passed. Prior installation restored; no save slots modified.\n");
+   String media=OriginalMediaCheck.run(resources,imported.edition);
+   output.putString("stream","Real OBB import, CRC, activation, Native bootstrap and Android title bitmap passed. "+media+"Prior installation restored; no save slots modified.\n");
   }finally{if(activated)install.activate(priorRoot,priorArchive,priorEdition,priorBackend);GameInstaller.discard(getTargetContext(),imported);}
  }
 }
