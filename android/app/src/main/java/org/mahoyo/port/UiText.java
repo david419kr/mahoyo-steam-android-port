@@ -2,6 +2,7 @@ package org.mahoyo.port;
 
 import android.content.Context;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -16,7 +17,9 @@ final class UiText {
     static synchronized boolean refresh(Context context){
         if(!loaded){
             try(InputStream input=context.getAssets().open("ui-text.json")){
-                byte[] bytes=input.readAllBytes();if(bytes.length>2*1024*1024)throw new IllegalStateException("UI catalogue budget");
+                ByteArrayOutputStream output=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int count;
+                while((count=input.read(buffer))!=-1){if(output.size()>2*1024*1024-count)throw new IllegalStateException("UI catalogue budget");output.write(buffer,0,count);}
+                byte[] bytes=output.toByteArray();
                 JSONObject root=new JSONObject(new String(bytes,java.nio.charset.StandardCharsets.UTF_8));if(root.getInt("schema")!=1)throw new IllegalStateException("Unknown UI catalogue");
                 JSONArray rows=root.getJSONArray("messages");
                 for(int i=0;i<rows.length();i++){
