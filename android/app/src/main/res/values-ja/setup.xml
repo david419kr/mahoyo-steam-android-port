@@ -42,4 +42,5 @@
     <string name="setup_transfer_info">%1$.1f%% · 今回の受信 %2$.2f GB / 展開 %3$.2f GB · %4$.1f MB/s\nインストール全体 %5$.2f GB</string>
     <string name="setup_manifest_unavailable">Steam がゲーム1.1の固定 manifest へのアクセスを許可しませんでした。再試行するか、対応する OBB を取り込んでください。既存のインストールには影響しません。</string>
     <string name="setup_connection_lost">Steam の接続またはリクエストが終了しました。続行するには再度ログインしてください。既存のインストールは引き続きオフラインで実行できます。</string>
+ <string name="setup_back_install">インストール方法に戻る</string>
 </resources>

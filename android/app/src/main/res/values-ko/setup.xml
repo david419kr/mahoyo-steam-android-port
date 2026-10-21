@@ -42,4 +42,5 @@
     <string name="setup_transfer_info">%1$.1f%% · 이번 전송 %2$.2fGB / 복원 %3$.2fGB · %4$.1fMB/s\n전체 설치 파일 %5$.2fGB</string>
     <string name="setup_manifest_unavailable">Steam이 게임 1.1의 고정 manifest 접근을 허용하지 않았습니다. 다시 시도하거나 지원하는 OBB를 가져올 수 있습니다. 기존 설치에는 영향이 없습니다.</string>
     <string name="setup_connection_lost">Steam 연결 또는 요청이 중단되었습니다. 계속하려면 다시 로그인해 주세요. 기존 설치는 계속 오프라인으로 실행할 수 있습니다.</string>
+ <string name="setup_back_install">설치 방법으로 돌아가기</string>
 </resources>

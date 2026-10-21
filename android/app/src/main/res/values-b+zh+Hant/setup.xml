@@ -42,4 +42,5 @@
     <string name="setup_transfer_info">%1$.1f%% · 本次接收 %2$.2f GB / 解壓 %3$.2f GB · %4$.1f MB/s\n完整安裝 %5$.2f GB</string>
     <string name="setup_manifest_unavailable">Steam 未授予遊戲 1.1 固定 manifest 的存取權限。您可以重試或匯入相容的 OBB。現有安裝不受影響。</string>
     <string name="setup_connection_lost">Steam 連線或請求已中斷。請重新登入後繼續。現有安裝仍可離線執行。</string>
+ <string name="setup_back_install">返回安裝選項</string>
 </resources>
