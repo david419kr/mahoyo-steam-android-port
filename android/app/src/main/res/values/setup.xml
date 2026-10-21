@@ -61,4 +61,5 @@
     <string name="setup_advanced">Advanced · PC-prepared files</string>
     <string name="setup_patch_hint"></string>
     <string name="setup_steam_installed">Installed from Steam</string>
+    <string name="setup_patch_installed">Korean patch applied</string>
 </resources>

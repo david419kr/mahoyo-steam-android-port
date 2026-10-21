@@ -60,4 +60,5 @@
     <string name="setup_qr_lan_page_title">Steam登入QR</string>
     <string name="setup_advanced">進階選項 · 使用PC轉換的檔案</string>
     <string name="setup_steam_installed">已從Steam安裝</string>
+    <string name="setup_patch_installed">韓語修補已套用</string>
 </resources>

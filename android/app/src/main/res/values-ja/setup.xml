@@ -60,4 +60,5 @@
     <string name="setup_qr_lan_page_title">SteamログインQR</string>
     <string name="setup_advanced">上級者向け · PCで変換したファイル</string>
     <string name="setup_steam_installed">Steamからインストール済み</string>
+    <string name="setup_patch_installed">韓国語パッチ適用済み</string>
 </resources>
