@@ -8,11 +8,14 @@ import java.io.*;
 /** One immutable file range, with an independent descriptor for each reader. */
 final class GameAsset {
     final File container;final long offset,length;final boolean packed;
+    private GameAsset patch;
     private GameAsset(File file,long offset,long length,boolean packed){container=file;this.offset=offset;this.length=length;this.packed=packed;}
     static GameAsset loose(File file){return new GameAsset(file,0,file.length(),false);}
     static GameAsset packed(File file,ObbIndex.Entry entry){return new GameAsset(file,entry.offset,entry.length,true);}
+    static GameAsset range(File file,long offset,long length){return new GameAsset(file,offset,length,true);}
+    static GameAsset composite(GameAsset primary,GameAsset patch){GameAsset value=new GameAsset(primary.container,primary.offset,primary.length,primary.packed);value.patch=patch;return value;}
     boolean isFile(){return container.isFile()&&(!packed||ObbIndex.range(offset,length,container.length()));}
-    String key()throws IOException{return container.getCanonicalPath()+(packed?"@"+offset+":"+length:"");}
+    String key()throws IOException{return container.getCanonicalPath()+(packed?"@"+offset+":"+length:"")+(patch==null?"":"+"+patch.key());}
     InputStream open()throws IOException{
         FileInputStream input=new FileInputStream(container);
         try{
@@ -29,15 +32,22 @@ final class GameAsset {
         }catch(Throwable error){input.close();throw error;}
     }
     Bitmap bitmap(BitmapFactory.Options options)throws IOException{
+        if(nativeImage()){
+            if(options!=null&&options.inJustDecodeBounds){int[] size=HfaImageInfo.read(new HfaIndex.Entry(container,"",offset,length));options.outWidth=size[0];options.outHeight=size[1];options.outMimeType="image/x-hunex";return null;}
+            return NativeAssetCodec.bitmap(encoded(256*1024*1024),patch==null?null:patch.encoded(256*1024*1024),options,null);
+        }
         if(avif())return AvifCodec.bitmap(encodedAvif(),options);
         if(!packed)return BitmapFactory.decodeFile(container.getPath(),options);
         try(InputStream input=new BufferedInputStream(open(),65536)){return BitmapFactory.decodeStream(input,null,options);}
     }
     Bitmap region(Rect rect,BitmapFactory.Options options)throws IOException{
+        if(nativeImage())return NativeAssetCodec.bitmap(encoded(256*1024*1024),patch==null?null:patch.encoded(256*1024*1024),options,rect);
         if(avif())return AvifCodec.region(encodedAvif(),rect,options);
         if(!packed){BitmapRegionDecoder reader=BitmapRegionDecoder.newInstance(container.getPath(),false);try{return reader.decodeRegion(rect,options);}finally{reader.recycle();}}
         try(InputStream input=new BufferedInputStream(open(),65536)){BitmapRegionDecoder reader=BitmapRegionDecoder.newInstance(input,false);try{return reader.decodeRegion(rect,options);}finally{reader.recycle();}}
     }
+    private boolean nativeImage()throws IOException{try(InputStream in=open()){byte[] header=new byte[16];int at=0,n;while(at<header.length&&(n=in.read(header,at,header.length-at))!=-1)at+=n;return NativeAssetCodec.image(header);}}
+    byte[] encoded(int cap)throws IOException{if(length<0||length>cap)throw new IOException("Encoded asset budget");try(InputStream in=open();ByteArrayOutputStream out=new ByteArrayOutputStream((int)Math.min(length,65536))){byte[] block=new byte[65536];int n;while((n=in.read(block))!=-1){if(out.size()>cap-n)throw new IOException("Encoded asset budget");out.write(block,0,n);}return out.toByteArray();}}
     private boolean avif()throws IOException{
         try(InputStream in=open()){byte[] p=new byte[12];int at=0,n;while(at<p.length&&(n=in.read(p,at,p.length-at))!=-1)at+=n;
             return at==12&&p[4]=='f'&&p[5]=='t'&&p[6]=='y'&&p[7]=='p'&&p[8]=='a'&&p[9]=='v'&&p[10]=='i'&&(p[11]=='f'||p[11]=='s');}
