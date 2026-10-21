@@ -12,7 +12,7 @@
     <string name="setup_mobile">Steam 모바일 앱에서 이번 로그인을 승인해 주세요.</string>
     <string name="setup_choose">설치 방법 선택</string>
     <string name="setup_obb">AVIF OBB 가져오기</string>
-    <string name="setup_obb_info">약 5GB. PC에서 OBB를 만든 뒤 이 기기에서 파일을 선택합니다.</string>
+    <string name="setup_obb_info">약 5GB. PC에서 만든 OBB를 선택하세요. 가져오기 시 복사본을 생성하므로 원본 OBB 외에 OBB 용량만큼 추가 여유 공간이 필요합니다.</string>
     <string name="setup_steam">Steam에서 바로 설치</string>
     <string name="setup_steam_info">PC 없이 설치합니다. 원본 파일 약 %1$sGB와 캐시 공간이 필요합니다. 다운로드 용량은 확인 후 별도로 표시합니다.</string>
     <string name="setup_guide">PC 변환 방법</string>
@@ -30,7 +30,7 @@
     <string name="setup_missing">게임 데이터가 없습니다. 소유권 확인 기록은 유지되어 있으니 설치 방법을 선택하여 복구해 주세요.</string>
     <string name="setup_failure">설치를 완료하지 못했습니다</string>
     <string name="setup_patch">한글패치 ZIP 적용</string>
-    <string name="setup_patch_info">게임 1.1용 한글패치 1.2 ZIP을 선택하세요. 내부 폴더 배치는 상관없습니다. 패치 적용 과정에서 게임 원본은 다운로드하지 않습니다.</string>
+    <string name="setup_patch_info">게임 1.1용 한글패치 1.2 ZIP을 선택하세요. 내부 폴더 배치는 상관없습니다. ZIP 외에 약 2.5GB의 추가 여유 공간이 필요하며 게임 원본은 다운로드하지 않습니다.</string>
     <string name="setup_relogin">다운로드하려면 Steam에 로그인해 주세요. 기존에 설치된 게임의 오프라인 실행에는 영향이 없습니다.</string>
     <string name="setup_storage">저장공간이 부족합니다.</string>
     <string name="setup_install_channel">게임 설치</string>
@@ -43,4 +43,5 @@
     <string name="setup_manifest_unavailable">Steam이 게임 1.1의 고정 manifest 접근을 허용하지 않았습니다. 다시 시도하거나 지원하는 OBB를 가져올 수 있습니다. 기존 설치에는 영향이 없습니다.</string>
     <string name="setup_connection_lost">Steam 연결 또는 요청이 중단되었습니다. 계속하려면 다시 로그인해 주세요. 기존 설치는 계속 오프라인으로 실행할 수 있습니다.</string>
  <string name="setup_back_install">설치 방법으로 돌아가기</string>
+    <string name="setup_available">사용 가능한 저장공간: %1$.1fGB</string>
 </resources>

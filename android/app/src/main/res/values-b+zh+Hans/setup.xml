@@ -12,7 +12,7 @@
     <string name="setup_mobile">请在Steam手机应用中批准此次登录。</string>
     <string name="setup_choose">选择安装方式</string>
     <string name="setup_obb">导入AVIF OBB</string>
-    <string name="setup_obb_info">约5GB。在PC上制作OBB后，在本设备选择文件。</string>
+    <string name="setup_obb_info">约5GB。选择在PC上制作的OBB。导入时会创建副本，因此除原OBB外还需与OBB大小相同的可用空间。</string>
     <string name="setup_steam">从Steam直接下载</string>
     <string name="setup_steam_info">无需PC。原始文件约需%1$sGB，另需缓存空间。下载流量将在查询后显示。</string>
     <string name="setup_guide">PC转换指南</string>
@@ -30,7 +30,7 @@
     <string name="setup_missing">未找到游戏数据。所有权验证记录仍然有效，请选择安装方式进行修复。</string>
     <string name="setup_failure">无法完成安装</string>
     <string name="setup_patch">应用韩语补丁ZIP</string>
-    <string name="setup_patch_info">选择支持的韩语补丁1.2 ZIP。无需特定文件夹结构，不会下载游戏本体。</string>
+    <string name="setup_patch_info">选择游戏1.1的韩语补丁1.2 ZIP，无需特定文件夹结构。除ZIP外还需约2.5GB可用空间，不会下载游戏本体。</string>
     <string name="setup_relogin">下载需要登录Steam。已安装游戏的离线运行不受影响。</string>
     <string name="setup_storage">可用存储空间不足。</string>
     <string name="setup_install_channel">游戏安装</string>
@@ -43,4 +43,5 @@
     <string name="setup_manifest_unavailable">Steam 未授予游戏 1.1 固定 manifest 的访问权限。您可以重试或导入兼容的 OBB。现有安装不受影响。</string>
     <string name="setup_connection_lost">Steam 连接或请求已中断。请重新登录后继续。现有安装仍可离线运行。</string>
  <string name="setup_back_install">返回安装选项</string>
+    <string name="setup_available">可用存储空间：%1$.1fGB</string>
 </resources>

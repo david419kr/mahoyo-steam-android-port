@@ -12,7 +12,7 @@
     <string name="setup_mobile">Steamモバイルアプリで今回のログインを承認してください。</string>
     <string name="setup_choose">インストール方法を選択</string>
     <string name="setup_obb">AVIF OBBを取り込む</string>
-    <string name="setup_obb_info">約5GB。PCでOBBを作成し、この端末でファイルを選択します。</string>
+    <string name="setup_obb_info">約5GB。PCで作成したOBBを選択します。取り込み時にコピーを作成するため、元のOBBとは別に同じ容量の空きが必要です。</string>
     <string name="setup_steam">Steamからダウンロード</string>
     <string name="setup_steam_info">PCは不要です。元データ約%1$sGBとキャッシュ容量が必要です。通信量は確認後に表示します。</string>
     <string name="setup_guide">PC変換ガイド</string>
@@ -30,7 +30,7 @@
     <string name="setup_missing">ゲームデータが見つかりません。所有権の確認記録は保持されています。方法を選択して修復してください。</string>
     <string name="setup_failure">インストールできませんでした</string>
     <string name="setup_patch">韓国語パッチZIPを適用</string>
-    <string name="setup_patch_info">対応する韓国語パッチ1.2のZIPを選択します。フォルダー構成は問いません。ゲーム本体はダウンロードしません。</string>
+    <string name="setup_patch_info">ゲーム1.1用の韓国語パッチ1.2 ZIPを選択します。フォルダー構成は問いません。ZIPとは別に約2.5GBの空きが必要です。ゲーム本体はダウンロードしません。</string>
     <string name="setup_relogin">ダウンロードするにはSteamにログインしてください。既存のオフライン実行には影響しません。</string>
     <string name="setup_storage">空き容量が不足しています。</string>
     <string name="setup_install_channel">ゲームのインストール</string>
@@ -43,4 +43,5 @@
     <string name="setup_manifest_unavailable">Steam がゲーム1.1の固定 manifest へのアクセスを許可しませんでした。再試行するか、対応する OBB を取り込んでください。既存のインストールには影響しません。</string>
     <string name="setup_connection_lost">Steam の接続またはリクエストが終了しました。続行するには再度ログインしてください。既存のインストールは引き続きオフラインで実行できます。</string>
  <string name="setup_back_install">インストール方法に戻る</string>
+    <string name="setup_available">空き容量: %1$.1fGB</string>
 </resources>
