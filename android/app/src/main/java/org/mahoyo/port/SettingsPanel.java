@@ -23,7 +23,7 @@ final class SettingsPanel extends LinearLayout {
     private static final int INK=0xffe5eefb, ACCENT=0xff759fc9;
     SettingsPanel(android.content.Context context,int initialTab,Runnable close,Runnable reload){
         super(context);this.close=close;this.reload=reload;prefs=new DisplayPrefs(context);tab=Math.max(0,Math.min(2,initialTab));
-        LinearLayout root=this;root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff0b1423);
+        LinearLayout root=this;root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff0b1423);root.setClickable(true);
         LinearLayout header=new LinearLayout(getContext());header.setGravity(16);header.setPadding(dp(12),dp(2),dp(16),dp(2));root.addView(header);
         Button back=button("‹");back.setContentDescription(tr("뒤로"));header.addView(back,new LinearLayout.LayoutParams(dp(48),dp(48)));back.setOnClickListener(v->close.run());
         TextView title=label("설정",20);title.setTypeface(null,Typeface.BOLD);header.addView(title,new LinearLayout.LayoutParams(0,dp(48),1));title.setGravity(16);
