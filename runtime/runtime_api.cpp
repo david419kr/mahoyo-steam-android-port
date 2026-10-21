@@ -354,7 +354,7 @@ struct Runtime final:mahoyo::vm::Host {
                 std::string trailing;if(file>>trailing)throw mahoyo::vm::Error("Trailing exact layout metadata");
             }
             const auto geometryPath=root/"meta"/"native-composite-geometry.tsv";
-            if(std::filesystem::exists(geometryPath)){std::ifstream file(geometryPath);if(!file)throw mahoyo::vm::Error("Cannot read native bitmap geometry metadata");compositeGeometry=mahoyo::bitmap_geometry::readRecipes(file,"1a9bdcf53a9e6ff181c9312d1c9186cf97bee2db873e39f29ad6b81c1b8b540b","abef1143c161fc1573f7c6478b9f0024cb32a766e72a5da087b54a3a8b9e0f2f");}
+            if(std::filesystem::exists(geometryPath)){std::ifstream file(geometryPath);if(!file)throw mahoyo::vm::Error("Cannot read native bitmap geometry metadata");compositeGeometry=mahoyo::bitmap_geometry::readRecipes(file,mahoyo::bitmap_geometry::Steam11PE,mahoyo::bitmap_geometry::Steam11Authority);}
             nativeImageResources=readNativeImageResources(root/"meta"/"native-image-resources.tsv");
             effectClips=mahoyo::effects::load(root/"meta"/"effects.tsv");mahoyo::effects::loadWindows(effectClips,root/"meta"/"effects-window.tsv");mahoyo::effects::loadProperties(effectClips,root/"meta"/"effects-properties.tsv");
             std::filesystem::file_time_type latest=std::filesystem::file_time_type::min();

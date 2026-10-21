@@ -55,6 +55,9 @@ AUTHORITY = ROOT / "data" / "bitmap-composition-profile.json"
 AUTHORITY_SHA = "96e0657557c322ee290fa607af8a5fd7f9d2fee5072d0e73a80ddfb381f5b548"
 
 
+# Stable on-disk geometry contract, independent of the profile file checksum.
+GEOMETRY_AUTHORITY = "abef1143c161fc1573f7c6478b9f0024cb32a766e72a5da087b54a3a8b9e0f2f"
+
 NAME = re.compile(r"[a-z0-9_]+\.mzp\Z")
 
 
@@ -103,7 +106,7 @@ def load_recipes(path: Path) -> tuple[dict, str]:
     for r in records:
         if not NAME.fullmatch(r["key"]) or not NAME.fullmatch(r["primary"]) or (r["alias"] is not None and (r["alias"] != r["key"] or not NAME.fullmatch(r["alias"]))):
             raise ValueError("invalid Native recipe name")
-    return table, AUTHORITY_SHA
+    return table, GEOMETRY_AUTHORITY
 
 
 def _read_image(source: Path, manifest: dict, name: str) -> tuple[np.ndarray, dict, str]:

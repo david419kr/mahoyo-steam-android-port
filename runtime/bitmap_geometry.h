@@ -14,6 +14,8 @@
 
 //Exact bitmap metadata and pure geometry transforms; Runtime owns WH integration.
 namespace mahoyo::bitmap_geometry {
+inline constexpr const char* Steam11PE="1a9bdcf53a9e6ff181c9312d1c9186cf97bee2db873e39f29ad6b81c1b8b540b";
+inline constexpr const char* Steam11Authority="abef1143c161fc1573f7c6478b9f0024cb32a766e72a5da087b54a3a8b9e0f2f";
 struct Size {int32_t width,height;bool operator==(const Size& b)const{return width==b.width&&height==b.height;}};
 struct Recipe {Size patch,primary;};
 using Recipes=std::map<std::string,Recipe>;
