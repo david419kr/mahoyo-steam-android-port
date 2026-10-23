@@ -42,6 +42,7 @@ static Viewport viewport(int panel){return new Viewport(2480,2248,160,true,true,
 static TextOverlay.RenderState show(TextOverlay text,Scene scene,Viewport vp){TextOverlay.RenderState state=text.prepare(scene,vp,false);text.present(scene,vp,false);return state;}
 public static void main(String[]args)throws Exception {
 Context resolutionContext=new Context();DisplayPrefs resolutionPrefs=new DisplayPrefs(resolutionContext);
+for(int legacyFilter:new int[]{0,1,2,999}){resolutionContext.prefs.values.put("filter",legacyFilter);check(resolutionPrefs.filter()==0,"legacy bicubic/lanczos preferences always resolve to bilinear");}
 check(resolutionPrefs.renderPercent()==100&&resolutionPrefs.renderDimension(2160)==2160,"rendering defaults to native resolution");
 for(int percent=50;percent<=100;percent++){
  resolutionContext.prefs.values.put("renderPercent",percent);

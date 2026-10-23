@@ -74,7 +74,6 @@ final class SettingsPanel extends LinearLayout {
             options("이벤트 CG","eventCover",new String[]{"전체 표시","꽉 채움"},prefs.cover(true)?1:0,true);
             typography("렌더링 해상도","renderPercent",50,100,prefs.renderPercent());
             TextView resolutionHint=label("게임 이미지의 가로·세로 해상도에 각각 적용됩니다. 50%는 픽셀 수가 25%입니다. 대사와 메뉴는 기기 해상도를 유지합니다.",13);resolutionHint.setTextColor(0xffa7b9d0);resolutionHint.setPadding(0,0,0,dp(10));content.addView(resolutionHint);
-            options("이미지 필터","filter",new String[]{"Bilinear","Bicubic","Lanczos"},prefs.filter(),false);
             options("여백","ambient",new String[]{"검정","이미지색"},prefs.ambient()?1:0,true);
             options("대화창","dialogue",new String[]{"원본 전체 화면","하단 분리","자동"},prefs.dialogueMode(),false);
             typography("글자 크기","fontPercent",75,150,prefs.fontPercent());typography("좌우 여백","marginPercent",0,160,prefs.marginPercent());

@@ -11,7 +11,7 @@ final class DisplayPrefs {
     boolean ambient(){return values.getBoolean("ambient",true);}
     int renderPercent(){return Math.max(50,Math.min(100,values.getInt("renderPercent",100)));}
     int renderDimension(int pixels){return Math.max(1,Math.round(pixels*renderPercent()/100f));}
-    int filter(){return values.getInt("filter",0);}
+    int filter(){return 0;} // Ignore legacy filter preferences; bilinear is the only supported setting.
     int dialogueMode(){return Math.max(0,Math.min(2,values.getInt("dialogue",2)));}
     boolean separateDialogue(){return dialogueMode()==1;}
     // A 10:7 or taller usable area leaves a practical detached reading panel.
