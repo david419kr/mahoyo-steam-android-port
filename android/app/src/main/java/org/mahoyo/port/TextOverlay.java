@@ -26,9 +26,11 @@ final class TextOverlay extends View {
     private Scene preparedScene;
     private int preferredPanelHeight;
     private float fontScale=1,marginScale=1;
-    private float panelScale=1,effectiveScale=1,maximumScale=2,pinchSpan,pinchScale;
+    private float panelScale=1,effectiveScale=1,maximumScale=2,pinchSpan,pinchFont,pinchMargin,density=1;
+    private boolean handleClaimed,handleChanged;private float handleDownY,handleStartHeight,handleStartScale;
+    private final Paint handlePaint=new Paint(Paint.ANTI_ALIAS_FLAG);
     private boolean pinchEligible,pinchClaimed;
-    private Runnable resized,resizeFinished;
+    private Runnable resized,resizeFinished,typographyChanged,typographyFinished;
     TextOverlay(Context context){super(context);setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);scroller=new OverScroller(context);ViewConfiguration config=ViewConfiguration.get(context);touchSlop=config.getScaledTouchSlop();maxFling=config.getScaledMaximumFlingVelocity();minFling=config.getScaledMinimumFlingVelocity();}
     void setOnAdvance(Runnable callback){advance=callback;}
     void setPanelScale(float value){panelScale=Float.isFinite(value)?Math.max(.6f,value):1;}
@@ -38,22 +40,61 @@ final class TextOverlay extends View {
     static float horizontalInset(float width,float padding){return horizontalInset(width,padding,1);}
     static float horizontalInset(float width,float padding,float scale){return Math.max(padding,width*.12f*scale);}
     void setOnPanelResize(Runnable changed,Runnable finished){resized=changed;resizeFinished=finished;}
-    int panelHeight(Scene scene,DisplayPrefs prefs,int contentWidth,int contentHeight,float density,float scaledDensity){fontScale=prefs.fontPercent()/100f;marginScale=prefs.marginPercent()/100f;scaledDensity*=fontScale;effectiveScale=PanelSizing.scale(contentHeight,density,scaledDensity,panelScale);maximumScale=PanelSizing.scale(contentHeight,density,scaledDensity,Float.MAX_VALUE);panelFont=PanelSizing.font(contentHeight,density,scaledDensity)*effectiveScale;panelPadding=20*density*effectiveScale;boolean separate=prefs.separateDialogue(contentWidth,contentHeight);preferredPanelHeight=PanelSizing.height(separate,false,"play",contentHeight,density,scaledDensity,panelScale);return scene.wholeFrame?0:PanelSizing.height(separate,scene.movie!=null,scene.json.optString("scene",""),contentHeight,density,scaledDensity,panelScale);}
+    void setOnTypographyChange(Runnable changed,Runnable finished){typographyChanged=changed;typographyFinished=finished;}
+    int fontPercent(){return Math.round(fontScale*100);}
+    int marginPercent(){return Math.round(marginScale*100);}
+    int panelHeight(Scene scene,DisplayPrefs prefs,int contentWidth,int contentHeight,float density,float scaledDensity){
+        this.density=density;if(!pinchClaimed){fontScale=prefs.fontPercent()/100f;marginScale=prefs.marginPercent()/100f;}
+        effectiveScale=PanelSizing.scale(contentHeight,density,scaledDensity,panelScale);maximumScale=PanelSizing.scale(contentHeight,density,scaledDensity,Float.MAX_VALUE);
+        // Typography and box height are independent controls.
+        panelFont=PanelSizing.font(contentHeight,density,scaledDensity)*fontScale;panelPadding=20*density;
+        boolean separate=prefs.separateDialogue(contentWidth,contentHeight);preferredPanelHeight=PanelSizing.height(separate,false,"play",contentHeight,density,scaledDensity,panelScale);
+        return scene.wholeFrame?0:PanelSizing.height(separate,scene.movie!=null,scene.json.optString("scene",""),contentHeight,density,scaledDensity,panelScale);
+    }
+    private boolean typographyEligible(float x,float y){return !hidden&&scene!=null&&scene.movie==null&&scene.transition==null&&(preparedScene==null||preparedScene.transition==null)&&scene.json.optString("scene","").equals("play")&&viewport!=null&&viewport.content.contains(x,y);}
     // Activity forwards multi-touch before its two-finger tap recognizer consumes it.
     boolean pinch(MotionEvent event){
         int action=event.getActionMasked();
-        if(action==MotionEvent.ACTION_DOWN){pinchClaimed=false;pinchSpan=0;pinchEligible=!hidden&&scene!=null&&scene.transition==null&&viewport!=null&&viewport.panel.height()>0&&viewport.panel.contains(event.getX(),event.getY());}
+        if(action==MotionEvent.ACTION_DOWN){pinchClaimed=false;pinchSpan=0;pinchEligible=typographyEligible(event.getX(),event.getY());}
         if(pinchEligible&&event.getPointerCount()==2){
-            if(pinchSpan==0){pinchEligible=viewport.panel.contains(event.getX(1),event.getY(1));if(pinchEligible){pinchSpan=(float)Math.hypot(event.getX(0)-event.getX(1),event.getY(0)-event.getY(1));pinchScale=effectiveScale;}}
+            if(pinchSpan==0){pinchEligible=typographyEligible(event.getX(1),event.getY(1));if(pinchEligible){pinchSpan=(float)Math.hypot(event.getX(0)-event.getX(1),event.getY(0)-event.getY(1));pinchFont=fontScale;pinchMargin=marginScale;}}
             float span=(float)Math.hypot(event.getX(0)-event.getX(1),event.getY(0)-event.getY(1));
             if(pinchEligible&&pinchSpan>0&&action==MotionEvent.ACTION_MOVE){
                 if(Math.abs(span-pinchSpan)>touchSlop*2){pinchClaimed=true;scroller.abortAnimation();endTouch();}
-                if(pinchClaimed){float next=Math.min(maximumScale,Math.max(.6f,pinchScale*span/pinchSpan));if(Math.abs(next-panelScale)>.001f){panelScale=next;if(resized!=null)resized.run();}}
+                if(pinchClaimed){
+                    int font=Math.round(Math.max(.75f,Math.min(1.5f,pinchFont*span/pinchSpan))*100);
+                    float ratio=font/(100f*pinchFont);int margin=Math.round(Math.max(0,Math.min(1.6f,pinchMargin+1-ratio))*100);
+                    if(font!=fontPercent()||margin!=marginPercent()){fontScale=font/100f;marginScale=margin/100f;if(typographyChanged!=null)typographyChanged.run();}
+                }
             }
         }else if(event.getPointerCount()>2)pinchEligible=false;
         boolean consume=pinchClaimed;
-        if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){if(pinchClaimed&&resizeFinished!=null)resizeFinished.run();pinchEligible=pinchClaimed=false;pinchSpan=0;}
+        if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){if(pinchClaimed&&typographyFinished!=null)typographyFinished.run();pinchEligible=pinchClaimed=false;pinchSpan=0;}
         return consume;
+    }
+    RectF resizeHandleBounds(){return viewport==null?new RectF(0,0,0,0):new RectF(Math.max(viewport.panel.left,viewport.panel.centerX()-50*density),viewport.panel.top+2*density,Math.min(viewport.panel.right,viewport.panel.centerX()+50*density),Math.min(viewport.panel.bottom,viewport.panel.top+34*density));}
+    boolean resizeHandle(MotionEvent event){
+        int action=event.getActionMasked();
+        if(action==MotionEvent.ACTION_DOWN){
+            handleClaimed=typographyEligible(event.getX(),event.getY())&&viewport.panel.height()>0&&resizeHandleBounds().contains(event.getX(),event.getY());handleChanged=false;
+            if(handleClaimed){handleDownY=event.getY();handleStartHeight=viewport.panel.height();handleStartScale=effectiveScale;scroller.abortAnimation();endTouch();invalidate();}
+        }
+        if(!handleClaimed)return false;
+        if(action==MotionEvent.ACTION_MOVE&&event.getPointerCount()==1&&Math.abs(event.getY()-handleDownY)>touchSlop){
+            float height=handleStartHeight+handleDownY-event.getY(),next=Math.min(maximumScale,Math.max(.6f,handleStartScale*height/handleStartHeight));
+            if(Math.abs(next-panelScale)>.001f){panelScale=next;handleChanged=true;if(resized!=null)resized.run();}
+        }
+        if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){if(handleChanged&&resizeFinished!=null)resizeFinished.run();handleClaimed=handleChanged=false;invalidate();}
+        return true;
+    }
+    private void drawResizeHandle(Canvas canvas){
+        if(viewport.panel.height()<=0||scene.movie!=null||!scene.json.optString("scene","").equals("play"))return;
+        float center=viewport.panel.centerX(),top=viewport.panel.top;
+        canvas.save();canvas.clipRect(viewport.panel);handlePaint.setColor(handleClaimed?0x99465f7d:0x55384b64);
+        canvas.drawRoundRect(center-30*density,top+4*density,center+30*density,top+22*density,7*density,7*density,handlePaint);
+        handlePaint.setColor(handleClaimed?0xccd9e7f5:0x99b5c8dd);
+        for(int row=0;row<2;row++)canvas.drawRoundRect(center-14*density,top+(9+6*row)*density,center+14*density,top+(11+6*row)*density,density,density,handlePaint);
+        canvas.restore();
     }
     RenderState prepare(Scene scene,Viewport viewport,boolean hidden){
         PanelSnapshot previous=presentedState==null?null:presentedState.current;preparedScene=scene;ScrollState planned=scroll.copy();
@@ -85,7 +126,7 @@ final class TextOverlay extends View {
         super.onDraw(canvas);removeCallbacks(cursorFrame);
         // Keep live dialogue on Canvas across graphics transitions; outgoing movie/title can capture it.
         if(scene==null||viewport==null||hidden)return;
-        painter.draw(canvas,scene,viewport,presentedState,!touching&&scroller.isFinished());
+        painter.draw(canvas,scene,viewport,presentedState,!touching&&scroller.isFinished());drawResizeHandle(canvas);
         if(scene.transition==null&&!touching&&(viewport.panel.height()<=0||scroll.following))for(JSONObject item:scene.texts)if(item.optBoolean("cursor",false)){postDelayed(cursorFrame,50-android.os.SystemClock.uptimeMillis()%50);break;}
     }
     @Override protected void onDetachedFromWindow(){removeCallbacks(cursorFrame);super.onDetachedFromWindow();}

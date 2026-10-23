@@ -104,7 +104,38 @@ cosmetic.onTouchEvent(event(MotionEvent.ACTION_DOWN,top,16000));Canvas touching=
 TextOverlay.ScrollState scroll=new TextOverlay.ScrollState();scroll.update("abc",100);near(scroll.offset,100,"new visible text follows bottom");scroll.manual(20);scroll.update("abcdef",200);near(scroll.offset,20,"manual reading survives appends");scroll.manual(200);scroll.update("abcdefgh",300);near(scroll.offset,300,"returning to bottom restores follow");scroll.update("new-page",50);near(scroll.offset,50,"new page restores auto-follow");
 
 for(int screen:new int[]{480,1080,1584,2088,3200})for(float scale:new float[]{.6f,1f,2f,9f}){int sized=TextOverlay.PanelSizing.height(true,false,"play",screen,2.7625f,2.7625f,scale);check(sized<=screen/3,"scaled panel is capped at one third in either aspect");float factor=TextOverlay.PanelSizing.scale(screen,2.7625f,2.7625f,scale);check(Math.abs(sized-TextOverlay.PanelSizing.baseHeight(screen,2.7625f,2.7625f)*factor)<=1,"font, padding and line budget scale together");}
-TextOverlay zoom=new TextOverlay(context);int[] zoomCalls={0,0,0};zoom.setOnAdvance(()->zoomCalls[2]++);zoom.setOnPanelResize(()->{zoomCalls[0]++;int h=zoom.panelHeight(page,prefs,2480,2088,2.7625f,2.7625f);show(zoom,page,viewport(h));},()->{zoomCalls[1]++;context.prefs.values.put("dialogueScale",zoom.panelScale());});int zoomH=zoom.panelHeight(page,prefs,2480,2088,2.7625f,2.7625f);show(zoom,page,viewport(zoomH));float zoomY=2088-zoomH+100,oldFont=number(zoom,"panelFont");check(!zoom.pinch(new MotionEvent(0,1L,200,zoomY)),"one finger remains ordinary dialogue input");check(!zoom.pinch(new MotionEvent(5,2L,200,zoomY,400,zoomY)),"two-finger tap remains eligible before span moves");check(zoom.pinch(new MotionEvent(2,3L,150,zoomY,450,zoomY)),"pinch claims moving span before tap toggles menu");check(zoomCalls[0]>0&&number(zoom,"panelFont")>oldFont,"pinch enlarges native font and recomputes layout");check(zoom.pinch(new MotionEvent(6,4L,150,zoomY,450,zoomY))&&zoom.pinch(new MotionEvent(1,5L,150,zoomY)),"both pinch release events are consumed");check(zoomCalls[1]==1&&zoomCalls[2]==0,"pinch saves once and never advances dialogue");near(prefs.dialogueScale(),zoom.panelScale(),"saved pinch scale survives a fresh preferences read");int callsBefore=zoomCalls[0];zoom.pinch(new MotionEvent(0,6L,200,zoomY));zoom.pinch(new MotionEvent(5,7L,200,zoomY,400,zoomY));check(!zoom.pinch(new MotionEvent(1,8L,200,zoomY))&&zoomCalls[0]==callsBefore,"stationary two-finger tap does not resize or get consumed");zoom.pinch(new MotionEvent(0,9L,200,zoomY));zoom.pinch(new MotionEvent(5,10L,200,zoomY,400,zoomY));check(zoom.pinch(new MotionEvent(2,11L,280,zoomY,320,zoomY)),"reverse pinch claims gesture");zoom.pinch(new MotionEvent(1,12L,280,zoomY));check(number(zoom,"panelFont")<oldFont&&zoomCalls[2]==0,"pinch can shrink text and box without advancing");zoom.pinch(new MotionEvent(0,13L,200,100));zoom.pinch(new MotionEvent(5,14L,200,100,400,100));check(!zoom.pinch(new MotionEvent(2,15L,100,100,500,100)),"pinch on image area never resizes dialogue");
+for(boolean detached:new boolean[]{true,false}){
+ Context zoomContext=new Context();DisplayPrefs zoomPrefs=new DisplayPrefs(zoomContext);zoomContext.prefs.values.put("dialogue",detached?1:0);
+ TextOverlay zoom=new TextOverlay(zoomContext);int[] zoomCalls={0,0,0,0};zoom.setOnAdvance(()->zoomCalls[3]++);
+ Runnable showZoom=()->{int h=zoom.panelHeight(page,zoomPrefs,2480,2088,2.7625f,2.7625f);show(zoom,page,viewport(h));};
+ zoom.setOnTypographyChange(()->{zoomCalls[0]++;showZoom.run();},()->{zoomCalls[1]++;zoomContext.prefs.values.put("fontPercent",zoom.fontPercent());zoomContext.prefs.values.put("marginPercent",zoom.marginPercent());});
+ zoom.setOnPanelResize(()->{zoomCalls[2]++;showZoom.run();},()->zoomContext.prefs.values.put("dialogueScale",zoom.panelScale()));showZoom.run();
+ float oldFont=number(zoom,"panelFont"),oldHeight=((Viewport)field(zoom,"viewport")).panel.height();
+ check(!zoom.pinch(new MotionEvent(0,1L,200,100)),"one finger remains normal input");
+ check(!zoom.pinch(new MotionEvent(5,2L,200,100,400,100)),"stationary two-finger tap retains menu toggle");
+ check(zoom.pinch(new MotionEvent(2,3L,150,100,450,100)),"pinch claims moving fingers in either dialogue mode");
+ check(zoom.fontPercent()==150&&zoom.marginPercent()==50&&number(zoom,"panelFont")>oldFont,"pinch grows font and proportionally narrows margins");
+ near(((Viewport)field(zoom,"viewport")).panel.height(),oldHeight,"pinch cannot change detached box height");
+ check(zoomCalls[2]==0&&zoomCalls[3]==0,"pinch never resizes box or advances text");
+ check(zoom.pinch(new MotionEvent(6,4L,150,100,450,100))&&zoom.pinch(new MotionEvent(1,5L,150,100)),"pinch consumes pointer and final releases");
+ check(zoomCalls[1]==1&&zoomPrefs.fontPercent()==150&&zoomPrefs.marginPercent()==50,"typography saved once at gesture end");
+ zoom.pinch(new MotionEvent(0,6L,200,100));zoom.pinch(new MotionEvent(5,7L,200,100,400,100));
+ check(!zoom.pinch(new MotionEvent(1,8L,200,100))&&zoomCalls[1]==1,"two-finger tap never saves typography");
+ zoom.pinch(new MotionEvent(0,9L,200,100));zoom.pinch(new MotionEvent(5,10L,200,100,400,100));
+ check(zoom.pinch(new MotionEvent(2,11L,280,100,320,100)),"reverse pinch claims gesture");zoom.pinch(new MotionEvent(1,12L,280,100));
+ check(zoom.fontPercent()==75&&zoom.marginPercent()==100,"reverse pinch shrinks text and widens margins with safe limits");
+ if(detached){
+  RectF hit=zoom.resizeHandleBounds();Viewport original=(Viewport)field(zoom,"viewport");check(hit.top>=original.panel.top&&hit.bottom<=original.panel.bottom,"handle touch target stays entirely inside detached panel");
+  float beforeFont=number(zoom,"panelFont"),heightBefore=original.panel.height(),fingerX=hit.centerX(),fingerY=hit.centerY();
+  check(zoom.resizeHandle(new MotionEvent(0,20L,fingerX,fingerY)),"handle captures down before menu gestures");
+  check(zoom.resizeHandle(new MotionEvent(2,21L,fingerX,fingerY-1000)),"upward handle drag grows box");
+  Viewport grown=(Viewport)field(zoom,"viewport");check(grown.panel.height()>heightBefore&&grown.panel.height()<=2088/3,"handle height capped at one third of usable screen");
+  near(number(zoom,"panelFont"),beforeFont,"handle cannot change text size");zoom.resizeHandle(new MotionEvent(1,22L,fingerX,fingerY-1000));near(zoomPrefs.dialogueScale(),zoom.panelScale(),"handle height persists independently");
+  RectF grownHit=zoom.resizeHandleBounds();zoom.resizeHandle(new MotionEvent(0,23L,grownHit.centerX(),grownHit.centerY()));zoom.resizeHandle(new MotionEvent(2,24L,grownHit.centerX(),grownHit.centerY()+2000));zoom.resizeHandle(new MotionEvent(3,25L,grownHit.centerX(),grownHit.centerY()+2000));
+  check(((Viewport)field(zoom,"viewport")).panel.height()<grown.panel.height()&&zoomCalls[3]==0,"downward resize/cancel never advances dialogue");
+ }else check(!zoom.resizeHandle(new MotionEvent(0,20L,1240,100)),"fullscreen dialogue never claims a resize handle");
+}
+
 check(!TextOverlay.captureInFrame(viewport(400),viewport(400)),"split panel is not composited again into the GL transition");check(TextOverlay.captureInFrame(viewport(400),viewport(0)),"split-to-movie keeps the outgoing panel in its old frame");check(TextOverlay.captureInFrame(viewport(0),viewport(400))&&TextOverlay.captureInFrame(viewport(0),viewport(0)),"fullscreen NVL text remains in GL transition frames");check(committed.rectColors.stream().filter(c->c==0xcc070e1b).count()==1,"glass fill has one80percent pass, not two stacked alpha layers");
 System.out.println("split native dialogue: "+checks+" checks passed");}}
 """

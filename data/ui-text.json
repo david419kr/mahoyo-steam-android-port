@@ -122,6 +122,8 @@
     ["help_right", [], "→ Swipe right · Save", "→ 右にスワイプ · セーブ", "→ 왼쪽에서 오른쪽으로 · 저장", "→ 向右滑动 · 保存", "→ 向右滑動 · 儲存"],
     ["help_left", [], "← Swipe left · Load", "← 左にスワイプ · ロード", "← 오른쪽에서 왼쪽으로 · 불러오기", "← 向左滑动 · 读取", "← 向左滑動 · 讀取"],
     ["help_hold", [], "Hold for 1 second · Skip until you release", "1秒間長押し · 指を離すまでスキップ", "1초 이상 길게 누르기 · 손을 뗄 때까지 스킵", "长按1秒 · 松手即停止快进", "長按1秒 · 鬆手即停止快進"],
+    ["help_pinch", [], "Pinch · Adjust text size and side margins", "ピンチ操作 · 文字サイズと左右の余白を調整", "핀치 줌 · 글자 크기와 좌우 여백 조절", "双指缩放 · 调整字号和左右边距", "雙指縮放 · 調整字體大小和左右邊距"],
+    ["help_resize_panel", [], "Drag the handle inside the top of the bottom panel · Adjust panel height", "下部パネル上端の内側にあるハンドルを上下にドラッグ · パネルの高さを調整", "분리 대화창 상단 안쪽 손잡이를 위아래로 끌기 · 창 높이 조절", "上下拖动底部文本框顶部内侧的手柄 · 调整文本框高度", "上下拖曳底部文字視窗頂部內側的把手 · 調整視窗高度"],
     ["help_scroll", [], "In scrollable dialogue or menus, reach the scroll edge before pulling farther. Release toward a menu to open it, or reverse to cancel. Swipe in the opposite direction to close each menu.", "文章やメニューをスクロールできる場合は、端まで移動してからさらにスワイプします。開く方向へ動かして離すと開き、戻す方向で離すと取り消します。各メニューは逆方向のスワイプで閉じられます。", "대화창이나 메뉴에 스크롤이 있으면 끝까지 스크롤한 뒤 더 밀어 주세요. 여는 방향으로 움직이다 손을 떼면 열리고, 되돌리다 떼면 취소됩니다. 각 메뉴는 반대 방향 스와이프로 닫습니다.", "对话框或菜单可滚动时，先滚动到边缘，再继续滑动。朝打开方向移动后松手即可打开，反向移动后松手则取消。反向滑动可关闭各菜单。", "對話框或選單可捲動時，先捲動至邊緣，再繼續滑動。朝開啟方向移動後放手即可開啟，反向移動後放手則取消。反向滑動可關閉各選單。"],
     ["help_reset_done", [], "Help will appear on the next launch.", "次回起動時にヘルプを表示します。", "다음 실행 시 도움말을 표시합니다.", "下次启动时将显示帮助。", "下次啟動時將顯示說明。"]
   ]
