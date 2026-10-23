@@ -89,11 +89,11 @@ final class TextOverlay extends View {
     }
     private void drawResizeHandle(Canvas canvas){
         if(viewport.panel.height()<=0||scene.movie!=null||!scene.json.optString("scene","").equals("play"))return;
-        float center=viewport.panel.centerX(),top=viewport.panel.top;
+        float center=viewport.panel.centerX(),top=viewport.panel.top+4*density,verticalUnit=.85f*density;
         canvas.save();canvas.clipRect(viewport.panel);handlePaint.setColor(handleClaimed?0x99465f7d:0x55384b64);
-        canvas.drawRoundRect(center-30*density,top+4*density,center+30*density,top+22*density,7*density,7*density,handlePaint);
+        canvas.drawRect(new RectF(center-30*density,top,center+30*density,top+18*verticalUnit),handlePaint);
         handlePaint.setColor(handleClaimed?0xccd9e7f5:0x99b5c8dd);
-        for(int row=0;row<2;row++)canvas.drawRoundRect(center-14*density,top+(9+6*row)*density,center+14*density,top+(11+6*row)*density,density,density,handlePaint);
+        for(int row=0;row<2;row++)canvas.drawRect(new RectF(center-14*density,top+(5+6*row)*verticalUnit,center+14*density,top+(7+6*row)*verticalUnit),handlePaint);
         canvas.restore();
     }
     RenderState prepare(Scene scene,Viewport viewport,boolean hidden){
