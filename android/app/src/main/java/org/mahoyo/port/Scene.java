@@ -9,12 +9,20 @@ final class Scene {
     final List<JSONObject> preloads=new ArrayList<>();
     final String preloadKey;
     final float width,height;
+    final boolean wholeFrame;
     final Transition transition;
     final JSONObject movie;
     final GlobalScreenWave.Spec screenWave;
     final ParticleFrame particles;
     Scene(String source)throws JSONException{
         json=new JSONObject(source);width=(float)json.optDouble("designWidth",1920);height=(float)json.optDouble("designHeight",1080);movie=json.optJSONObject("movie");screenWave=GlobalScreenWave.Spec.from(json.optJSONObject("screenWave"));
+        // Chapter intermissions must retain the complete composition, including opening/closing effects.
+        String module=json.optString("module","").replace('\\','/');
+        module=module.substring(module.lastIndexOf('/')+1);
+        JSONObject modal=json.optJSONObject("modal");
+        wholeFrame="teatime".equals(json.optString("scene",""))
+            ||modal!=null&&"teatime".equals(modal.optString("kind",""))
+            ||module.matches("(?i)TEATIME[0-9]+[A-Z]?\\.chs");
         particles=ParticleFrame.from(json.optJSONObject("particles"));
         collect(json.optJSONArray("layers"),layers);collect(json.optJSONArray("actions"),actions);
         collect(json.optJSONArray("preloads"),preloads);preloadKey=warmKey(preloads);
@@ -22,6 +30,7 @@ final class Scene {
         layers.sort(Comparator.comparingDouble(v->v.optDouble("z",0)));
         JSONObject pending=json.optJSONObject("transition");transition=pending==null?null:new Transition(pending);
     }
+    boolean cover(boolean requested){return requested&&!wholeFrame;}
     // Color/tag changes share the same decoded pixels in this GL renderer.
     static String warmKey(List<JSONObject> preloads){TreeSet<String> hints=new TreeSet<>();for(JSONObject hint:preloads){String kind=hint.optString("kind",""),base=hint.optString("base",hint.optString("name",""));if(base.isEmpty())continue;if(kind.equals("image"))hints.add(kind+":"+base+":"+hint.optInt("variantX",0)+":"+hint.optInt("variantY",0));else if(kind.equals("range"))hints.add(kind+":"+base+":"+hint.optInt("xMin",0)+":"+hint.optInt("yMin",0)+":"+hint.optInt("xMax",0)+":"+hint.optInt("yMax",0));}return hints.toString();}
     static final class Transition {

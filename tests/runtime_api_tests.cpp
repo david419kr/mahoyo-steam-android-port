@@ -748,6 +748,7 @@ static void capturedSceneTransition(){
     Fixture fixture(std::move(program),true);fixture.firstComplete();auto state=fixture.command("advance");
     check(waiting(state,"transitionReady")&&number(state,"nextTickMs")==0&&number(state,"oldOpacity")==1,"new scene waits for a prepared old-frame capture");
     auto transition=state.substr(state.find("\"transition\":"));auto id=std::to_string(int(number(transition,"id")));auto old=transition.substr(transition.find("\"old\":"));
+    check(old.find("\"module\":\"1_0.chs\"")!=std::string::npos,"outgoing frame preserves source script for chapter fit policy");
     check(number(state,"colorMode")==1&&number(old,"colorMode")==0&&old.find("abcdefghij")!=std::string::npos,"old image state and native text are frozen before the new scene commit");
     state=fixture.command("tick","50000");check(waiting(state,"transitionReady")&&number(state.substr(state.find("\"transition\":")),"elapsedMs")==0,"asset loading time cannot consume a transition");
     state=fixture.command("transitionReady","9999");check(waiting(state,"transitionReady"),"stale preparation acknowledgement is ignored");
