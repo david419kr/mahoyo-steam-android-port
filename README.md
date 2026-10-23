@@ -19,7 +19,7 @@ This repository and the distributed APK contain none of the original game's imag
 ### Tested performance
 
 - Runs smoothly at 60 FPS on a Snapdragon 7 Gen 1 device with 8 GB of RAM.
-- Also confirmed to run on a Dimensity 720 device with approximately 2.5 GB of RAM available, but significant frame drops occur on hardware at this level.
+- Also confirmed to run on a Dimensity 720 device with 2.5 GB of RAM, but significant frame drops occur on hardware at this level.
 
 These are observations from tested devices, not minimum requirements. Performance may vary by device and scene.
 
