@@ -102,15 +102,15 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
         post{listener.status("ownership")}
         val list=withTimeout(60000){licenseList.await()};check(list.result==EResult.OK){"Steam licenses: "+list.result}
         val account=requireNotNull(steam.steamID).accountID
-        val owned=list.licenseList.filter{SteamOwnership.permanent(it.ownerAccountID,account,it.licenseFlags)}
-        check(owned.isNotEmpty()){ "No permanent game license found" }
+        val owned=list.licenseList.filter{SteamOwnership.accessible(it.ownerAccountID,account,it.licenseFlags)}
+        check(owned.isNotEmpty()){ "No valid game license found" }
         val apps=requireNotNull(steam.getHandler(SteamApps::class.java))
         var gameOwned=false
         for(group in owned.chunked(100)){
             val info=withTimeout(60000){apps.picsGetProductInfo(emptyList(),group.map{PICSRequest(it.packageID,it.accessToken)}).await()}
             if(info.results.any{result->result.packages.values.any{pkg->pkg.keyValues["appids"].children.any{it.asInteger()==Installation.APP_ID}}}){gameOwned=true;break}
         }
-        check(gameOwned){"This Steam account does not own WITCH ON THE HOLY NIGHT"}
+        check(gameOwned){"This Steam account does not have access to WITCH ON THE HOLY NIGHT"}
         val ticket=withTimeout(60000){apps.getAppOwnershipTicket(Installation.APP_ID).await()}
         check(ticket.result==EResult.OK&&ticket.appID==Installation.APP_ID&&ticket.ticket.isNotEmpty()){"Steam ownership confirmation failed: "+ticket.result}
         licenses=owned;verified=true
