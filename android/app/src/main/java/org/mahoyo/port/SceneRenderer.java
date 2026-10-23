@@ -223,7 +223,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
             }
         }
         trimTextures();
-        Viewport vp=viewport;if(s==null||vp==null||width==0||height==0){clearFrame();return;}
+        Viewport vp=viewport==null?null:viewport.scaledSurface(width,height);if(s==null||vp==null||width==0||height==0){clearFrame();return;}
         syncNoiseTransition(s);
         boolean recaptured=false;Scene.Transition transition=s.transition;String key=transitionFrameKey(s,vp);
         if(transition!=null){
@@ -264,6 +264,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     }
     private void clearFrame(){GLES30.glDisable(GLES30.GL_SCISSOR_TEST);GLES30.glClearColor(0,0,0,1);GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);}
     private void renderFrame(Scene s,Viewport vp,boolean includeText){
+        vp=vp.scaledSurface(width,height);
         clearFrame();GLES30.glUseProgram(program);GLES30.glEnable(GLES30.GL_SCISSOR_TEST);
         if(MovieRenderGate.active(movieId(s),movieFrameId,movieFrame!=null)){if(s!=noiseOldScene)noiseRendered=new HashMap<>();resetColor();scissor(vp.frame);JSONArray source=new JSONArray();source.put(0);source.put(movieFrame.height);source.put(movieFrame.width);source.put(-movieFrame.height);draw(movieFrame,vp.frame,1,false,source,0xffffffff,0,0,null,.5f,.5f);if(ambient&&vp.hasLetterboxes())drawAmbient(vp);GLES30.glDisable(GLES30.GL_SCISSOR_TEST);return;}
         boolean fillsArea=false;
@@ -533,7 +534,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     private static void noiseTokens(Scene value,Set<String> tokens){if(value==null)return;for(JSONObject layer:value.layers){JSONObject noise=layer.optJSONObject("noise");if(noise!=null)tokens.add(noise.optString("token",""));}if(value.transition!=null&&value.transition.mode==0)noiseTokens(value.transition.old,tokens);}
     private void trimNoise(Scene current,Scene next){Set<String> tokens=new HashSet<>();noiseTokens(current,tokens);noiseTokens(next,tokens);noiseRenderer.retain(tokens);noisePresented.keySet().retainAll(tokens);noiseOld.keySet().retainAll(tokens);noiseRendered.keySet().retainAll(tokens);}
     private void pinNoiseFrames(Set<String> keys,Scene value){if(value==null)return;for(JSONObject layer:value.layers){JSONObject noise=layer.optJSONObject("noise");if(noise==null)continue;String token=noise.optString("token","");int selector=noise.optInt("selector",0);if(selector==1||selector==2)keys.add(imageKey(selector==1?"noise0.mzp":"noise1.mzp"));String image=layer.optString("image","");if(!image.isEmpty())keys.add(imageKey(image));for(NoiseClock.Frame<JSONObject> frame:Arrays.asList(noiseOld.get(token),noisePresented.get(token),noiseRenderer.current(token)))if(frame!=null)keys.add(imageKey(frame.source.optString("image","")));}}
-    private String frameKey(Viewport vp){return vp==null?"":width+"x"+height+":"+vp.area.left+","+vp.area.top+","+vp.area.right+","+vp.area.bottom+":"+vp.content.left+","+vp.content.top+","+vp.content.right+","+vp.content.bottom+":"+vp.x+","+vp.y+","+vp.scale+":"+dynamic+":"+ambient+":"+bgCover+":"+eventCover+":"+filter+":"+hiddenText;}
+    private String frameKey(Viewport vp){if(vp!=null)vp=vp.scaledSurface(width,height);return vp==null?"":width+"x"+height+":"+vp.area.left+","+vp.area.top+","+vp.area.right+","+vp.area.bottom+":"+vp.content.left+","+vp.content.top+","+vp.content.right+","+vp.content.bottom+":"+vp.x+","+vp.y+","+vp.scale+":"+dynamic+":"+ambient+":"+bgCover+":"+eventCover+":"+filter+":"+hiddenText;}
     private String transitionFrameKey(Scene value,Viewport vp){String key=frameKey(vp);return value.transition==null||textRenderState==null?key:key+":"+textRenderState.captureKey(value.transition.old);}
     private static String movieId(Scene value){return value==null||value.movie==null?"":value.movie.optString("id","");}
     private void updateMovieFrame(MoviePlayer.Frame frame){
@@ -564,12 +565,12 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     static void movieCopyQuad(FloatBuffer out){QuadGeometry.write(out,0,0,1920,1080,0,1920,1080,0,1,1,0);}
     private void bindVertices(int position,int uv){vertices.position(0);GLES30.glVertexAttribPointer(position,2,GLES30.GL_FLOAT,false,16,vertices);GLES30.glEnableVertexAttribArray(position);vertices.position(2);GLES30.glVertexAttribPointer(uv,2,GLES30.GL_FLOAT,false,16,vertices);GLES30.glEnableVertexAttribArray(uv);}
     private void resetColor(){GLES30.glUniform1i(colorModeUniform,0);GLES30.glUniform1i(contrastUniform,0);GLES30.glUniform1i(brightnessUniform,0);}
-    private void drawFrameTexture(Texture texture,float alpha){JSONArray source=new JSONArray();source.put(0);source.put(height);source.put(width);source.put(-height);draw(texture,new RectF(0,0,width,height),alpha,false,source,0xffffffff,0,0,null,.5f,.5f);}
+    private void drawFrameTexture(Texture texture,float alpha){JSONArray source=new JSONArray();source.put(0);source.put(texture.height);source.put(texture.width);source.put(-texture.height);draw(texture,new RectF(0,0,width,height),alpha,false,source,0xffffffff,0,0,null,.5f,.5f);}
     private void drawNativeText(Scene s,Viewport vp){
         if(s.texts.isEmpty()&&vp.panel.height()<=0&&TextOverlay.fullscreenBackdropAlpha(s)<=0){releaseNativeText();return;}String key=frameKey(vp)+":"+s.texts.toString()+":"+(textRenderState==null?"":textRenderState.captureKey(s));
         if(!key.equals(nativeTextKey)){
-            Bitmap bitmap=TextOverlay.capture(s,vp,width,height,textRenderState);
-            try{releaseNativeText();int[] ids=new int[1];GLES30.glGenTextures(1,ids,0);GLES30.glActiveTexture(GLES30.GL_TEXTURE0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,ids[0]);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MIN_FILTER,GLES30.GL_LINEAR);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MAG_FILTER,GLES30.GL_LINEAR);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_WRAP_S,GLES30.GL_CLAMP_TO_EDGE);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_WRAP_T,GLES30.GL_CLAMP_TO_EDGE);GLUtils.texImage2D(GLES30.GL_TEXTURE_2D,0,bitmap,0);nativeTextTexture=new Texture(ids[0],width,height);nativeTextTexture.premultiplied=true;nativeTextKey=key;}finally{bitmap.recycle();}
+            Viewport nativeLayout=vp.surfaceLayout();Bitmap bitmap=TextOverlay.capture(s,nativeLayout,nativeLayout.width,nativeLayout.height,textRenderState);
+            try{releaseNativeText();int[] ids=new int[1];GLES30.glGenTextures(1,ids,0);GLES30.glActiveTexture(GLES30.GL_TEXTURE0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,ids[0]);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MIN_FILTER,GLES30.GL_LINEAR);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MAG_FILTER,GLES30.GL_LINEAR);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_WRAP_S,GLES30.GL_CLAMP_TO_EDGE);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_WRAP_T,GLES30.GL_CLAMP_TO_EDGE);GLUtils.texImage2D(GLES30.GL_TEXTURE_2D,0,bitmap,0);nativeTextTexture=new Texture(ids[0],bitmap.getWidth(),bitmap.getHeight());nativeTextTexture.premultiplied=true;nativeTextKey=key;}finally{bitmap.recycle();}
         }
         resetColor();scissor(vp.content);draw(nativeTextTexture,new RectF(0,0,width,height),1,false,null,0xffffffff,0,0,null,.5f,.5f);
     }

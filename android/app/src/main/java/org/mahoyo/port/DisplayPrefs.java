@@ -9,6 +9,8 @@ final class DisplayPrefs {
     boolean dynamic(){return values.getBoolean("dynamic",true);}
     boolean cover(boolean event){return values.getBoolean(event?"eventCover":"bgCover",true);}
     boolean ambient(){return values.getBoolean("ambient",true);}
+    int renderPercent(){return Math.max(50,Math.min(100,values.getInt("renderPercent",100)));}
+    int renderDimension(int pixels){return Math.max(1,Math.round(pixels*renderPercent()/100f));}
     int filter(){return values.getInt("filter",0);}
     int dialogueMode(){return Math.max(0,Math.min(2,values.getInt("dialogue",2)));}
     boolean separateDialogue(){return dialogueMode()==1;}

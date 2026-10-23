@@ -41,6 +41,32 @@ static Scene scene(String text,int visible){Scene scene=new Scene();scene.json.p
 static Viewport viewport(int panel){return new Viewport(2480,2248,160,true,true,1920,1080,panel);}static MotionEvent event(int action,float y,long time){return new MotionEvent(action,200,y,time);}static float offset(TextOverlay text)throws Exception{return number(field(text,"scroll"),"offset");}
 static TextOverlay.RenderState show(TextOverlay text,Scene scene,Viewport vp){TextOverlay.RenderState state=text.prepare(scene,vp,false);text.present(scene,vp,false);return state;}
 public static void main(String[]args)throws Exception {
+Context resolutionContext=new Context();DisplayPrefs resolutionPrefs=new DisplayPrefs(resolutionContext);
+check(resolutionPrefs.renderPercent()==100&&resolutionPrefs.renderDimension(2160)==2160,"rendering defaults to native resolution");
+for(int percent=50;percent<=100;percent++){
+ resolutionContext.prefs.values.put("renderPercent",percent);
+ check(resolutionPrefs.renderPercent()==percent,"one-percent rendering increments");
+ int width=resolutionPrefs.renderDimension(2160),height=resolutionPrefs.renderDimension(1584);
+ check(width==Math.round(2160*percent/100f)&&height==Math.round(1584*percent/100f),"both rendering dimensions scale independently");
+ for(boolean menu:new boolean[]{false,true})for(int panel:new int[]{0,400}){
+  Viewport original=new Viewport(2160,1584,120,menu,true,1920,1080,panel),scaled=original.scaledSurface(width,height);
+  check(scaled.surfaceLayout()==original,"native dialogue keeps its original viewport");
+  near(scaled.content.left,original.content.left*width/2160,"menu bounds retain scaled coordinates");
+  near(scaled.panel.top,original.panel.top*height/1584,"detached panel seam retains scaled coordinates");
+  for(boolean cover:new boolean[]{false,true}){
+   RectF a=original.image(10,30,1920,1080,true,cover,true,1920,1080),b=scaled.image(10,30,1920,1080,true,cover,true,1920,1080);
+   near(b.left,a.left*width/2160,"fit and crop x preserved");near(b.bottom,a.bottom*height/1584,"fit and crop y preserved");
+  }
+  Viewport old=scaled.withPanel(400);near(old.panel.height(),400f*height/1584,"outgoing transition panel uses native saved height");
+  RectF nativeCapture=original.normalizedContent(1920,1080).image(10,30,1920,1080,true,true,true,1920,1080);
+  RectF reducedCapture=scaled.normalizedContent(1920,1080).image(10,30,1920,1080,true,true,true,1920,1080);
+  near(nativeCapture.left,reducedCapture.left,"native effect capture survives surface scaling");near(nativeCapture.bottom,reducedCapture.bottom,"native effect capture height preserved");
+ }
+ if(percent==50)check((long)width*height==(long)2160*1584/4,"50 percent has one-quarter pixels");
+}
+resolutionContext.prefs.values.put("renderPercent",1);check(resolutionPrefs.renderPercent()==50,"rendering lower bound");
+resolutionContext.prefs.values.put("renderPercent",999);check(resolutionPrefs.renderPercent()==100,"rendering upper bound");
+
 for(int[] size:new int[][]{{2160,1584},{2480,2248},{2520,1080},{1920,1080}})for(boolean menu:new boolean[]{false,true}){
     Viewport vp=new Viewport(size[0],size[1],120,menu,true,1920,1080,0);
     RectF image=vp.image(0,0,1920,1080,true,false,true,1920,1080);

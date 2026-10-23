@@ -39,6 +39,7 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
     private android.graphics.Bitmap pendingSlotThumbnail;
     private String savingModalId="";
     private GLSurfaceView surface;
+    private int surfaceBufferWidth,surfaceBufferHeight;
     private SceneRenderer renderer;
     private TextOverlay text;
     private MoviePlayer moviePlayer;
@@ -309,6 +310,8 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
     }
     private void layoutScene(){
         if(scene==null||root.getWidth()==0)return;int width=root.getWidth(),height=root.getHeight();int bar=dp(width>height*16f/9f?68:58);if(!menuInitialized||menuDefaultWidth!=width||menuDefaultHeight!=height){menu=prefs.menuVisible(width,height,bar);menuInitialized=true;menuDefaultWidth=width;menuDefaultHeight=height;}
+        int bufferWidth=prefs.renderDimension(width),bufferHeight=prefs.renderDimension(height);
+        if(bufferWidth!=surfaceBufferWidth||bufferHeight!=surfaceBufferHeight){surfaceBufferWidth=bufferWidth;surfaceBufferHeight=bufferHeight;surface.getHolder().setFixedSize(bufferWidth,bufferHeight);}
         boolean rails=width>height*16f/9f;float density=getResources().getDisplayMetrics().density,scaledDensity=getResources().getDisplayMetrics().scaledDensity;
         boolean catalog=frontendsActive(),intermission=teatimeActive(),effectiveMenu=!inputSession.restricted()&&!catalog&&TeatimeControlsView.reserve(intermission,menu);int contentWidth=width-(effectiveMenu&&rails?2*bar:0),contentHeight=height-(effectiveMenu&&!rails?bar:0);
         int panelHeight=text.panelHeight(scene,prefs,contentWidth,contentHeight,density,scaledDensity);
