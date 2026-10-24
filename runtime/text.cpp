@@ -10,6 +10,8 @@ struct StyleControl {size_t end;int italic;};
 StyleControl inlineStyle(const std::string& input,size_t at){
     if(input.compare(at,2,"@i")==0)return {at+2,1};
     if(input.compare(at,2,"@r")==0)return {at+2,0};
+    if(input.compare(at,2,"@z")==0)return {at+2,-1};
+    if(at+2<input.size()&&((input.compare(at,2,"@a")==0&&(input[at+2]=='1'||input[at+2]=='2'))||(input.compare(at,2,"@c")==0&&digit(input[at+2]))))return {at+3,-1};
     if(input[at]!='<')return {at,-1};
     auto close=input.find('>',at);if(close==std::string::npos)return {at,-1};
     std::string tag=input.substr(at+1,close-at-1);
@@ -84,7 +86,7 @@ bool endingItalic(const std::string& input,bool initialItalic){
     bool italic=initialItalic;size_t at=0;
     while(at<input.size()){
         const auto style=inlineStyle(input,at);
-        if(style.end!=at){italic=style.italic!=0;at=style.end;continue;}
+        if(style.end!=at){if(style.italic>=0)italic=style.italic!=0;at=style.end;continue;}
         const auto close=input[at]=='<'?input.find('>',at):std::string::npos;
         const auto split=close!=std::string::npos?input.find('|',at):std::string::npos;
         if(split!=std::string::npos&&split<close)at=close+1;

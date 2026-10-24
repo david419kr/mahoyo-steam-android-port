@@ -60,6 +60,12 @@ int main(int argc,char** argv){
         check(visibleLength("@@iX\\@iY@IZ")==7,"raw italic has no double-at/backslash escape; uppercase stays literal");
         check(visibleLength("<I>A</I><i0>B</i0><fr>C")==3,"native internal italic names are case insensitive prefix matches");
         check(visibleLength("@i<AB|@p2/R><A@iB|@iR>")==6,"outer italic controls do not recursively consume raw controls inside ruby base");
+        check(visibleLength("@i@a1AB@r@z@c1C@c5D@a2E")==5,"presentation controls have no glyph or reveal delay");
+        check(visibleLength("<A@a1B|@c1R>")==5,"raw ruby fields are not recursively compiled");
+        check(visibleLength("@a0@a3@cX@A1")==12,"unknown syntax remains literal");
+        check(mahoyo::text::endingItalic("@i@a1@c5@z")&&!mahoyo::text::endingItalic("@a2@c1@z"),"presentation commands do not change italic carry");
+        check(compactDialogueSpacing("。@a1@c5@z　X")=="。@a1@c5@zX","presentation controls preserve continuation spacing state");
+        Reveal controls;controls.speed(10,0);controls.reset("@i@a1AB@r",0);controls.tick(100);check(controls.visible()==1&&controls.active(),"presentation commands add no hidden typewriter ticks");controls.tick(200);check(!controls.active(),"controlled body completes after visible glyphs only");
         Reveal italicDelay;italicDelay.speed(10,0);italicDelay.reset("@iA@iB</i>C",0);italicDelay.tick(200);check(italicDelay.visible()==2&&italicDelay.active(),"italic markup adds no typewriter delay");italicDelay.tick(300);check(!italicDelay.active(),"italic page finishes after its visible glyphs");
         using mahoyo::text::endingItalic;
         check(!endingItalic("")&&endingItalic("",true),"empty body preserves explicit input font carry");

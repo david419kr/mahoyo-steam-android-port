@@ -179,16 +179,24 @@ final class TextOverlay extends View {
         private static int nativeLong(String value,int index){while(index<value.length()&&" \t\n\r\f\u000b".indexOf(value.charAt(index))>=0)index++;boolean negative=index<value.length()&&value.charAt(index)=='-';if(index<value.length()&&(value.charAt(index)=='+'||negative))index++;long result=0,limit=negative?2147483648L:2147483647L;while(index<value.length()){char ch=value.charAt(index++);int digit=ch>='0'&&ch<='9'?ch-'0':ch>='０'&&ch<='９'?ch-'０':-1;if(digit<0)break;if(result>(limit-digit)/10)return negative?Integer.MIN_VALUE:Integer.MAX_VALUE;result=result*10+digit;}return (int)(negative?-result:result);}
     }
     static final class NativeTextToken {
-        final String base;final RubyReading ruby;final boolean newline,noWrap,italic;
-        NativeTextToken(String base,RubyReading ruby,boolean newline,boolean noWrap,boolean italic){this.base=base;this.ruby=ruby;this.newline=newline;this.noWrap=noWrap;this.italic=italic;}
+        final String base;final RubyReading ruby;final boolean newline,noWrap,italic;final Integer color;final int shadow;
+        NativeTextToken(String base,RubyReading ruby,boolean newline,boolean noWrap,boolean italic,Integer color,int shadow){this.base=base;this.ruby=ruby;this.newline=newline;this.noWrap=noWrap;this.italic=italic;this.color=color;this.shadow=shadow;}
         static List<NativeTextToken> parse(String text){
-            ArrayList<NativeTextToken> tokens=new ArrayList<>();boolean noWrap=false,italic=false;int index=0;
+            ArrayList<NativeTextToken> tokens=new ArrayList<>();boolean noWrap=false,italic=false;int index=0,shadow=0xff000000;Integer color=null;
             while(index<text.length()){
                 char ch=text.charAt(index);
-                if(ch=='\n'){tokens.add(new NativeTextToken("",new RubyReading("",0,0),true,false,italic));noWrap=false;index++;continue;}
+                if(ch=='\n'){tokens.add(new NativeTextToken("",new RubyReading("",0,0),true,false,italic,color,shadow));noWrap=false;index++;continue;}
                 if(text.startsWith("@o",index)){noWrap=true;index+=2;continue;}
                 if(text.startsWith("@i",index)){italic=true;index+=2;continue;}
-                if(text.startsWith("@r",index)){italic=false;index+=2;continue;}
+                if(text.startsWith("@r",index)){italic=false;color=null;shadow=0xff000000;index+=2;continue;}
+                // Recognized native presentation commands never become literal glyphs.
+                if(text.startsWith("@z",index)){index+=2;continue;}
+                if(index+2<text.length()&&text.startsWith("@a",index)&&(text.charAt(index+2)=='1'||text.charAt(index+2)=='2')){index+=3;continue;}
+                if(index+2<text.length()&&text.startsWith("@c",index)&&text.charAt(index+2)>='0'&&text.charAt(index+2)<='9'){
+                    int value=text.charAt(index+2)-'0';if(value<=4)color=value==0?0xffffffff:value==1?0xffff0000:0xff646464;
+                    if(value==0||value>=5)shadow=value==5?0xff002142:value==6?0xffff0000:0xff000000;
+                    index+=3;continue;
+                }
                 int close=ch=='<'?text.indexOf('>',index):-1,split=close>index?text.indexOf('|',index):-1;
                 String base;RubyReading ruby=new RubyReading("",0,0);
                 if(split>index&&split<close){
@@ -201,18 +209,18 @@ final class TextOverlay extends View {
                     if(close>index){String tag=text.substring(index+1,close).toLowerCase(Locale.ROOT);
                         if(tag.startsWith("/i")){italic=false;index=close+1;continue;}
                         if(tag.startsWith("i")){italic=true;index=close+1;continue;}
-                        if(tag.startsWith("fr")){italic=false;index=close+1;continue;}
+                        if(tag.startsWith("fr")){italic=false;color=null;shadow=0xff000000;index=close+1;continue;}
                     }
                     int end=index+Character.charCount(text.codePointAt(index));base=text.substring(index,end);index=end;
                 }
-                tokens.add(new NativeTextToken(base,ruby,false,noWrap,italic));
+                tokens.add(new NativeTextToken(base,ruby,false,noWrap,italic,color,shadow));
             }
             return tokens;
         }
     }
     private static final class Glyph {
-        final String base,reading;final int start,count;final float x,y,rubyX,rubyY;final boolean italic;
-        Glyph(String base,String reading,int start,float x,float y,float rubyX,float rubyY,boolean italic){this.italic=italic;this.base=base;this.reading=reading;this.start=start;count=base.codePointCount(0,base.length());this.x=x;this.y=y;this.rubyX=rubyX;this.rubyY=rubyY;}
+        final String base,reading;final int start,count;final float x,y,rubyX,rubyY;final boolean italic;final Integer color;final int shadow;
+        Glyph(String base,String reading,int start,float x,float y,float rubyX,float rubyY,boolean italic,Integer color,int shadow){this.color=color;this.shadow=shadow;this.italic=italic;this.base=base;this.reading=reading;this.start=start;count=base.codePointCount(0,base.length());this.x=x;this.y=y;this.rubyX=rubyX;this.rubyY=rubyY;}
     }
     private static final class Paragraph {
         final Glyph[] glyphs;final float top,height,firstBaseline;final int color;
@@ -220,7 +228,7 @@ final class TextOverlay extends View {
             // Panel offsets adapt native raster pixels to the independently sized mobile font.
             float offsetScale=font/nativeFont;
             for(NativeTextToken token:NativeTextToken.parse(text)){if(token.newline){x=0;y+=font*1.65f;continue;}String base=token.base,reading=token.ruby.text;
-                paint.setTypeface(token.italic?ITALIC_FACE:NORMAL_FACE);float measured=paint.measureText(base);if(!token.noWrap&&x+measured>width&&x>0){x=0;y+=font*1.65f;}paint.setTextSize(font*.45f);float rubyX=x+(measured-paint.measureText(reading))/2+token.ruby.x*offsetScale;paint.setTextSize(font);Glyph glyph=new Glyph(base,reading,characters,x,y,rubyX,y-font*1.05f+token.ruby.y*offsetScale,token.italic);glyphs.add(glyph);characters+=glyph.count;x+=measured;}
+                paint.setTypeface(token.italic?ITALIC_FACE:NORMAL_FACE);float measured=paint.measureText(base);if(!token.noWrap&&x+measured>width&&x>0){x=0;y+=font*1.65f;}paint.setTextSize(font*.45f);float rubyX=x+(measured-paint.measureText(reading))/2+token.ruby.x*offsetScale;paint.setTextSize(font);Glyph glyph=new Glyph(base,reading,characters,x,y,rubyX,y-font*1.05f+token.ruby.y*offsetScale,token.italic,token.color,token.shadow);glyphs.add(glyph);characters+=glyph.count;x+=measured;}
             this.glyphs=glyphs.toArray(new Glyph[0]);firstBaseline=first;height=text.isEmpty()?0:y-first+font*1.65f;}
         int firstLine(float y){int lo=0,hi=glyphs.length;while(lo<hi){int mid=(lo+hi)>>>1;if(glyphs[mid].y<y)lo=mid+1;else hi=mid;}return lo;}
     }
@@ -267,7 +275,7 @@ final class TextOverlay extends View {
         float lower=scroll-font,upper=scroll+viewport.panel.height()-2*padding+font*1.1f;
         for(int i=0;i<layout.paragraphs.length;i++){Paragraph paragraph=layout.paragraphs[i];if(paragraph.top+paragraph.height<lower||paragraph.top>upper)continue;float alpha=(float)scene.texts.get(i).optDouble("alpha",1);if(alpha<=0)continue;int visible=scene.texts.get(i).optInt("visibleCharacters",Integer.MAX_VALUE);style(false);paint.setTextSize(font);paint.setColor(multiplyAlpha(paragraph.color,alpha));paint.clearShadowLayer();
             float first=cleanTop?Math.max(lower,scroll-paint.ascent()):lower;
-            for(int j=paragraph.firstLine(first-paragraph.top);j<paragraph.glyphs.length;j++){Glyph glyph=paragraph.glyphs[j];if(paragraph.top+glyph.y>upper)break;int count=Math.min(glyph.count,Math.max(0,visible-glyph.start));if(count<=0)continue;style(glyph.italic);paint.setColor(multiplyAlpha(paragraph.color,alpha*(glyph.start<scene.texts.get(i).optInt("activeFrom",0)?.45f:1)));outlined(canvas,visiblePrefix(glyph.base,count),glyph.x,paragraph.top+glyph.y);if(!glyph.reading.isEmpty()){paint.setTextSize(font*.45f);int reading=rubyVisibleCharacters(count,glyph.count,glyph.reading.codePointCount(0,glyph.reading.length()));if(reading>0)outlined(canvas,visiblePrefix(glyph.reading,reading),glyph.rubyX,paragraph.top+glyph.rubyY);paint.setTextSize(font);}}
+            for(int j=paragraph.firstLine(first-paragraph.top);j<paragraph.glyphs.length;j++){Glyph glyph=paragraph.glyphs[j];if(paragraph.top+glyph.y>upper)break;int count=Math.min(glyph.count,Math.max(0,visible-glyph.start));if(count<=0)continue;style(glyph.italic);outlineColor=glyph.shadow;paint.setColor(multiplyAlpha(glyph.color==null?paragraph.color:glyph.color,alpha*(glyph.start<scene.texts.get(i).optInt("activeFrom",0)?.45f:1)));outlined(canvas,visiblePrefix(glyph.base,count),glyph.x,paragraph.top+glyph.y);if(!glyph.reading.isEmpty()){paint.setTextSize(font*.45f);int reading=rubyVisibleCharacters(count,glyph.count,glyph.reading.codePointCount(0,glyph.reading.length()));if(reading>0)outlined(canvas,visiblePrefix(glyph.reading,reading),glyph.rubyX,paragraph.top+glyph.rubyY);paint.setTextSize(font);}}
             if(scene.texts.get(i).optBoolean("cursor",false)&&paragraph.glyphs.length>0){Glyph last=paragraph.glyphs[paragraph.glyphs.length-1];style(last.italic);DialogueArt.cursor(canvas,last.x+paint.measureText(last.base),paragraph.top+last.y,font,layout.width,alpha,stationary);}}
         canvas.restore();float available=viewport.panel.height()-2*padding,maximum=Math.max(0,layout.visibleHeight(scene)-available);if(maximum>1){float thumb=Math.max(font*.5f,available*available/(available+maximum)),top=viewport.panel.top+padding+(available-thumb)*scroll/maximum,left=viewport.panel.right-padding*.35f;paint.clearShadowLayer();paint.setColor(0x996c8878);canvas.drawRoundRect(left,top,left+Math.max(2,font*.07f),top+thumb,font*.035f,font*.035f,paint);}}
     private final LinkedHashMap<String,Paragraph> fullLayouts=new LinkedHashMap<>(8,.75f,true);
@@ -275,17 +283,18 @@ final class TextOverlay extends View {
         float font=paint.getTextSize();int fill=paint.getColor();String key=paint.getTextLocale().toLanguageTag()+":"+text+"\u0000"+width+":"+font+":"+nativeFont;Paragraph paragraph=fullLayouts.get(key);
         if(paragraph==null){paragraph=new Paragraph(text,0,width,font,nativeFont,fill,paint);fullLayouts.put(key,paragraph);while(fullLayouts.size()>6)fullLayouts.remove(fullLayouts.keySet().iterator().next());}
         paint.setTypeface(NORMAL_FACE);italicFace=false;paint.setTextSize(font);float tail=0;for(Glyph glyph:paragraph.glyphs)if(visible>glyph.start)tail=glyph.y-font*.2f+font*.25f;float offset=Math.max(0,tail-height);canvas.save();canvas.translate(0,-offset-font*.2f);
-        for(Glyph glyph:paragraph.glyphs){int count=Math.min(glyph.count,Math.max(0,visible-glyph.start));if(count<=0)break;if(glyph.y-offset<-font||glyph.y-offset>height+font)continue;style(glyph.italic);paint.setColor(multiplyAlpha(fill,glyph.start<activeFrom?.45f:1));outlined(canvas,visiblePrefix(glyph.base,count),glyph.x,glyph.y);if(!glyph.reading.isEmpty()){paint.setTextSize(font*.45f);int reading=rubyVisibleCharacters(count,glyph.count,glyph.reading.codePointCount(0,glyph.reading.length()));if(reading>0)outlined(canvas,visiblePrefix(glyph.reading,reading),glyph.rubyX,glyph.rubyY);paint.setTextSize(font);}}
+        for(Glyph glyph:paragraph.glyphs){int count=Math.min(glyph.count,Math.max(0,visible-glyph.start));if(count<=0)break;if(glyph.y-offset<-font||glyph.y-offset>height+font)continue;style(glyph.italic);outlineColor=glyph.shadow;paint.setColor(multiplyAlpha(glyph.color==null?fill:multiplyAlpha(glyph.color,alpha),glyph.start<activeFrom?.45f:1));outlined(canvas,visiblePrefix(glyph.base,count),glyph.x,glyph.y);if(!glyph.reading.isEmpty()){paint.setTextSize(font*.45f);int reading=rubyVisibleCharacters(count,glyph.count,glyph.reading.codePointCount(0,glyph.reading.length()));if(reading>0)outlined(canvas,visiblePrefix(glyph.reading,reading),glyph.rubyX,glyph.rubyY);paint.setTextSize(font);}}
         if(cursor&&paragraph.glyphs.length>0){Glyph last=paragraph.glyphs[paragraph.glyphs.length-1];style(last.italic);DialogueArt.cursor(canvas,last.x+paint.measureText(last.base),last.y,font,width,alpha,animated);}canvas.restore();paint.setColor(fill);
     }
+    private int outlineColor=0xff000000;
     private void outlined(Canvas canvas,String value,float x,float y){
-        int fill=paint.getColor();paint.clearShadowLayer();paint.setStyle(Paint.Style.STROKE);paint.setStrokeJoin(Paint.Join.ROUND);paint.setStrokeWidth(Math.max(1,paint.getTextSize()*.065f));paint.setColor(fill&0xff000000);canvas.drawText(value,x,y,paint);paint.setStyle(Paint.Style.FILL);paint.setColor(fill);canvas.drawText(value,x,y,paint);
+        int fill=paint.getColor();paint.clearShadowLayer();paint.setStyle(Paint.Style.STROKE);paint.setStrokeJoin(Paint.Join.ROUND);paint.setStrokeWidth(Math.max(1,paint.getTextSize()*.065f));paint.setColor((fill&0xff000000)|(outlineColor&0xffffff));canvas.drawText(value,x,y,paint);paint.setStyle(Paint.Style.FILL);paint.setColor(fill);canvas.drawText(value,x,y,paint);
     }
     private void drawRuby(Canvas canvas,String text,float width,int visibleCharacters){drawRuby(canvas,text,width,visibleCharacters,0);}
     private void drawRuby(Canvas canvas,String text,float width,int visibleCharacters,int activeFrom){float font=paint.getTextSize(),x=0,baseline=-paint.ascent()+font*.45f;int remaining=Math.max(0,visibleCharacters),index=0,fill=paint.getColor();for(NativeTextToken token:NativeTextToken.parse(text)){
         if(token.newline){x=0;baseline+=font*1.65f;continue;}String base=token.base,reading=token.ruby.text;
         style(token.italic);float measured=paint.measureText(base);if(!token.noWrap&&x+measured>width&&x>0){x=0;baseline+=font*1.65f;}
-        int baseCharacters=base.codePointCount(0,base.length()),visibleBase=Math.min(remaining,baseCharacters);paint.setColor(multiplyAlpha(fill,index<activeFrom?.45f:1));
+        int baseCharacters=base.codePointCount(0,base.length()),visibleBase=Math.min(remaining,baseCharacters);outlineColor=token.shadow;paint.setColor(multiplyAlpha(token.color==null?fill:multiplyAlpha(token.color,(fill>>>24)/255f),index<activeFrom?.45f:1));
         if(visibleBase>0)outlined(canvas,visiblePrefix(base,visibleBase),x,baseline);
         if(!reading.isEmpty()){paint.setTextSize(font*.45f);float rubyWidth=paint.measureText(reading);int visibleReading=rubyVisibleCharacters(visibleBase,baseCharacters,reading.codePointCount(0,reading.length()));if(visibleReading>0)outlined(canvas,visiblePrefix(reading,visibleReading),x+(measured-rubyWidth)/2+token.ruby.x*rubyOffsetScale,baseline-font*1.05f+token.ruby.y*rubyOffsetScale);paint.setTextSize(font);}remaining=Math.max(0,remaining-baseCharacters);index+=baseCharacters;x+=measured;
     }tailX=x;tailBaseline=baseline;paint.setColor(fill);}

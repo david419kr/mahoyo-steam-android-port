@@ -21,7 +21,7 @@ std::string stripDisplayControls(const std::string& input);
 // Drop CTD continuation indents after Japanese punctuation, retaining paragraph indents.
 std::string compactDialogueSpacing(const std::string& input,const std::string& preceding={});
 // Count Unicode scalars in visible base text; ruby readings are annotations.
-// Native inline italic/reset controls have no glyph or reveal interval.
+// Native inline style/presentation controls have no glyph or reveal interval.
 size_t visibleLength(const std::string& input);
 // Supported inline-font producer for the next native140 job. Ruby raw fields
 // are not recursively compiled. Clearing this carry never edits prior glyphs.
