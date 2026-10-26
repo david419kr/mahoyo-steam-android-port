@@ -15,10 +15,11 @@
         }
         if(inputJumpRelease)return; //Wait for the real Android player release and rendered movie removal.
         if(choices.active()||intermission.active()||mode!="play"||
-           (wait!="input"&&wait!="frame"&&wait!="animation"&&wait!="budget"&&wait!="transition"&&wait!="movie"&&wait!="movieReady"&&wait!="inputJumpRelease"&& !wait.empty()))
+           (wait!="input"&&wait!="voice"&&wait!="frame"&&wait!="animation"&&wait!="budget"&&wait!="transition"&&wait!="movie"&&wait!="movieReady"&&wait!="inputJumpRelease"&& !wait.empty()))
             throw mahoyo::vm::Error("Unreviewed input typeE blocking-job cancellation context");
         //Cancel only the VM blocking wait. Scene/effect/audio state, operand
         //stack, local scopes and call frames are retained by externalJump.
+        deferredVoice.reset();
         inputJumpPreviousPc=machine->externalJump(inputRegion.jumpTarget());
         inputRegion.jumped();wait.clear();transition.active=false;pulseWaitLayer.reset();waitingScreenWave=false;
         automatic=skipping=false;havePlatformTime=false;pump();

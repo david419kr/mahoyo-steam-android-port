@@ -228,6 +228,7 @@ struct Runtime final:mahoyo::vm::Host {
     std::string pendingLanguage;
     std::map<std::string,std::map<std::string,std::string>> menuMessages;
     mahoyo::history::State historyMeta;
+    std::optional<mahoyo::history::Voice> deferredVoice;
     uint64_t historyRevision=historyToken(),historyGeneration=historyToken();
     struct HistoryClip {size_t row,index;std::string path;int actor,volume,pan,variant,gain;};
     struct HistoryReplay {uint64_t id,generation;std::vector<HistoryClip> clips;};
@@ -1082,7 +1083,7 @@ struct Runtime final:mahoyo::vm::Host {
         try {auto flow=machine->run(20000);if(flow==Flow::Halt){if(archiveReplay)openArchive(archiveReplay,archiveCheckpoint);else wait="end";}else if(flow==Flow::Continue){wait="budget";}captureWaitClock();++version;}
         catch(const std::exception& e){error=e.what();wait="error";++version;}
     }
-    void resume() {if(inputRegion.jumpQueued()){effectWaitLayer.reset();finishInputJump();return;}if(!machine||wait=="error"||wait=="end")return;if(transition.mode==1)transition.active=false;wait.clear();waitingScreenWave=false;if(effectWaitLayer)queryEffectRegistry(*effectWaitLayer);effectWaitLayer.reset();machine->resume();pump();}
+    void resume(bool interruptVoice=false) {if(inputRegion.jumpQueued()){effectWaitLayer.reset();finishInputJump();return;}if(!machine||wait=="error"||wait=="end")return;if(deferredVoice){if(paused||mode!="play"||(!interruptVoice&&!skipping&&voicePlaying()))return;auto next=std::move(*deferredVoice);deferredVoice.reset();startNormalVoice(next);}if(transition.mode==1)transition.active=false;wait.clear();waitingScreenWave=false;if(effectWaitLayer)queryEffectRegistry(*effectWaitLayer);effectWaitLayer.reset();machine->resume();pump();}
     #include "input_runtime.inc"
     void historyChanged(){historyRevision=historyToken();cachedHistoryRevision=0;}
     void resetHistorySession(){historyReplay.reset();historyGeneration=historyToken();}
@@ -1183,7 +1184,20 @@ struct Runtime final:mahoyo::vm::Host {
         if(audio.size()>64)audio.erase(audio.begin());
     }
     bool voicePlaying() const {auto voice=std::find_if(audio.rbegin(),audio.rend(),[](const Audio& item){return item.channel=="voice";});return voice!=audio.rend()&&!voice->name.empty();}
+    bool continuedVoicePlaying() const {
+        if(!historyMeta.pendingRows)return false;
+        auto current=std::find_if(audio.rbegin(),audio.rend(),[](const Audio& a){return a.channel=="voice";});
+        if(current==audio.rend()||current->name.empty())return false;
+        bool continuation=false,currentInGroup=false;
+        for(size_t i=historyMeta.rows.size()-historyMeta.pendingRows;i<historyMeta.rows.size();++i){
+            const auto& source=historySources[i].raw;continuation|=source.size()>=4&&source.compare(source.size()-4,4,"@k@e")==0;
+            for(const auto& voice:historyMeta.rows[i].voices)currentInGroup|=voice.active&&lower(voice.name)==current->name;
+        }
+        return continuation&&currentInGroup;
+    }
+    void startNormalVoice(const mahoyo::history::Voice& voice){historyMeta.pendingVoices.clear();historyMeta.pendingVoices.push_back(voice);sound(voice.name,"voice",false);}
     void resetAudio() {
+        deferredVoice.reset();
         std::map<std::string,bool> channels;for(const auto& a:audio)channels[a.channel]=true;
         pendingSounds.clear();pendingVolumeFades.clear();audio.clear();audioFades.clear();for(const auto& c:channels)audio.push_back(Audio{++audioId,"",c.first,false,0});
     }
@@ -1768,7 +1782,14 @@ struct Runtime final:mahoyo::vm::Host {
             if(noWait||waitFlag==0)return Flow::Continue;
             wait="input";deadline=tick+(skipping?0:uint64_t(autoDelay));return Flow::Yield;
         }
-        case 0x1a0:case 0x1a8: {bool present=vm.peek()!=0;auto name=vm.popString();vm.pop();historyMeta.pendingVoices.clear();if(present){mahoyo::history::Voice v;v.active=true;v.name=name+".hw";v.volume=100;v.pan=64;v.variant=op==0x1a8?1:0;mahoyo::history::validate(v);historyMeta.pendingVoices.push_back(v);sound(v.name,"voice",false);}return Flow::Continue;}
+        case 0x1a0:case 0x1a8: {
+            bool present=vm.peek()!=0;auto name=vm.popString();vm.pop();
+            if(!present){historyMeta.pendingVoices.clear();return Flow::Continue;}
+            mahoyo::history::Voice voice;voice.active=true;voice.name=name+".hw";voice.volume=100;voice.pan=64;voice.variant=op==0x1a8?1:0;mahoyo::history::validate(voice);
+            // An explicit @k@e continuation must not truncate an earlier clip in its group.
+            if(!skipping&&continuedVoicePlaying()){deferredVoice=std::move(voice);wait="voice";++version;return Flow::Yield;}
+            startNormalVoice(voice);return Flow::Continue;
+        }
         case 0x1c0:if(particleOverlays.active()||particleOverlays.pending())throw mahoyo::vm::Error("Unsupported particles/movie combination");if(screenWave.active()||screenWave.pending())throw mahoyo::vm::Error("Unsupported Screen Raster/movie combination");movieActions(opening.start(++movieGeneration));wait="movieReady";havePlatformTime=false;return Flow::Yield;
         case 0x1c1:if(movieActions(opening.wait(opening.state().id)))return Flow::Continue;wait="movie";return Flow::Yield;
         case 0x160: {
@@ -2020,7 +2041,7 @@ struct Runtime final:mahoyo::vm::Host {
             else if(type=="transitionReady"){if(transition.active&&wait=="transitionReady"&&payload==(alphaRules.pending()?alphaRules.ack(transition.id,version):std::to_string(transition.id))&&(!alphaRules.pending()||!paused)){if(alphaRules.pending()){prepareAlphaRules();alphaRules.prepared(tick);}captureWaitClock();const auto capturedAge=waitClock.pending()?0:transition.waitClockAge;waitClock.prepared(transition.waitClockAge,tick);if(transition.wait110)transition.deadlineAfterReady=tick+mahoyo::wait_clock::Clock::remaining(transition.wait110Duration,transition.wait110Mode,capturedAge);commitGlobalShake();commitLayerPulses();commitWindow();commitWaves();commitClockRotations();pulseWaitLayer=transition.pulseWait?std::optional<int>(transition.pulseWaitLayer):std::nullopt;if(transition.clockWait){transition.deadlineAfterReady=transition.nonrotationDeadline;for(const auto& a:transforms)if(a.mask==4&&(transition.clockWaitLayer<0||a.id==transition.clockWaitLayer))transition.deadlineAfterReady=std::max(transition.deadlineAfterReady,a.end);}waitingScreenWave=transition.waveWait&&transition.waveWaitLayer<0;if(transition.waveWait)transition.deadlineAfterReady=std::max(transition.deadlineAfterReady,tick+waves.remainingWait(transition.waveWaitLayer));transition.begin=tick;if(!transition.waitAfterReady.empty()){deadline=transition.deadlineAfterReady;wait=transition.waitAfterReady;transition.active=false;sampleLayerPulses();if(wait=="choice"){choices.prepared();}else if(deadline<=tick&&(!waitingScreenWave||screenWave.remainingWait()==0)&&(!pulseWaitLayer||!finiteLayerShakeBusy(*pulseWaitLayer))&&(!effectWaitLayer||!finiteEffectWaitBusy(*effectWaitLayer)))resume();}else{deadline=tick+uint64_t(transition.mode==1?16:transition.duration);wait=transition.mode==1?"frame":"transition";}havePlatformTime=false;}}
             else if(type=="textSpeed"){reveal.speed(std::stoi(payload),tick);if(!reveal.active()&&wait=="input")deadline=tick+uint64_t(autoDelay);}
             else if(type=="autoDelay"){int value=std::stoi(payload);if(value<500||value>10000)throw mahoyo::vm::Error("Auto delay must be 500..10000 ms");autoDelay=value;if(wait=="input")deadline=tick+uint64_t(autoDelay);}
-            else if(type=="advance") {if(opening.active())movieActions(opening.skip(opening.state().id));else if(mode=="play"&&wait=="input"){if(reveal.finish())deadline=tick+uint64_t(autoDelay);else resume();}else if(mode=="history"){mode="play";resetHistorySession();historyChanged();}}
+            else if(type=="advance") {if(opening.active())movieActions(opening.skip(opening.state().id));else if(mode=="play"&&(wait=="input"||wait=="voice")){if(reveal.finish())deadline=tick+uint64_t(autoDelay);else resume(wait=="voice");}else if(mode=="history"){mode="play";resetHistorySession();historyChanged();}}
             else if(type=="tick") {if(!paused&&wait!="transitionReady"&&wait!="movieReady"){
                 auto now=std::stoull(payload);auto delta=havePlatformTime&&now>=platformLast?now-platformLast:uint64_t(tickBootstrapMs);if(delta>UINT64_MAX-tick)throw mahoyo::vm::Error("Logical clock overflow");waitClock.age(tick+delta);tick+=delta;inputRegion.sample(tick,!paused&&mode=="play");if((mode=="play"||mode=="teatime")&&!opening.active())noiseClockMs+=delta;platformLast=now;havePlatformTime=true;
                 alphaRules.sample(tick);for(auto& p:layers)if(alphaRules.contains(p.first)&&alphaRules.json(p.first)=="null")p.second.alpha=1.;
@@ -2052,7 +2073,7 @@ struct Runtime final:mahoyo::vm::Host {
                 shakes.erase(std::remove_if(shakes.begin(),shakes.end(),[&](const Shake&s){return s.duration>=0&&tick-s.begin>=uint64_t(s.duration);}),shakes.end());
                 if(intermission.tick(tick)==mahoyo::teatime::Result::ResumeCurrentVm){mode="play";havePlatformTime=false;resume();}
                 if(!inputRegion.jumpQueued()&&wait=="transition"&&((transition.nativeMode==0||transition.nativeMode==2)?transition.nativePhaseMs>=uint64_t(transition.duration):tick>=deadline)){presentedLayers=layerJson();presentedScreenWave=screenWaveJson();presentedParticles=particleOverlays.json();transition.active=false;resume();}
-                else if(!inputRegion.jumpQueued()&&(wait=="frame"||wait=="animation")&&tick>=deadline&&(!waitingScreenWave||screenWave.remainingWait()==0)&&(!pulseWaitLayer||!finiteLayerShakeBusy(*pulseWaitLayer))&&(!effectWaitLayer||!finiteEffectWaitBusy(*effectWaitLayer))){pulseWaitLayer.reset();resume();}else if(!inputRegion.jumpQueued()&&(wait=="budget"||((skipping||(automatic&&!reveal.active()&&!voicePlaying()))&&wait=="input"&&tick>=deadline)))resume();
+                else if(!inputRegion.jumpQueued()&&(wait=="frame"||wait=="animation")&&tick>=deadline&&(!waitingScreenWave||screenWave.remainingWait()==0)&&(!pulseWaitLayer||!finiteLayerShakeBusy(*pulseWaitLayer))&&(!effectWaitLayer||!finiteEffectWaitBusy(*effectWaitLayer))){pulseWaitLayer.reset();resume();}else if(!inputRegion.jumpQueued()&&wait=="voice"&&(skipping||!voicePlaying()))resume();else if(!inputRegion.jumpQueued()&&(wait=="budget"||((skipping||(automatic&&!reveal.active()&&!voicePlaying()))&&wait=="input"&&tick>=deadline)))resume();
             }}
             else if(type=="auto"){automatic=!automatic;if(automatic&&wait=="input")deadline=tick+uint64_t(autoDelay);}
             else if(type=="skip"){skipping=payload=="1"?true:payload=="0"?false:!skipping;if(skipping){reveal.finish();deadline=tick;}}
@@ -2082,7 +2103,7 @@ struct Runtime final:mahoyo::vm::Host {
         return total>active?total-active:0;
     }
     std::string snapshot(bool historyPreview=false) {
-        bool scheduled=(!paused&&error.empty()&&mode!="history"&&wait!="transitionReady"&&wait!="movieReady"&&((inputRegion.needsTick()|| !opening.active()&&(alphaRules.running()||particleOverlays.needsTimedUpdates()||waveScheduled()||globalShakeBusy()||layerShakeBusy()||intermission.needsTick()||musicNeedsTick()||windowFade.active()||reveal.active()||!fades.empty()||std::any_of(effects.begin(),effects.end(),[](const Effect& e){return !e.paused;})||!motions.empty()||!transforms.empty()||!shakes.empty()))||!audioFades.empty()||!pendingSounds.empty()||!pendingVolumeFades.empty()||wait=="frame"||wait=="animation"||wait=="transition"||wait=="budget"||((skipping||(automatic&&(tick<deadline||!voicePlaying())))&&wait=="input")));int noiseWake=(!paused&&error.empty()&&(mode=="play"||mode=="teatime")&&!opening.active()&&wait!="transitionReady"&&wait!="movieReady")?noise.minimumPeriod():0;int nextTick=scheduled?16:noiseWake;tickBootstrapMs=nextTick?nextTick:16;if(!nextTick)havePlatformTime=false;
+        bool scheduled=(!paused&&error.empty()&&mode!="history"&&wait!="transitionReady"&&wait!="movieReady"&&((inputRegion.needsTick()|| !opening.active()&&(alphaRules.running()||particleOverlays.needsTimedUpdates()||waveScheduled()||globalShakeBusy()||layerShakeBusy()||intermission.needsTick()||musicNeedsTick()||windowFade.active()||reveal.active()||!fades.empty()||std::any_of(effects.begin(),effects.end(),[](const Effect& e){return !e.paused;})||!motions.empty()||!transforms.empty()||!shakes.empty()))||!audioFades.empty()||!pendingSounds.empty()||!pendingVolumeFades.empty()||wait=="frame"||wait=="animation"||wait=="transition"||wait=="budget"||(wait=="voice"&&(skipping||!voicePlaying()))||((skipping||(automatic&&(tick<deadline||!voicePlaying())))&&wait=="input")));int noiseWake=(!paused&&error.empty()&&(mode=="play"||mode=="teatime")&&!opening.active()&&wait!="transitionReady"&&wait!="movieReady")?noise.minimumPeriod():0;int nextTick=scheduled?16:noiseWake;tickBootstrapMs=nextTick?nextTick:16;if(!nextTick)havePlatformTime=false;
         const auto currentScreenWave=screenWaveJson();const auto currentParticles=particleOverlays.json();
         std::ostringstream s;s.imbue(std::locale::classic());s<<std::setprecision(9);
         s<<"{\"alphaRulePrepareAck\":"<<(alphaRules.pending()&&transition.active&&wait=="transitionReady"?quote(alphaRules.ack(transition.id,version)):"null")<<",\"windowMode\":"<<windowMode<<",\"windowAlphaFixed16\":"<<windowFade.currentFixed16()<<",\"windowVisible\":"<<(windowFade.visible()?"true":"false")<<",\"version\":"<<version<<",\"designWidth\":1920,\"designHeight\":1080,\"scene\":"<<quote(mode)<<",\"waiting\":"<<quote(wait)<<",\"error\":"<<quote(error)<<",\"notice\":"<<quote(notice)<<",\"automatic\":"<<(automatic?"true":"false")<<",\"skipping\":"<<(skipping?"true":"false")<<",\"revealing\":"<<(reveal.active()?"true":"false")<<",\"canSave\":"<<(canSaveNow()?"true":"false")<<",\"nextTickMs\":"<<nextTick<<",\"layers\":"<<layerJson();
