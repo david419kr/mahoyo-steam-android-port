@@ -73,6 +73,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     private final Consumer<String> errors;
     private volatile Scene scene,desired;
     private volatile Viewport viewport;
+    private String renderedEpoch="";
     private volatile boolean dynamic=true,ambient=true;
     private volatile boolean bgCover=true,eventCover=true;
     private volatile boolean hiddenText;
@@ -193,7 +194,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
         mainDestination.clear();screenDestination.clear();screenDestinationTextureCount=0;
         windowMask.contextLost();plainImage.contextLost();windowErrors.clear();waveRenderer.contextLost();screenWaveRenderer.contextLost();waveErrors.clear();windowImageStage=false;windowChildStage=false;
         noiseRenderer.contextLost();noiseErrors.clear();alphaRuleRenderer.contextLost();alphaRuleNeedsRebuild=true;
-        transitionFrame=null;nativeTextTexture=null;nativeTextKey="";transitionState.clear();languageFrame=null;
+        transitionFrame=null;nativeTextTexture=null;nativeTextKey="";transitionState.clear();languageFrame=null;renderedEpoch="";
         movieFrame=null;movieFrameId="";movieFramebuffer=0;movieProgram=0;movieGpuFailure="";
         program=GLES30.glCreateProgram();int v=shader(GLES30.GL_VERTEX_SHADER,VERTEX),f=shader(GLES30.GL_FRAGMENT_SHADER,FRAGMENT);GLES30.glAttachShader(program,v);GLES30.glAttachShader(program,f);GLES30.glLinkProgram(program);int[] ok=new int[1];GLES30.glGetProgramiv(program,GLES30.GL_LINK_STATUS,ok,0);if(ok[0]==0)throw new IllegalStateException(GLES30.glGetProgramInfoLog(program));GLES30.glDeleteShader(v);GLES30.glDeleteShader(f);
         int[] white=new int[1];GLES30.glGenTextures(1,white,0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,white[0]);ByteBuffer pixel=ByteBuffer.allocateDirect(4);pixel.put(new byte[]{-1,-1,-1,-1}).position(0);GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D,0,GLES30.GL_RGBA,1,1,0,GLES30.GL_RGBA,GLES30.GL_UNSIGNED_BYTE,pixel);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MIN_FILTER,GLES30.GL_LINEAR);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MAG_FILTER,GLES30.GL_LINEAR);solid=new Texture(white[0],1,1);
@@ -224,6 +225,12 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
         }
         trimTextures();
         Viewport vp=viewport==null?null:viewport.scaledSurface(width,height);if(s==null||vp==null||width==0||height==0){clearFrame();return;}
+        String epoch=s.json.optString("runtimeEpoch","");
+        if(!epoch.isEmpty()&&!epoch.equals(renderedEpoch)){
+            windowMask.release();waveRenderer.release();screenWaveRenderer.release();noiseRenderer.release();alphaRuleRenderer.release();alphaRuleNeedsRebuild=true;
+            noisePresented.clear();noiseOld.clear();noiseRendered.clear();noiseOldScene=null;noiseTransitionId="";
+            release(transitionFrame);transitionFrame=null;transitionState.clear();releaseNativeText();renderedEpoch=epoch;
+        }
         syncNoiseTransition(s);
         boolean recaptured=false;Scene.Transition transition=s.transition;String key=transitionFrameKey(s,vp);
         if(transition!=null){

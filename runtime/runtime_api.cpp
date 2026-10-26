@@ -211,6 +211,9 @@ double nativeAngle(double hundredths) {
 }
 struct Runtime final:mahoyo::vm::Host {
     std::filesystem::path root;
+    bool isolatedReplay=false;
+    uint64_t historyRowsAppended=0,runtimeEpoch=historyToken();
+    std::string rewindFailure;
     mahoyo::language::Assets languageAssets;
     std::unique_ptr<Machine> machine;
     mahoyo::shared::State sharedState;bool sharedLoaded=false,sharedWritePending=false;
@@ -318,7 +321,7 @@ struct Runtime final:mahoyo::vm::Host {
     mahoyo::wait_clock::Clock waitClock;
     void captureWaitClock(){if(transition.active&&wait=="transitionReady"&&!transition.waitClockCaptured){transition.waitClockAge=waitClock.age(tick);transition.waitClockCaptured=true;}}
     uint64_t prepareWaitClock(){const auto captured=waitClock.age(tick);waitClock.prepared(captured,tick);return waitClock.age(tick);}
-    explicit Runtime(const char* path,const char* edition=nullptr,const char* language=nullptr):root(path?path:"") {
+    explicit Runtime(const char* path,const char* edition=nullptr,const char* language=nullptr,bool isolated=false):root(path?path:""),isolatedReplay(isolated) {
         try {
             languageAssets.open(root,edition?edition:"",language?language:"");
             const auto messagesPath=root/"meta/language-messages.tsv";
@@ -497,7 +500,7 @@ struct Runtime final:mahoyo::vm::Host {
                 if(!sharedLoaded||sharedState.variables!=vars||sharedState.flags!=flags){
                     if(sharedState.generation==UINT64_MAX)throw mahoyo::save::Error("Shared generation exhausted");
                     ++sharedState.generation;sharedState.variables=vars;sharedState.flags=flags;sharedLoaded=true;sharedWritePending=true;}}
-            if(sharedLoaded&&sharedWritePending){mahoyo::shared::write(sharedPath(),sharedState);sharedWritePending=false;}return true;
+            if(sharedLoaded&&sharedWritePending){if(!isolatedReplay)mahoyo::shared::write(sharedPath(),sharedState);sharedWritePending=false;}return true;
         }catch(const std::exception& e){notice=std::string("Shared progress persistence: ")+e.what();return false;}
     }
     ~Runtime(){try{flushShared();}catch(...){}}
@@ -1087,7 +1090,7 @@ struct Runtime final:mahoyo::vm::Host {
     #include "input_runtime.inc"
     void historyChanged(){historyRevision=historyToken();cachedHistoryRevision=0;}
     void resetHistorySession(){historyReplay.reset();historyGeneration=historyToken();}
-    void clearHistory(){history.clear();historySources.clear();historyMeta.clear();historyChanged();resetHistorySession();}
+    void clearHistory(){historyRowsAppended=0;history.clear();historySources.clear();historyMeta.clear();historyChanged();resetHistorySession();}
     bool effectNoiseKeys(const mahoyo::effects::Clip& clip)const{return clip.propertiesMetadata&&mahoyo::effects::isSelected(clip,mahoyo::effects::AuxResourceAndScale)&&std::any_of(clip.frames.begin(),clip.frames.end(),[](const auto& f){return f.properties[11]!=-32766&&f.properties[11]!=-32767;});}
     void savedEffectNoise(Effect& e,int schema,const Layer& saved){if(schema<19){if(effectNoiseKeys(effectClips.at(e.clip)))throw mahoyo::save::Error("Legacy active/stopped effect lacks initial noise state");e.properties.decimalMode=saved.decimalMode;}try{mahoyo::noise::decode(e.properties.decimalMode);}catch(const std::exception&){throw mahoyo::save::Error("Invalid saved effect noise baseline");}}
     std::map<int,Effect> readStoppedEffectBases(std::istream& input,const std::map<int,Layer>& scene,const std::vector<Effect>& running,int schema){
@@ -1112,6 +1115,7 @@ struct Runtime final:mahoyo::vm::Host {
         validateParents(canonicalScene);return values;
     }
     void appendHistory(const std::string& text,mahoyo::history::Row row,const std::string& raw){
+        ++historyRowsAppended;
         historySources.push_back({"",raw});if(historySources.size()>mahoyo::history::MaxRows)historySources.erase(historySources.begin());
         historyMeta.append(std::move(row));history.push_back(text);if(history.size()>mahoyo::history::MaxRows)history.erase(history.begin());historyChanged();
     }
@@ -1130,7 +1134,7 @@ struct Runtime final:mahoyo::vm::Host {
         if(cachedHistoryRevision==historyRevision)return cachedHistory;
         historyMeta.validate(history.size());std::ostringstream out;out<<'[';
         for(size_t i=0;i<history.size();++i){if(i)out<<',';const auto& r=historyMeta.rows[i];
-            out<<"{\"index\":"<<i<<",\"text\":"<<quote(history[i])<<",\"metadataKnown\":"<<(r.known?"true":"false")<<",\"leadingBreaks\":"<<r.leadingBreaks<<",\"startsGroup\":"<<(r.startsGroup?"true":"false")<<",\"endsGroup\":"<<(r.endsGroup?"true":"false")<<",\"initialItalic\":"<<(r.initialItalic?"true":"false")<<",\"fontSize\":48,\"fontColor\":\"#ffffff\",\"wait\":"<<(r.wait?"true":"false")<<",\"page\":"<<(r.page?"true":"false")<<",\"style\":"<<r.style<<",\"voices\":[";
+            out<<"{\"index\":"<<i<<",\"text\":"<<quote(history[i])<<",\"metadataKnown\":"<<(r.known?"true":"false")<<",\"rewindAvailable\":"<<(r.known&&historySources.size()==history.size()?"true":"false")<<",\"leadingBreaks\":"<<r.leadingBreaks<<",\"startsGroup\":"<<(r.startsGroup?"true":"false")<<",\"endsGroup\":"<<(r.endsGroup?"true":"false")<<",\"initialItalic\":"<<(r.initialItalic?"true":"false")<<",\"fontSize\":48,\"fontColor\":\"#ffffff\",\"wait\":"<<(r.wait?"true":"false")<<",\"page\":"<<(r.page?"true":"false")<<",\"style\":"<<r.style<<",\"voices\":[";
             for(size_t j=0;j<r.voices.size();++j){if(j)out<<',';const auto& v=r.voices[j];out<<"{\"active\":"<<(v.active?"true":"false")<<",\"backend\":"<<v.backend<<",\"name\":"<<quote(v.name)<<",\"volume\":"<<v.volume<<",\"pan\":"<<v.pan<<",\"variant\":"<<v.variant<<",\"actorId\":"<<mahoyo::history::actorId(v.name)<<",\"available\":"<<(historyVoiceAvailable(v)?"true":"false")<<'}';}
             out<<"]}";
         }
@@ -1280,7 +1284,7 @@ struct Runtime final:mahoyo::vm::Host {
         if(selector>=18&&selector<=23)unlock(selector);
         if(selector>=18&&selector<=24&&gate({129,130,131,132,133,134}))unlock(24);
         if(selector==25&&gate({6,7,8,9}))unlock(25);
-        if(!trophiesDirty)return;
+        if(!trophiesDirty||isolatedReplay)return;
         //Android has no SteamUserStats adapter. This independent atomic local
         //registry is a port policy; optional achievement I/O never halts CHS.
         try{std::ostringstream out;out<<"WOHTROPHY1 "<<trophies.size()<<'\n';for(int id:trophies)out<<id<<'\n';auto text=out.str();mahoyo::save::Document doc;doc.hostExtra.assign(text.begin(),text.end());mahoyo::save::writeAtomic(trophyPath(),doc);trophiesDirty=false;}
@@ -1290,10 +1294,12 @@ struct Runtime final:mahoyo::vm::Host {
         name=lower(name);if(name.rfind("img",0)!=0)return;name+=".mzp";
         if(!safeName(name)||name.find_first_of("\r\n")!=std::string::npos||name.size()>4096)throw mahoyo::vm::Error("Invalid image-unlock name");
         if(seenImages.count(name))return;
+        if(isolatedReplay){seenImages.insert(name);return;}
         auto candidate=seenImages;candidate.insert(name);std::ostringstream rows;rows<<"WOHSEEN1\n";for(const auto& item:candidate)rows<<std::quoted(item)<<'\n';
         auto bytes=rows.str();mahoyo::save::Document document;document.hostExtra.assign(bytes.begin(),bytes.end());mahoyo::save::writeAtomic(seenPath(),document);seenImages.swap(candidate);
     }
     void saveGame(int slot) {
+        if(isolatedReplay)throw mahoyo::save::Error("Replay cannot write save slots");
         if(slot<1||slot>12)throw mahoyo::save::Error("Invalid save slot");
         if(!canSaveNow())throw mahoyo::save::Error("Save is available after the current transition");
         if(!flushShared())throw mahoyo::save::Error(notice);
@@ -2102,12 +2108,14 @@ struct Runtime final:mahoyo::vm::Host {
         for(size_t i=history.size();i>0;--i){active+=mahoyo::text::visibleLength(history[i-1]);if(i==1||!historyMeta.rows[i-1].known||historyMeta.rows[i-2].wait||historyMeta.rows[i-2].page)break;}
         return total>active?total-active:0;
     }
+#include "history_rewind.inc"
     std::string snapshot(bool historyPreview=false) {
         bool scheduled=(!paused&&error.empty()&&mode!="history"&&wait!="transitionReady"&&wait!="movieReady"&&((inputRegion.needsTick()|| !opening.active()&&(alphaRules.running()||particleOverlays.needsTimedUpdates()||waveScheduled()||globalShakeBusy()||layerShakeBusy()||intermission.needsTick()||musicNeedsTick()||windowFade.active()||reveal.active()||!fades.empty()||std::any_of(effects.begin(),effects.end(),[](const Effect& e){return !e.paused;})||!motions.empty()||!transforms.empty()||!shakes.empty()))||!audioFades.empty()||!pendingSounds.empty()||!pendingVolumeFades.empty()||wait=="frame"||wait=="animation"||wait=="transition"||wait=="budget"||(wait=="voice"&&(skipping||!voicePlaying()))||((skipping||(automatic&&(tick<deadline||!voicePlaying())))&&wait=="input")));int noiseWake=(!paused&&error.empty()&&(mode=="play"||mode=="teatime")&&!opening.active()&&wait!="transitionReady"&&wait!="movieReady")?noise.minimumPeriod():0;int nextTick=scheduled?16:noiseWake;tickBootstrapMs=nextTick?nextTick:16;if(!nextTick)havePlatformTime=false;
         const auto currentScreenWave=screenWaveJson();const auto currentParticles=particleOverlays.json();
         std::ostringstream s;s.imbue(std::locale::classic());s<<std::setprecision(9);
-        s<<"{\"alphaRulePrepareAck\":"<<(alphaRules.pending()&&transition.active&&wait=="transitionReady"?quote(alphaRules.ack(transition.id,version)):"null")<<",\"windowMode\":"<<windowMode<<",\"windowAlphaFixed16\":"<<windowFade.currentFixed16()<<",\"windowVisible\":"<<(windowFade.visible()?"true":"false")<<",\"version\":"<<version<<",\"designWidth\":1920,\"designHeight\":1080,\"scene\":"<<quote(mode)<<",\"waiting\":"<<quote(wait)<<",\"error\":"<<quote(error)<<",\"notice\":"<<quote(notice)<<",\"automatic\":"<<(automatic?"true":"false")<<",\"skipping\":"<<(skipping?"true":"false")<<",\"revealing\":"<<(reveal.active()?"true":"false")<<",\"canSave\":"<<(canSaveNow()?"true":"false")<<",\"nextTickMs\":"<<nextTick<<",\"layers\":"<<layerJson();
+        s<<"{\"runtimeEpoch\":"<<quote(std::to_string(runtimeEpoch))<<",\"alphaRulePrepareAck\":"<<(alphaRules.pending()&&transition.active&&wait=="transitionReady"?quote(alphaRules.ack(transition.id,version)):"null")<<",\"windowMode\":"<<windowMode<<",\"windowAlphaFixed16\":"<<windowFade.currentFixed16()<<",\"windowVisible\":"<<(windowFade.visible()?"true":"false")<<",\"version\":"<<version<<",\"designWidth\":1920,\"designHeight\":1080,\"scene\":"<<quote(mode)<<",\"waiting\":"<<quote(wait)<<",\"error\":"<<quote(error)<<",\"notice\":"<<quote(notice)<<",\"automatic\":"<<(automatic?"true":"false")<<",\"skipping\":"<<(skipping?"true":"false")<<",\"revealing\":"<<(reveal.active()?"true":"false")<<",\"canSave\":"<<(canSaveNow()?"true":"false")<<",\"nextTickMs\":"<<nextTick<<",\"layers\":"<<layerJson();
         s<<",\"inputRegion\":"<<inputRegionJson();
+        if(!rewindFailure.empty())s<<",\"historyRewindError\":"<<quote(rewindFailure);
         s<<",\"text\":[";if(!hidden&&!paragraph.empty()&&mode=="play"&&!opening.active())s<<"{\"text\":"<<quote(paragraph)<<",\"visibleCharacters\":"<<reveal.visible()<<",\"activeFrom\":"<<activeTextStart()<<",\"cursor\":"<<(wait=="input"&&!reveal.active()?"true":"false")<<",\"alpha\":"<<windowFade.currentFixed16()/65536.<<",\"x\":300,\"y\":120,\"w\":1320,\"h\":840,\"fontSize\":52,\"color\":\"#ffffff\"}";
         s<<"],\"actions\":[";
         if(mode=="title"){const char* ids[]={"start","load","continue","settings","extra","exit"};for(int i=0;i<6;++i){if(i)s<<',';s<<"{\"id\":"<<quote(ids[i])<<",\"label\":\"\",\"x\":1280,\"y\":"<<455+i*89<<",\"w\":495,\"h\":89}";}}
@@ -2165,7 +2173,12 @@ const char* invalid="{\"error\":\"Invalid runtime handle\"}";
 }
 extern "C" uint64_t woh_create(const char* root) {std::lock_guard<std::mutex> lock(mutex);auto id=nextHandle++;runtimes[id]=std::make_unique<Runtime>(root);return id;}
 extern "C" uint64_t woh_create_configured(const char* root,const char* edition,const char* language) {std::lock_guard<std::mutex> lock(mutex);auto id=nextHandle++;runtimes[id]=std::make_unique<Runtime>(root,edition,language);return id;}
-extern "C" const char* woh_command(uint64_t id,const char* type,const char* payload) {std::lock_guard<std::mutex> lock(mutex);auto i=runtimes.find(id);if(i==runtimes.end())return invalid;if(std::string(type?type:"")=="historyPreview")return guardedSnapshot(*i->second,true);i->second->command(type?type:"",payload?payload:"");return guardedSnapshot(*i->second);}
+extern "C" const char* woh_command(uint64_t id,const char* type,const char* payload) {std::lock_guard<std::mutex> lock(mutex);auto i=runtimes.find(id);if(i==runtimes.end())return invalid;if(std::string(type?type:"")=="historyPreview")return guardedSnapshot(*i->second,true);
+    if(std::string(type?type:"")=="historyRewind"){
+        try{auto replacement=i->second->rewindHistory(payload?payload:"");i->second->isolatedReplay=true;i->second=std::move(replacement);i->second->isolatedReplay=false;}
+        catch(const std::exception& error){i->second->notice="Unable to restore this history scene.";i->second->rewindFailure=error.what();}
+        return guardedSnapshot(*i->second);
+    }i->second->command(type?type:"",payload?payload:"");return guardedSnapshot(*i->second);}
 extern "C" void woh_wave_clock(uint64_t id,uint64_t now) {std::lock_guard<std::mutex> lock(mutex);auto i=runtimes.find(id);if(i!=runtimes.end())i->second->sampleWaveClock(now);}
 extern "C" const char* woh_snapshot(uint64_t id) {std::lock_guard<std::mutex> lock(mutex);auto i=runtimes.find(id);if(i==runtimes.end())return invalid;return guardedSnapshot(*i->second);}
 extern "C" void woh_destroy(uint64_t id) {std::lock_guard<std::mutex> lock(mutex);runtimes.erase(id);}

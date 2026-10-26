@@ -12,17 +12,18 @@ final class HistoryModel {
         Voice(JSONObject value){active=value.optBoolean("active");available=value.optBoolean("available");backend=value.optInt("backend",-1);name=value.optString("name");volume=value.optInt("volume");pan=value.optInt("pan");variant=value.optInt("variant");actorId=value.optInt("actorId");}
     }
     static final class Row {
-        final int index,leadingBreaks,color;final float nativeFont;final String text;final boolean known,starts,ends,italic;
+        final int index,leadingBreaks,color;final float nativeFont;final String text;final boolean known,starts,ends,italic,rewindable;
         final List<Voice> voices;
         Row(int index,JSONObject value,String legacy){
             this.index=value==null?index:value.optInt("index",index);known=value!=null&&value.optBoolean("metadataKnown");text=value==null?legacy:value.optString("text");
+            rewindable=known&&value.optBoolean("rewindAvailable");
             leadingBreaks=known?Math.max(0,value.optInt("leadingBreaks")):0;starts=!known||value.optBoolean("startsGroup");ends=!known||value.optBoolean("endsGroup");italic=known&&value.optBoolean("initialItalic");
             double font=value==null?48:value.optDouble("fontSize",48);nativeFont=Double.isFinite(font)&&font>0?(float)font:48;color=color(value==null?"":value.optString("fontColor"),0xffffffff);
             ArrayList<Voice> items=new ArrayList<>();JSONArray list=value==null?null:value.optJSONArray("voices");if(known&&list!=null)for(int i=0;i<list.length();i++){JSONObject voice=list.optJSONObject(i);if(voice!=null)items.add(new Voice(voice));}voices=Collections.unmodifiableList(items);
         }
     }
     static final class Group {
-        final String key;final int start,count;final List<Row> rows;final boolean hasVoice,playable;final String reason;
+        final String key;final int start,count;final List<Row> rows;final boolean hasVoice,playable,rewindable;final String reason;
         Group(String revision,List<Row> input){
             rows=Collections.unmodifiableList(new ArrayList<>(input));start=rows.get(0).index;count=rows.size();key=revision+":"+start+":"+count;
             boolean any=false;String issue=revision.isEmpty()?"履歴情報を確認できません":"";int expected=start;
@@ -30,7 +31,7 @@ final class HistoryModel {
                 for(Voice voice:row.voices){if(!voice.active||voice.name.isEmpty())continue;any=true;if(voice.backend!=0){if(issue.isEmpty())issue="この音声形式は未対応です";continue;}eligible++;if(!voice.available&&issue.isEmpty())issue="音声データがありません";}
                 if(eligible>1)issue="同じ行の複数音声は未対応です";
             }
-            hasVoice=any;playable=any&&issue.isEmpty();reason=issue;
+            hasVoice=any;playable=any&&issue.isEmpty();reason=issue;rewindable=!revision.isEmpty()&&rows.get(rows.size()-1).ends&&rows.stream().allMatch(row->row.rewindable);
         }
         String payload(String revision){return revision+" "+start+" "+count;}
         boolean contains(int row){return row>=start&&row<start+count;}

@@ -47,6 +47,7 @@ public:
     const std::vector<int32_t>& stack() const { return stack_; }
     uint32_t pc() const { return pc_; }
     uint32_t modulePc() const;
+    bool sameExecutionPoint(const Machine& other) const;
     const std::string& moduleName() const;
     uint32_t sourceLine() const { return sourceLine_; }
     const std::string& debugMessage() const { return debugMessage_; }

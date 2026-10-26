@@ -21,6 +21,12 @@ struct Reader {
     std::vector<int32_t> ints(size_t max){const auto n=u32();if(n>max)throw Error("Invalid VM save vector length");std::vector<int32_t> v;v.reserve(n);for(uint32_t i=0;i<n;++i)v.push_back(int32_t(u32()));return v;}
 };
 }
+bool Machine::sameExecutionPoint(const Machine& other) const {
+    if(instructions_!=other.instructions_||moduleName()!=other.moduleName()||modulePc()!=other.modulePc()||frames_.size()!=other.frames_.size()||localTop_!=other.localTop_||stack_.size()!=other.stack_.size()||scopes_.size()!=other.scopes_.size())return false;
+    for(size_t i=0;i<frames_.size();++i){const auto& a=frames_[i];const auto& b=other.frames_[i];const auto& am=modules_.at(a.module);const auto& bm=other.modules_.at(b.module);
+        if(am.name!=bm.name||a.pc-am.code!=b.pc-bm.code||a.localTop!=b.localTop||a.unload!=b.unload)return false;}
+    return true;
+}
 std::vector<uint8_t> Machine::saveState() const {
     Writer w;for(char c:std::string("WOHVM002"))w.bytes.push_back(uint8_t(c));
     w.u32(pc_);w.u32(currentModule_);w.u32(localTop_);w.u32(sourceLine_);w.u32(uint32_t(flow_));

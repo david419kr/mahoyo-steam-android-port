@@ -59,6 +59,8 @@ Swipe in the opposite direction to close a menu. If dialogue or a menu can scrol
 
 In **Settings → Display**, choose the original 16:9 view or an adaptive layout, fit or fill images, and full-screen or bottom-panel dialogue. **Automatic** dialogue layout adapts to the available screen space. Text size and margins are adjustable.
 
+In History, use the rewind button and confirm to return to that dialogue scene. History stored in existing saves is supported too. Save files are not overwritten. Restoration may take a moment; if the destination cannot be verified, your current progress is kept.
+
 Saves are kept on this device. Uninstalling the app or clearing its storage removes its installed data and saves.
 
 This is an unofficial project, not affiliated with the game’s publisher or Valve. Game files are downloaded using your own Steam account.

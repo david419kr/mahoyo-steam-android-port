@@ -201,7 +201,7 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
             try{HistoryView dialog=createHistoryView(HistoryModel.parse(new JSONObject(value)));prepareReaderPullDialog(dialog,serial);dialog.show();readerPullDialogShown(serial);}catch(Exception failure){discardReaderPull(false);error(failure.toString());}
         });}catch(Exception failure){ui.post(()->{if(readerPullOpen&&serial==readerPullSerial){discardReaderPull(false);error(failure.toString());}});}});
     }
-    private HistoryView createHistoryView(HistoryModel model){final HistoryView[] view={null};view[0]=new HistoryView(this,model,group->replayHistory(view[0],group),this::stopHistoryReplay);view[0].contentArea(viewport==null?null:viewport.content,root.getWidth(),root.getHeight());return view[0];}
+    private HistoryView createHistoryView(HistoryModel model){final HistoryView[] view={null};view[0]=new HistoryView(this,model,group->replayHistory(view[0],group),this::stopHistoryReplay,group->confirmHistoryRewind(view[0],group));view[0].contentArea(viewport==null?null:viewport.content,root.getWidth(),root.getHeight());return view[0];}
     private View readerPullView(){return readerPullDialog!=null?readerPullDialog.pullView():readerPullPanel;}
     private void positionReaderPull(){View view=readerPullView();if(view==null)return;float[] offset=ReaderGesture.offset(readerPullAction,readerPullReveal,root.getWidth(),root.getHeight());view.setTranslationX(offset[0]);view.setTranslationY(offset[1]);if(readerPullLayer!=null)readerPullLayer.setBackgroundColor(Color.argb(Math.round(80*Math.min(1,readerPullReveal/Math.max(1,root.getHeight()))),0,0,0));}
     private void prepareReaderPullDialog(SwipeDialog dialog,long serial){
@@ -437,6 +437,20 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
     private void replayHistory(HistoryView view,HistoryModel.Group group){
         if(view!=historyDialog||!historyOpen||paused||errorModalOpen||!group.playable){view.pending(false);return;}
         long serial=historyUiSerial;command("historyReplay",group.payload(view.model.revision),next->{if(serial==historyUiSerial&&historyDialog==view){view.pending(false);if(next!=null)view.replay(next.json.optJSONObject("historyReplay"));}});
+    }
+    private void confirmHistoryRewind(HistoryView view,HistoryModel.Group group){
+        if(view!=historyDialog||!historyOpen||paused||errorModalOpen||!group.rewindable)return;
+        new AlertDialog.Builder(this).setTitle(UiText.key(this,"history_rewind"))
+            .setMessage(UiText.key(this,"history_rewind_confirm"))
+            .setNegativeButton(UiText.key(this,"cancel"),null)
+            .setPositiveButton(UiText.key(this,"history_rewind"),(dialog,which)->rewindHistory(view,group)).show();
+    }
+    private void rewindHistory(HistoryView view,HistoryModel.Group group){
+        if(view!=historyDialog||!historyOpen||paused||errorModalOpen||!group.rewindable)return;
+        long serial=historyUiSerial;view.rewinding(true);if(audio!=null)audio.updateHistoryReplay(null,this::assetFile);
+        String pair=scene==null?"":HistoryModel.replayPair(scene.json.optJSONObject("historyReplay"));
+        Runnable restore=()->{if(view!=historyDialog||serial!=historyUiSerial)return;command("historyRewind",group.payload(view.model.revision),next->{if(view==historyDialog&&serial==historyUiSerial)view.rewinding(false);});};
+        if(pair.isEmpty())restore.run();else command("historyReplayStop",pair,next->restore.run());
     }
     private void stopHistoryReplay(){
         if(audio!=null)audio.updateHistoryReplay(null,this::assetFile);String pair=scene==null?"":HistoryModel.replayPair(scene.json.optJSONObject("historyReplay"));if(pair.isEmpty())return;

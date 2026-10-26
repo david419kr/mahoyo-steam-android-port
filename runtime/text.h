@@ -38,6 +38,7 @@ public:
     void tick(uint64_t now);
     void speed(int charactersPerSecond,uint64_t now);
     bool finish();
+    int speed() const {return speed_;}
     bool active() const {return shown_<double(total_);}
     size_t visible() const;
 };
