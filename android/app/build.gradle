@@ -56,8 +56,8 @@ android {
         minSdk 28
         targetSdk 35
         testInstrumentationRunner 'org.mahoyo.port.SourceProbe'
-        versionCode 97
-        versionName '0.6.9-test'
+        versionCode 98
+        versionName '0.6.9'
         ndk { abiFilters 'arm64-v8a' }
         externalNativeBuild { cmake { cppFlags '-std=c++17' } }
     }
