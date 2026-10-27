@@ -26,8 +26,11 @@ final class DialogueArt {
     }
     static void cursor(Canvas canvas,float x,float baseline,float font,float right,float alpha,boolean animated){
         Bitmap image=cursor;if(image==null)return;int frame=animated?(int)((android.os.SystemClock.uptimeMillis()/50)%40):0,col=frame%20,row=frame/20;
-        float width=font*.70f,height=width*56/45;if(x+width>right){x=0;baseline+=font*1.65f;}
         Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);paint.setAlpha(Math.round(255*Math.max(0,Math.min(1,alpha))));
-        canvas.drawBitmap(image,new Rect(col*45,row*56,col*45+45,row*56+56),new RectF(x-font*.12f,baseline-font*.48f,x-font*.12f+width,baseline-font*.48f+height),paint);
+        canvas.drawBitmap(image,new Rect(col*45,row*56,col*45+45,row*56+56),cursorBounds(x,baseline,font),paint);
+    }
+    static RectF cursorBounds(float x,float baseline,float font){
+        float width=font*.70f,height=width*56/45;
+        return new RectF(x-font*.12f,baseline-font*.48f,x-font*.12f+width,baseline-font*.48f+height);
     }
 }
