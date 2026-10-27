@@ -53,6 +53,12 @@ for(boolean detached:new boolean[]{true,false}){
  check(body.marks.get(0).color==0xffe6c7a1&&body.marks.get(1).color==0xffe6c7a1,"reset inherits the native source text color");check(body.marks.get(2).color==0xffff0000&&body.marks.get(3).color==0xffffffff,"native inline color commands render their mapped colors");check(body.outlineColors.contains(0xff002142)&&body.outlineColors.contains(0xff000000),"native shadow color and reset are applied");
  controlledPage.texts.get(0).put("visibleCharacters",1);show(controlled,controlledPage,viewport(controlledHeight));Canvas partial=new Canvas();controlled.draw(partial);check(partial.marks.size()==1&&partial.marks.get(0).text.equals("A"),"first reveal unit is a visible glyph instead of a command character");
  controlledPage.texts.get(0).put("visibleCharacters",Integer.MAX_VALUE).put("alpha",0.5);show(controlled,controlledPage,viewport(controlledHeight));Canvas fadedControl=new Canvas();controlled.draw(fadedControl);check(fadedControl.marks.get(2).color==0x80ff0000,"inline colors retain native alpha on cached text layouts");
+ Scene fixedRuby=scene("XX<AB|@_reading>",Integer.MAX_VALUE);Viewport rubyViewport=viewport(controlledHeight);show(controlled,fixedRuby,rubyViewport);Canvas rubyCanvas=new Canvas();controlled.draw(rubyCanvas);
+ Canvas.Mark rubyMark=rubyCanvas.marks.stream().filter(mark->mark.text.equals("reading")).findFirst().get(),firstBase=rubyCanvas.marks.get(0);
+ check(rubyCanvas.marks.stream().noneMatch(mark->mark.text.contains("@_")),"fullscreen and detached ruby prefix is not drawn");
+ near(rubyMark.x-firstBase.x,73*(detached?firstBase.size/40:rubyViewport.scale),"native fixed ruby anchor follows each mode's coordinate scale");
+ fixedRuby.texts.get(0).put("visibleCharacters",3);show(controlled,fixedRuby,rubyViewport);Canvas rubyReveal=new Canvas();controlled.draw(rubyReveal);
+ Canvas.Mark partialReading=rubyReveal.marks.stream().filter(mark->mark.text.equals("read")).findFirst().get();near(partialReading.x,rubyMark.x,"ruby prefix adds no reveal units or horizontal reveal movement");
 }
 
 Context resolutionContext=new Context();DisplayPrefs resolutionPrefs=new DisplayPrefs(resolutionContext);

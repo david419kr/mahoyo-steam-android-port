@@ -65,7 +65,7 @@ final class HistoryView extends SwipeDialog {
                     try{tokens=TextOverlay.NativeTextToken.parse((run.italic?"@i":"")+run.text);}catch(IllegalArgumentException malformed){tokens=TextOverlay.NativeTextToken.parse((run.italic?"@i":"")+plain(run.text));}
                     for(TextOverlay.NativeTextToken token:tokens){if(token.newline){description.append('\n');x=0;y+=font*1.65f;continue;}description.append(token.base);paint.setTypeface(token.italic?ITALIC:NORMAL);paint.setTextSize(font);float measured=paint.measureText(token.base);
                         // History is a readable mobile reflow, with explicit LF/ruby intact.
-                        if(x>0&&x+measured>width){x=0;y+=font*1.65f;}paint.setTextSize(font*.45f);float rx=x+(measured-paint.measureText(token.ruby.text))/2+token.ruby.x*font/row.nativeFont,ry=y-font*1.05f+token.ruby.y*font/row.nativeFont;out.add(new Glyph(token,x,y,rx,ry,run.color,run.shadow));x+=measured;
+                        if(x>0&&x+measured>width){x=0;y+=font*1.65f;}paint.setTextSize(font*.45f);float rx=token.ruby.left(x,measured,paint.measureText(token.ruby.text),font/row.nativeFont),ry=y-font*1.05f+token.ruby.y*font/row.nativeFont;out.add(new Glyph(token,x,y,rx,ry,run.color,run.shadow));x+=measured;
                     }
                 }
             }

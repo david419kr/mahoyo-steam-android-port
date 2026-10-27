@@ -173,9 +173,12 @@ final class TextOverlay extends View {
         void clear(){document="";offset=maximum=0;following=true;}
     }
     static final class RubyReading {
-        final String text;final int x,y;
-        RubyReading(String text,int x,int y){this.text=text;this.x=x;this.y=y;}
-        static RubyReading parse(String value){if(!value.startsWith("@p"))return new RubyReading(value,0,0);int slash=value.indexOf('/');if(slash<0)throw new IllegalArgumentException("Native ruby @p requires '/': "+value);int comma=value.indexOf(',');return new RubyReading(value.substring(slash+1),nativeLong(value,2),comma<0?0:nativeLong(value,comma+1));}
+        final String text;final int x,y;final boolean fixedLeft;
+        RubyReading(String text,int x,int y){this(text,x,y,false);}
+        RubyReading(String text,int x,int y,boolean fixedLeft){this.text=text;this.x=x;this.y=y;this.fixedLeft=fixedLeft;}
+        static RubyReading parse(String value){if(value.startsWith("@_"))return new RubyReading(value.substring(2),0,0,true);if(!value.startsWith("@p"))return new RubyReading(value,0,0);int slash=value.indexOf('/');if(slash<0)throw new IllegalArgumentException("Native ruby @p requires '/': "+value);int comma=value.indexOf(',');return new RubyReading(value.substring(slash+1),nativeLong(value,2),comma<0?0:nativeLong(value,comma+1));}
+        // Native @_ uses a fixed reading anchor, 73 raster pixels from the text origin.
+        float left(float baseX,float baseWidth,float readingWidth,float scale){return fixedLeft?73*scale:baseX+(baseWidth-readingWidth)/2+x*scale;}
         private static int nativeLong(String value,int index){while(index<value.length()&&" \t\n\r\f\u000b".indexOf(value.charAt(index))>=0)index++;boolean negative=index<value.length()&&value.charAt(index)=='-';if(index<value.length()&&(value.charAt(index)=='+'||negative))index++;long result=0,limit=negative?2147483648L:2147483647L;while(index<value.length()){char ch=value.charAt(index++);int digit=ch>='0'&&ch<='9'?ch-'0':ch>='０'&&ch<='９'?ch-'０':-1;if(digit<0)break;if(result>(limit-digit)/10)return negative?Integer.MIN_VALUE:Integer.MAX_VALUE;result=result*10+digit;}return (int)(negative?-result:result);}
     }
     static final class NativeTextToken {
@@ -228,7 +231,7 @@ final class TextOverlay extends View {
             // Panel offsets adapt native raster pixels to the independently sized mobile font.
             float offsetScale=font/nativeFont;
             for(NativeTextToken token:NativeTextToken.parse(text)){if(token.newline){x=0;y+=font*1.65f;continue;}String base=token.base,reading=token.ruby.text;
-                paint.setTypeface(token.italic?ITALIC_FACE:NORMAL_FACE);float measured=paint.measureText(base);if(!token.noWrap&&x+measured>width&&x>0){x=0;y+=font*1.65f;}paint.setTextSize(font*.45f);float rubyX=x+(measured-paint.measureText(reading))/2+token.ruby.x*offsetScale;paint.setTextSize(font);Glyph glyph=new Glyph(base,reading,characters,x,y,rubyX,y-font*1.05f+token.ruby.y*offsetScale,token.italic,token.color,token.shadow);glyphs.add(glyph);characters+=glyph.count;x+=measured;}
+                paint.setTypeface(token.italic?ITALIC_FACE:NORMAL_FACE);float measured=paint.measureText(base);if(!token.noWrap&&x+measured>width&&x>0){x=0;y+=font*1.65f;}paint.setTextSize(font*.45f);float rubyX=token.ruby.left(x,measured,paint.measureText(reading),offsetScale);paint.setTextSize(font);Glyph glyph=new Glyph(base,reading,characters,x,y,rubyX,y-font*1.05f+token.ruby.y*offsetScale,token.italic,token.color,token.shadow);glyphs.add(glyph);characters+=glyph.count;x+=measured;}
             this.glyphs=glyphs.toArray(new Glyph[0]);firstBaseline=first;height=text.isEmpty()?0:y-first+font*1.65f;}
         int firstLine(float y){int lo=0,hi=glyphs.length;while(lo<hi){int mid=(lo+hi)>>>1;if(glyphs[mid].y<y)lo=mid+1;else hi=mid;}return lo;}
     }
@@ -296,7 +299,7 @@ final class TextOverlay extends View {
         style(token.italic);float measured=paint.measureText(base);if(!token.noWrap&&x+measured>width&&x>0){x=0;baseline+=font*1.65f;}
         int baseCharacters=base.codePointCount(0,base.length()),visibleBase=Math.min(remaining,baseCharacters);outlineColor=token.shadow;paint.setColor(multiplyAlpha(token.color==null?fill:multiplyAlpha(token.color,(fill>>>24)/255f),index<activeFrom?.45f:1));
         if(visibleBase>0)outlined(canvas,visiblePrefix(base,visibleBase),x,baseline);
-        if(!reading.isEmpty()){paint.setTextSize(font*.45f);float rubyWidth=paint.measureText(reading);int visibleReading=rubyVisibleCharacters(visibleBase,baseCharacters,reading.codePointCount(0,reading.length()));if(visibleReading>0)outlined(canvas,visiblePrefix(reading,visibleReading),x+(measured-rubyWidth)/2+token.ruby.x*rubyOffsetScale,baseline-font*1.05f+token.ruby.y*rubyOffsetScale);paint.setTextSize(font);}remaining=Math.max(0,remaining-baseCharacters);index+=baseCharacters;x+=measured;
+        if(!reading.isEmpty()){paint.setTextSize(font*.45f);float rubyWidth=paint.measureText(reading);int visibleReading=rubyVisibleCharacters(visibleBase,baseCharacters,reading.codePointCount(0,reading.length()));if(visibleReading>0)outlined(canvas,visiblePrefix(reading,visibleReading),token.ruby.left(x,measured,rubyWidth,rubyOffsetScale),baseline-font*1.05f+token.ruby.y*rubyOffsetScale);paint.setTextSize(font);}remaining=Math.max(0,remaining-baseCharacters);index+=baseCharacters;x+=measured;
     }tailX=x;tailBaseline=baseline;paint.setColor(fill);}
 
     }
