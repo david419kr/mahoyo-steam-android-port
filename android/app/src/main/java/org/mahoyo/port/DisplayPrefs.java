@@ -18,6 +18,7 @@ final class DisplayPrefs {
     boolean separateDialogue(int width,int height){return dialogueMode()==1 || dialogueMode()==2 && width>0 && height>0 && height>=width*.70f;}
     int fontPercent(){return Math.max(75,Math.min(150,values.getInt("fontPercent",100)));}
     int marginPercent(){return Math.max(0,Math.min(160,values.getInt("marginPercent",100)));}
+    int fullscreenDimPercent(){return Math.max(0,Math.min(100,values.getInt("fullscreenDimPercent",100)));}
     float dialogueScale(){float value=values.getFloat("dialogueScale",1f);return Float.isFinite(value)?Math.max(.6f,value):1f;}
     int volume(String channel){return values.getInt("volume_"+channel,100);}
     int textSpeed(){int speed=values.getInt("textSpeed",40);return speed==0?0:Math.max(10,Math.min(100,speed));}

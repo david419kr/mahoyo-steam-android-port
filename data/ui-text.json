@@ -24,6 +24,8 @@
     ["fullscreen_dialogue", ["원본 전체 화면"], "Full screen", "全画面", "원본 전체 화면", "全屏", "全螢幕"],
     ["detached_dialogue", ["하단 분리"], "Bottom panel", "下部パネル", "하단 분리", "底部独立", "底部分離"],
     ["automatic", ["자동"], "Automatic", "自動", "자동", "自动", "自動"],
+    ["fullscreen_backdrop", ["전체화면 배경 농도"], "Full-screen background dimming", "全画面の背景の暗さ", "전체화면 배경 농도", "全屏背景暗度", "全螢幕背景暗度"],
+    ["fullscreen_backdrop_hint", ["0%는 검정 배경을 끕니다. 글자와 장식은 유지됩니다."], "0% removes the dimming layer. Text and ornaments remain visible.", "0%で黒い背景を非表示にします。文字と装飾はそのまま表示されます。", "0%는 검정 배경을 끕니다. 글자와 장식은 유지됩니다.", "0%关闭黑色背景，文字和装饰保持显示。", "0%關閉黑色背景，文字與裝飾維持顯示。"],
     ["font_size", ["글자 크기"], "Text size", "文字サイズ", "글자 크기", "文字大小", "文字大小"],
     ["horizontal_margin", ["좌우 여백"], "Side margins", "左右の余白", "좌우 여백", "左右边距", "左右邊距"],
     ["text_speed", ["텍스트 속도"], "Text speed", "文字表示速度", "텍스트 속도", "文字速度", "文字速度"],

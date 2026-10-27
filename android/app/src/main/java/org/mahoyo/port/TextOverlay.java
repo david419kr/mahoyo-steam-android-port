@@ -25,7 +25,7 @@ final class TextOverlay extends View {
     private final Runnable cursorFrame=()->invalidate();
     private Scene preparedScene;
     private int preferredPanelHeight;
-    private float fontScale=1,marginScale=1;
+    private float fontScale=1,marginScale=1,backdropScale=1;
     private float panelScale=1,effectiveScale=1,maximumScale=2,pinchSpan,pinchFont,pinchMargin,density=1;
     private boolean handleClaimed,handleChanged;private float handleDownY,handleStartHeight,handleStartScale;
     private final Paint handlePaint=new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -44,7 +44,7 @@ final class TextOverlay extends View {
     int fontPercent(){return Math.round(fontScale*100);}
     int marginPercent(){return Math.round(marginScale*100);}
     int panelHeight(Scene scene,DisplayPrefs prefs,int contentWidth,int contentHeight,float density,float scaledDensity){
-        this.density=density;if(!pinchClaimed){fontScale=prefs.fontPercent()/100f;marginScale=prefs.marginPercent()/100f;}
+        this.density=density;backdropScale=prefs.fullscreenDimPercent()/100f;if(!pinchClaimed){fontScale=prefs.fontPercent()/100f;marginScale=prefs.marginPercent()/100f;}
         effectiveScale=PanelSizing.scale(contentHeight,density,scaledDensity,panelScale);maximumScale=PanelSizing.scale(contentHeight,density,scaledDensity,Float.MAX_VALUE);
         // Typography and box height are independent controls.
         panelFont=PanelSizing.font(contentHeight,density,scaledDensity)*fontScale;panelPadding=20*density;
@@ -108,16 +108,16 @@ final class TextOverlay extends View {
                 planned.following=previous.following;planned.offset=previous.following?planned.maximum:Math.min(planned.maximum,layout.offsetFor(previous.layout.anchor(previous.scroll)));
             }
             PanelSnapshot current=new PanelSnapshot(scene,layout,planned.offset,planned.following,Math.round(viewport.panel.height()));
-            renderState=new RenderState(current,oldSnapshot(scene,previous,viewport,font,padding),font,padding,scroll.revision,fontScale,marginScale);
-        }else{float font=panelFont>0?panelFont:40*viewport.scale,padding=panelPadding>0?panelPadding:font*.9f;renderState=new RenderState(null,oldSnapshot(scene,previous,viewport,font,padding),font,padding,scroll.revision,fontScale,marginScale);}
+            renderState=new RenderState(current,oldSnapshot(scene,previous,viewport,font,padding),font,padding,scroll.revision,fontScale,marginScale,backdropScale);
+        }else{float font=panelFont>0?panelFont:40*viewport.scale,padding=panelPadding>0?panelPadding:font*.9f;renderState=new RenderState(null,oldSnapshot(scene,previous,viewport,font,padding),font,padding,scroll.revision,fontScale,marginScale,backdropScale);}
         if(hidden||scene.transition!=null){scroller.abortAnimation();endTouch();}
         return renderState;
     }
     private PanelSnapshot oldSnapshot(Scene scene,PanelSnapshot previous,Viewport viewport,float font,float padding){if(scene.transition==null||scene.transition.old==null||preferredPanelHeight<=0||scene.transition.old.movie!=null)return null;Scene source=scene.transition.old;String key=contentKey(source);PanelSnapshot saved=previous!=null&&previous.key.equals(key)?previous:renderState==null?null:renderState.snapshot(source);if(saved==null)return null;PanelLayout oldLayout=layout(source,Math.max(1,viewport.content.width()-2*horizontalInset(viewport.content.width(),padding,marginScale)),font);float oldScroll=saved.layout==oldLayout?saved.scroll:oldLayout.offsetFor(saved.layout.anchor(saved.scroll));return new PanelSnapshot(source,oldLayout,Math.min(oldScroll,Math.max(0,oldLayout.visibleHeight(source)-(preferredPanelHeight-2*padding))),saved.following,preferredPanelHeight);}
     void present(Scene scene,Viewport viewport,boolean hidden){if(preparedScene!=scene||renderState==null)prepare(scene,viewport,hidden);RenderState next=renderState;
-        if(next.current!=null){PanelSnapshot current=next.current;boolean preserve=scroll.revision!=next.revision&&current.layout.document.startsWith(scroll.document);if(!current.layout.document.startsWith(scroll.document))scroller.abortAnimation();float previousMaximum=scroll.maximum;scroll.update(current.layout.document,Math.max(0,current.layout.visibleHeight(scene)-(viewport.panel.height()-2*next.padding)));if(scroll.following&&scroll.maximum>previousMaximum)scroller.abortAnimation();if(!preserve){scroll.offset=current.scroll;scroll.following=current.following;}next=new RenderState(current.withScroll(scroll.offset,scroll.following),next.old,next.font,next.padding,scroll.revision,next.fontScale,next.marginScale);
+        if(next.current!=null){PanelSnapshot current=next.current;boolean preserve=scroll.revision!=next.revision&&current.layout.document.startsWith(scroll.document);if(!current.layout.document.startsWith(scroll.document))scroller.abortAnimation();float previousMaximum=scroll.maximum;scroll.update(current.layout.document,Math.max(0,current.layout.visibleHeight(scene)-(viewport.panel.height()-2*next.padding)));if(scroll.following&&scroll.maximum>previousMaximum)scroller.abortAnimation();if(!preserve){scroll.offset=current.scroll;scroll.following=current.following;}next=new RenderState(current.withScroll(scroll.offset,scroll.following),next.old,next.font,next.padding,scroll.revision,next.fontScale,next.marginScale,next.backdropScale);
         }else{scroller.abortAnimation();scroll.clear();endTouch();}
-        String visualKey=contentKey(scene)+":"+fullscreenBackdropAlpha(scene)+":"+(scene.transition!=null)+":"+hidden+":"+viewport.area+":"+viewport.frame+":"+viewport.panel+":"+viewport.scale+":"+next.font+":"+next.padding+":"+next.fontScale+":"+next.marginScale+":"+(next.current==null?"":next.current.scroll+":"+next.current.following);
+        String visualKey=contentKey(scene)+":"+fullscreenBackdropAlpha(scene)+":"+(scene.transition!=null)+":"+hidden+":"+viewport.area+":"+viewport.frame+":"+viewport.panel+":"+viewport.scale+":"+next.font+":"+next.padding+":"+next.fontScale+":"+next.marginScale+":"+next.backdropScale+":"+(next.current==null?"":next.current.scroll+":"+next.current.following);
         this.scene=scene;this.viewport=viewport;this.hidden=hidden;presentedState=next;
         // Graphics-only ticks retain the Canvas display list; dialogue/cursor/scroll changes still redraw at native resolution.
         if(!visualKey.equals(presentedVisualKey)){presentedVisualKey=visualKey;invalidate();}}
@@ -141,15 +141,15 @@ final class TextOverlay extends View {
     private void endTouch(){touching=false;dragging=false;if(velocity!=null){velocity.recycle();velocity=null;}}
     @Override public boolean performClick(){super.performClick();if(advance!=null)advance.run();return true;}
     @Override public void computeScroll(){if(scroller.computeScrollOffset()){scroll.manual(scroller.getCurrY());publishScroll();postInvalidateOnAnimation();}}
-    private void publishScroll(){if(presentedState!=null&&presentedState.current!=null)presentedState=new RenderState(presentedState.current.withScroll(scroll.offset,scroll.following),presentedState.old,presentedState.font,presentedState.padding,scroll.revision,presentedState.fontScale,presentedState.marginScale);invalidate();}
+    private void publishScroll(){if(presentedState!=null&&presentedState.current!=null)presentedState=new RenderState(presentedState.current.withScroll(scroll.offset,scroll.following),presentedState.old,presentedState.font,presentedState.padding,scroll.revision,presentedState.fontScale,presentedState.marginScale,presentedState.backdropScale);invalidate();}
     private PanelLayout layout(Scene scene,float width,float font){String key=layoutKey(scene)+":"+width+":"+font;PanelLayout value=layouts.get(key);if(value==null){value=new PanelLayout(scene,width,font,painter.paint);layouts.put(key,value);while(layouts.size()>6)layouts.remove(layouts.keySet().iterator().next());}return value;}
     private static String contentKey(Scene scene){return scene.json.optString("language","ja")+":"+scene.texts.toString();}
     private static String layoutKey(Scene scene){StringBuilder key=new StringBuilder(scene.json.optString("language","ja"));for(JSONObject item:scene.texts)key.append(item.optString("text","")).append('\u0000').append(item.opt("color")).append('\u0000').append(item.optDouble("fontSize",40)).append('\u0001');return key.toString();}
     static final class RenderState {
-        final PanelSnapshot current,old;final float font,padding,fontScale,marginScale;final long revision;
-        RenderState(PanelSnapshot current,PanelSnapshot old,float font,float padding,long revision,float fontScale,float marginScale){this.fontScale=fontScale;this.marginScale=marginScale;this.current=current;this.old=old;this.font=font;this.padding=padding;this.revision=revision;}
+        final PanelSnapshot current,old;final float font,padding,fontScale,marginScale,backdropScale;final long revision;
+        RenderState(PanelSnapshot current,PanelSnapshot old,float font,float padding,long revision,float fontScale,float marginScale,float backdropScale){this.fontScale=fontScale;this.marginScale=marginScale;this.backdropScale=backdropScale;this.current=current;this.old=old;this.font=font;this.padding=padding;this.revision=revision;}
         PanelSnapshot snapshot(Scene source){if(current!=null&&current.source==source)return current;if(old!=null&&old.source==source)return old;String key=contentKey(source);if(old!=null&&old.key.equals(key))return old;return current!=null&&current.key.equals(key)?current:null;}
-        String captureKey(Scene source){PanelSnapshot value=snapshot(source);return fontScale+":"+marginScale+":"+(value==null?"":value.layout.width+":"+font+":"+padding+":"+value.scroll+":"+value.panelHeight);}
+        String captureKey(Scene source){PanelSnapshot value=snapshot(source);return fontScale+":"+marginScale+":"+backdropScale+":"+(value==null?"":value.layout.width+":"+font+":"+padding+":"+value.scroll+":"+value.panelHeight);}
         Viewport viewportFor(Scene source,Viewport viewport){PanelSnapshot value=snapshot(source);return source.movie!=null||source.wholeFrame?viewport.withPanel(0):value==null?viewport:viewport.withPanel(value.panelHeight);}
     }
     private static final class PanelSnapshot {
@@ -264,7 +264,15 @@ final class TextOverlay extends View {
     TextPainter(){paint.setTypeface(NORMAL_FACE);}
     private void style(boolean italic){if(italicFace!=italic){paint.setTypeface(italic?ITALIC_FACE:NORMAL_FACE);italicFace=italic;}}
     void draw(Canvas canvas,Scene scene,Viewport viewport,RenderState state){draw(canvas,scene,viewport,state,true);}
-    void draw(Canvas canvas,Scene scene,Viewport viewport,RenderState state,boolean stationary){paint.setTextLocale(Locale.forLanguageTag(scene.json.optString("language","ja")));if(viewport.panel.height()>0){drawPanel(canvas,scene,viewport,state,stationary);return;}canvas.save();canvas.clipRect(viewport.area);float backdrop=fullscreenBackdropAlpha(scene);if(backdrop>0){paint.clearShadowLayer();paint.setShader(null);paint.setStyle(Paint.Style.FILL);paint.setColor(multiplyAlpha(0x99000000,backdrop));canvas.drawRect(viewport.area,paint);DialogueArt.frame(canvas,viewport.area,false,backdrop);}
+    void draw(Canvas canvas,Scene scene,Viewport viewport,RenderState state,boolean stationary){
+        paint.setTextLocale(Locale.forLanguageTag(scene.json.optString("language","ja")));if(viewport.panel.height()>0){drawPanel(canvas,scene,viewport,state,stationary);return;}
+        canvas.save();canvas.clipRect(viewport.area);float backdrop=fullscreenBackdropAlpha(scene);
+        if(backdrop>0){
+            paint.clearShadowLayer();paint.setShader(null);paint.setStyle(Paint.Style.FILL);
+            float dim=backdrop*(state==null?1:state.backdropScale);
+            if(dim>0){paint.setColor(multiplyAlpha(0x99000000,dim));canvas.drawRect(viewport.area,paint);}
+            DialogueArt.frame(canvas,viewport.area,false,backdrop);
+        }
         for(JSONObject item:scene.texts){String text=item.optString("text","");if(text.isEmpty())continue;
             float alpha=(float)item.optDouble("alpha",1);if(alpha<=0)continue;float margin=state==null?1:state.marginScale,nativeX=(float)item.optDouble("x",150),nativeWidth=(float)item.optDouble("w",1620),nativeFont=(float)item.optDouble("fontSize",40);RectF r=viewport.transform(nativeX*margin,(float)item.optDouble("y",100),nativeWidth+2*nativeX*(1-margin),(float)item.optDouble("h",850));style(false);paint.setTextSize(nativeFont*viewport.scale*(state==null?1:state.fontScale));paint.setColor(multiplyAlpha(color(item.opt("color"),Color.WHITE),alpha));paint.clearShadowLayer();rubyOffsetScale=viewport.scale;
             canvas.save();canvas.clipRect(r);canvas.translate(r.left,r.top);drawFullParagraph(canvas,text,r.width(),r.height(),nativeFont,item.optInt("visibleCharacters",Integer.MAX_VALUE),item.optInt("activeFrom",0),item.optBoolean("cursor",false),alpha,stationary);canvas.restore();

@@ -76,6 +76,8 @@ final class SettingsPanel extends LinearLayout {
             TextView resolutionHint=label("게임 이미지의 가로·세로 해상도에 각각 적용됩니다. 50%는 픽셀 수가 25%입니다. 대사와 메뉴는 기기 해상도를 유지합니다.",13);resolutionHint.setTextColor(0xffa7b9d0);resolutionHint.setPadding(0,0,0,dp(10));content.addView(resolutionHint);
             options("여백","ambient",new String[]{"검정","이미지색"},prefs.ambient()?1:0,true);
             options("대화창","dialogue",new String[]{"원본 전체 화면","하단 분리","자동"},prefs.dialogueMode(),false);
+            typography("전체화면 배경 농도","fullscreenDimPercent",0,100,prefs.fullscreenDimPercent());
+            TextView dimHint=label("0%는 검정 배경을 끕니다. 글자와 장식은 유지됩니다.",13);dimHint.setTextColor(0xffa7b9d0);dimHint.setPadding(0,0,0,dp(10));content.addView(dimHint);
             typography("글자 크기","fontPercent",75,150,prefs.fontPercent());typography("좌우 여백","marginPercent",0,160,prefs.marginPercent());
             TextView hint=label("화면비가 바뀌어도 진행은 유지됩니다. 두 손가락 탭으로 메뉴를 표시하거나 숨길 수 있습니다.",14);hint.setTextColor(0xffa7b9d0);hint.setPadding(0,dp(18),0,dp(18));content.addView(hint);
         }else if(tab==1){

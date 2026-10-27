@@ -62,6 +62,27 @@ for(boolean detached:new boolean[]{true,false}){
 }
 
 Context resolutionContext=new Context();DisplayPrefs resolutionPrefs=new DisplayPrefs(resolutionContext);
+Context dimContext=new Context();DisplayPrefs dimPrefs=new DisplayPrefs(dimContext);TextOverlay dimOverlay=new TextOverlay(dimContext);Scene dimScene=scene("AB",Integer.MAX_VALUE);Viewport dimViewport=viewport(0);
+check(dimPrefs.fullscreenDimPercent()==100,"fullscreen background defaults to its existing maximum darkness");String priorDimKey="";
+dimScene.json.put("windowAlphaFixed16",65536);dimOverlay.panelHeight(dimScene,dimPrefs,2480,2088,2.7625f,2.7625f);show(dimOverlay,dimScene,dimViewport);int beforeDimChange=dimOverlay.invalidates;
+dimContext.prefs.values.put("fullscreenDimPercent",0);dimOverlay.panelHeight(dimScene,dimPrefs,2480,2088,2.7625f,2.7625f);show(dimOverlay,dimScene,dimViewport);check(dimOverlay.invalidates==beforeDimChange+1,"changing only the preference redraws an unchanged dialogue scene");
+for(int percent=0;percent<=100;percent++){
+ dimContext.prefs.values.put("fullscreenDimPercent",percent);check(new DisplayPrefs(dimContext).fullscreenDimPercent()==percent,"all 101 dimming levels persist");
+ for(int nativeAlpha:new int[]{65536,32768}){
+  dimScene.json.put("windowAlphaFixed16",nativeAlpha);dimOverlay.panelHeight(dimScene,dimPrefs,2480,2088,2.7625f,2.7625f);TextOverlay.RenderState dimState=show(dimOverlay,dimScene,dimViewport);
+  Canvas dimCanvas=new Canvas();int ornaments=DialogueArt.frames;dimOverlay.draw(dimCanvas);int expected=Math.round(153*(nativeAlpha/65536f)*(percent/100f))<<24;
+  check(percent==0?dimCanvas.rectColors.isEmpty():dimCanvas.rectColors.equals(java.util.List.of(expected)),"dimming is relative to the old 0x99 black layer and respects native fades");
+  check(DialogueArt.frames==ornaments+1,"ornaments remain present even at zero dimming");near(DialogueArt.lastAlpha,nativeAlpha/65536f,"ornament alpha is independent of background preference");
+  check(dimCanvas.marks.size()==2&&dimCanvas.marks.get(0).color==0xffe6c7a1,"background preference never changes dialogue glyphs");
+  Bitmap dimCapture=TextOverlay.capture(dimScene,dimViewport,2480,2088,dimState);check(dimCapture.rectColors.equals(dimCanvas.rectColors)&&dimCapture.marks.size()==dimCanvas.marks.size(),"GL transition capture matches the live dimming setting");
+  if(nativeAlpha==65536){String key=dimState.captureKey(dimScene);check(!key.equals(priorDimKey),"changing background setting invalidates captured text pixels");priorDimKey=key;}
+  int invalidations=dimOverlay.invalidates;show(dimOverlay,dimScene,dimViewport);check(dimOverlay.invalidates==invalidations,"unchanged dimming does not cause idle redraws");
+ }
+}
+dimContext.prefs.values.put("fullscreenDimPercent",-1);check(dimPrefs.fullscreenDimPercent()==0,"dimming lower bound");dimContext.prefs.values.put("fullscreenDimPercent",101);check(dimPrefs.fullscreenDimPercent()==100,"dimming upper bound");
+java.util.List<Integer> panelFills=null;
+for(int percent:new int[]{0,100}){dimContext.prefs.values.put("fullscreenDimPercent",percent);int panel=dimOverlay.panelHeight(dimScene,dimPrefs,2480,2088,2.7625f,2.7625f);show(dimOverlay,dimScene,viewport(panel));Canvas panelCanvas=new Canvas();dimOverlay.draw(panelCanvas);if(panelFills==null)panelFills=panelCanvas.rectColors;else check(panelFills.equals(panelCanvas.rectColors),"fullscreen dimming never changes detached panel fill or borders");}
+dimScene.json.put("windowAlphaFixed16",0);dimOverlay.panelHeight(dimScene,dimPrefs,2480,2088,2.7625f,2.7625f);show(dimOverlay,dimScene,dimViewport);int hiddenOrnaments=DialogueArt.frames;dimOverlay.draw(new Canvas());check(DialogueArt.frames==hiddenOrnaments,"native window hide still hides ornaments");
 for(int legacyFilter:new int[]{0,1,2,999}){resolutionContext.prefs.values.put("filter",legacyFilter);check(resolutionPrefs.filter()==0,"legacy bicubic/lanczos preferences always resolve to bilinear");}
 check(resolutionPrefs.renderPercent()==100&&resolutionPrefs.renderDimension(2160)==2160,"rendering defaults to native resolution");
 for(int percent=50;percent<=100;percent++){
