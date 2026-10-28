@@ -65,7 +65,7 @@ In History, use the rewind button and confirm to return to that dialogue scene. 
 
 Update checks are enabled by default and run once at launch. Offline checks are silently skipped. You can skip one version or turn notifications off, and use **Settings → Game** to check manually or reset those preferences. Updates come from GitHub releases; the app verifies the APK package and signing certificate before opening Android’s installation confirmation.
 
-Use **Export ZIP** and **Import ZIP** in the Save/Load header to back up manual slots, thumbnails and shared progress. Import uses empty slots first and shows the exact slots to be overwritten if there is not enough room. Image, clear and achievement unlocks are merged; existing settings and navigation state are preserved. Export a ZIP before uninstalling or clearing app storage.
+Use **Export ZIP** and **Import ZIP** in the Save/Load header to back up manual slots, thumbnails and shared progress. Import uses empty slots first and shows the exact slots to be overwritten if there is not enough room. Image, clear and achievement unlocks are merged; existing settings and navigation state are preserved. Export a ZIP before uninstalling or clearing app storage. Hold an occupied slot to delete only that save and its thumbnail; two irreversible-deletion confirmations are required. Shared progress is kept.
 
 Saves are kept on this device. Uninstalling the app or clearing its storage removes its installed data and saves.
 

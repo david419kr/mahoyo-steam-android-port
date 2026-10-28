@@ -1298,7 +1298,10 @@ struct Runtime final:mahoyo::vm::Host {
         if(imported){sharedState.generation=std::max(sharedState.generation,imported->generation);sharedLoaded=true;sharedWritePending=variables!=imported->variables||flags!=imported->flags;}
         sharedState.variables=std::move(variables);sharedState.flags=std::move(flags);seenImages.swap(images);trophies.swap(awards);
         if(onlyInitialTitleCommon()){sharedLoaded=false;sharedState.generation=0;pendingFrontendFlags.insert(321);}
-        if(!saveTransferHadActiveSlot||!std::filesystem::exists(savePath(activeSlot))){std::filesystem::file_time_type latest=std::filesystem::file_time_type::min();for(int slot=1;slot<=12;slot++){std::error_code ec;auto stamp=std::filesystem::last_write_time(savePath(slot),ec);if(!ec&&stamp>latest){latest=stamp;activeSlot=slot;}}}
+        refreshActiveSaveSlot(saveTransferHadActiveSlot);
+    }
+    void refreshActiveSaveSlot(bool preserve){
+        if(!preserve||!std::filesystem::exists(savePath(activeSlot))){std::filesystem::file_time_type latest=std::filesystem::file_time_type::min();for(int slot=1;slot<=12;slot++){std::error_code ec;auto stamp=std::filesystem::last_write_time(savePath(slot),ec);if(!ec&&stamp>latest){latest=stamp;activeSlot=slot;}}}
         saveTransferHadActiveSlot=std::filesystem::exists(savePath(activeSlot));
     }
     void unlockTrophy(int selector,Machine& vm){
@@ -1995,9 +1998,10 @@ struct Runtime final:mahoyo::vm::Host {
             if(type=="language"){if(!mahoyo::language::supported(languageAssets.edition(),payload))throw mahoyo::vm::Error("Language not available in this edition");pendingLanguage=payload;applyPendingLanguage();++version;return;}
             if(type=="particlesReady"){particleOverlays.acknowledge(version,payload,tick,paused);return;}
             notice.clear();
-            if(type=="backupPrepare"||type=="progressImport"){
+            if(type=="backupPrepare"||type=="progressImport"||type=="slotDeleted"){
                 try{if(!paused&&mode!="title")throw mahoyo::save::Error("Save transfer requires a paused game");
                     if(type=="backupPrepare"){if(!flushShared())return;saveTransferHadActiveSlot=std::filesystem::exists(savePath(activeSlot));notice="Save backup ready.";}
+                    else if(type=="slotDeleted"){refreshActiveSaveSlot(true);notice="Save slot deleted.";}
                     else{refreshImportedProgress();notice="Imported progress refreshed.";}
                 }catch(const std::exception&){notice="Save transfer preparation failed.";}++version;return;
             }

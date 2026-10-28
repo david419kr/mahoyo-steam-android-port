@@ -17,5 +17,11 @@ static void titleContinue(){
     const auto older=f.root/"savedata/slot1.whs",newer=f.root/"savedata/slot12.whs";f.extraFiles.push_back(older);f.extraFiles.push_back(newer);mahoyo::save::writeAtomic(older,first);fs::last_write_time(older,fs::file_time_type::clock::now()-std::chrono::hours(1));mahoyo::save::writeAtomic(newer,last);
     auto result=f.command("progressImport");check(result.find("Imported progress refreshed.")!=std::string::npos,"title accepts imported manual slots");result=f.command("action","continue");check(result.find("\"notice\":\"Loaded\"")!=std::string::npos,"continue selects an imported slot when its old active slot is absent");f.command("save","2");InspectHost host;mahoyo::vm::Machine vm(host);vm.loadState(mahoyo::save::read(f.root/"savedata/slot2.whs").vm);check(vm.variable(5)==22,"fresh import chooses the latest save even when the imported archive also contains slot1");f.passed=true;
 }
-static void run(){refresh();titleContinue();}
+static void deletedActiveSlot(){
+    Program p;p.push(11);p.push(5);p.op(0xe0);p.push(1);p.push(9);p.op(0xe6);p.dialogue(0);p.push(22);p.push(5);p.op(0xe0);p.dialogue(1);p.op(0xf4);Fixture f(std::move(p));f.extraFiles.push_back(f.root/"savedata/slot1.whs");f.command("textSpeed","0");f.firstComplete();f.command("save","1");f.command("advance");f.command("save","2");auto current=f.command("pause");auto common=mahoyo::save::read(f.root/"savedata/shared.whp");
+    fs::remove(f.root/"savedata/slot2.whs");auto state=f.command("slotDeleted");check(state.find("Save slot deleted.")!=std::string::npos&&history_rewind_cases::visibleText(state)==history_rewind_cases::visibleText(current),"deletion refresh keeps the currently displayed game scene");check(mahoyo::save::read(f.root/"savedata/shared.whp").hostExtra==common.hostExtra,"slot deletion refresh does not rewrite common progress");
+    state=f.command("action","continue");check(state.find("\"notice\":\"Loaded\"")!=std::string::npos,"continue falls back to a remaining slot after deleting the active one");check(!fs::exists(f.root/"savedata/slot2.whs"),"deletion refresh cannot recreate the deleted slot");
+    fs::remove(f.root/"savedata/slot1.whs");f.command("slotDeleted");state=f.command("action","continue");check(state.find("No saved game was found.")!=std::string::npos&&state.find("\"error\":\"\"")!=std::string::npos,"deleting the final slot keeps continue failure informational");f.passed=true;
+}
+static void run(){refresh();titleContinue();deletedActiveSlot();}
 }

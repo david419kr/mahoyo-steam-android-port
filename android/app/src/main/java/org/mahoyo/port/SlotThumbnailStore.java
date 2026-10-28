@@ -18,12 +18,13 @@ final class SlotThumbnailStore {
     private final Handler ui=new Handler(Looper.getMainLooper());
     SlotThumbnailStore(File saves,File sidecars){this.saves=saves;this.sidecars=sidecars;}
     static final class Entry {
-        final int slot;final boolean exists;final long modified,size;final String text;final Bitmap thumbnail;
-        Entry(int slot,boolean exists,long modified,long size,String text,Bitmap thumbnail){this.slot=slot;this.exists=exists;this.modified=modified;this.size=size;this.text=text;this.thumbnail=thumbnail;}
+        final int slot;final boolean exists;final long modified,size;final String text,sha256;final Bitmap thumbnail;
+        Entry(int slot,boolean exists,long modified,long size,String text,Bitmap thumbnail){this(slot,exists,modified,size,text,thumbnail,"");}
+        Entry(int slot,boolean exists,long modified,long size,String text,Bitmap thumbnail,String sha256){this.slot=slot;this.exists=exists;this.modified=modified;this.size=size;this.text=text;this.thumbnail=thumbnail;this.sha256=sha256;}
     }
     File saveFile(int slot){if(slot<1||slot>COUNT)throw new IllegalArgumentException("Invalid slot");return new File(saves,"slot"+slot+".whs");}
     void transfer(Runnable work){io.execute(work);} // Serialize backups with pending thumbnail writes.
-    void list(Consumer<List<Entry>> completion){io.execute(()->{ArrayList<Entry> entries=new ArrayList<>();for(int slot=1;slot<=COUNT;slot++){File file=saveFile(slot);SlotSaveMetadata metadata=null;Bitmap thumb=null;boolean exists=file.isFile();if(exists)try{metadata=SlotSaveMetadata.read(file);thumb=readThumbnail(slot,metadata);}catch(IOException|JSONException|RuntimeException error){android.util.Log.w("WoH.Slots","Slot metadata "+slot,error);}entries.add(new Entry(slot,exists,metadata==null?file.lastModified():metadata.modified,metadata==null?file.length():metadata.size,metadata==null?"":metadata.text,thumb));}ui.post(()->completion.accept(entries));});}
+    void list(Consumer<List<Entry>> completion){io.execute(()->{ArrayList<Entry> entries=new ArrayList<>();for(int slot=1;slot<=COUNT;slot++){File file=saveFile(slot);SlotSaveMetadata metadata=null;Bitmap thumb=null;boolean exists=file.isFile();if(exists)try{metadata=SlotSaveMetadata.read(file);thumb=readThumbnail(slot,metadata);}catch(IOException|JSONException|RuntimeException error){android.util.Log.w("WoH.Slots","Slot metadata "+slot,error);}entries.add(new Entry(slot,exists,metadata==null?file.lastModified():metadata.modified,metadata==null?file.length():metadata.size,metadata==null?"":metadata.text,thumb,metadata==null?"":metadata.sha256));}ui.post(()->completion.accept(entries));});}
     /** Run on the serialized engine executor immediately after notice=Saved.
      * Bind before any later save command, then recheck the binding on the I/O worker.
      * Ownership of image transfers here even if binding or submission fails. */

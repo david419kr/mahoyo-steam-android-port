@@ -161,6 +161,17 @@
     ["save_zip_failed", [], "Save transfer failed", "セーブデータの転送に失敗しました", "세이브데이터 전송 실패", "存档传输失败", "存檔傳輸失敗"],
     ["save_zip_failed_info", [], "Check that save data exists, the ZIP is a valid backup from this app, and enough storage is available. Then try again.", "セーブデータの有無、このアプリで作成した正しいZIPかどうか、空き容量を確認してからお試しください。", "저장된 데이터가 있는지, 이 앱에서 만든 정상적인 ZIP인지, 저장 공간이 충분한지 확인한 뒤 다시 시도해 주세요.", "请确认已有存档、ZIP是由此应用生成的有效备份，并且存储空间足够，然后重试。", "請確認已有存檔、ZIP是由此應用程式產生的有效備份，且儲存空間足夠，然後重試。"],
     ["save_zip_exported", [], "Save ZIP exported.", "セーブZIPを書き出しました。", "세이브 ZIP을 내보냈습니다.", "已导出存档ZIP。", "已匯出存檔ZIP。"],
-    ["save_zip_imported", [], "Imported %d save slots and merged shared progress.", "%d個のセーブスロットを読み込み、共通の進行記録を統合しました。", "세이브 %d개 슬롯을 가져오고 공통 진행 기록을 병합했습니다.", "已导入%d个存档槽并合并共通进度。", "已匯入%d個存檔欄位並合併共通進度。"]
+    ["save_zip_imported", [], "Imported %d save slots and merged shared progress.", "%d個のセーブスロットを読み込み、共通の進行記録を統合しました。", "세이브 %d개 슬롯을 가져오고 공통 진행 기록을 병합했습니다.", "已导入%d个存档槽并合并共通进度。", "已匯入%d個存檔欄位並合併共通進度。"],
+    ["save_slot_long_press", [], "Hold to delete", "長押しで削除", "길게 눌러 삭제", "长按删除", "長按刪除"],
+    ["save_slot_delete_title", [], "Delete save slot", "セーブスロットの削除", "세이브 슬롯 삭제", "删除存档槽", "刪除存檔欄位"],
+    ["save_slot_delete_final_title", [], "Final deletion confirmation", "削除の最終確認", "삭제 최종 확인", "最终删除确认", "刪除最終確認"],
+    ["save_slot_delete_warning", [], "Delete the save in slot %d?\n\nThis cannot be undone. Other slots and shared progress will be kept.", "スロット%dのセーブを削除しますか？\n\n削除すると元に戻せません。他のスロットと共通の進行記録は保持します。", "%d번 슬롯의 세이브를 삭제할까요?\n\n삭제하면 복구할 수 없습니다. 다른 슬롯과 공통 진행 기록은 유지됩니다.", "删除槽位%d中的存档？\n\n此操作无法撤销，其他槽位和共通进度将保留。", "要刪除欄位%d中的存檔嗎？\n\n此操作無法復原，其他欄位與共通進度將保留。"],
+    ["save_slot_delete_final_warning", [], "Permanently delete slot %d?\n\nThis is the final confirmation. The deleted save cannot be restored by this app.", "スロット%dを完全に削除しますか？\n\nこれが最後の確認です。削除したセーブをアプリから復元することはできません。", "%d번 슬롯을 영구 삭제할까요?\n\n마지막 확인입니다. 삭제된 세이브는 앱에서 복구할 수 없습니다.", "永久删除槽位%d？\n\n这是最后一次确认，删除后无法通过此应用恢复存档。", "要永久刪除欄位%d嗎？\n\n這是最後一次確認，刪除後無法透過此應用程式還原存檔。"],
+    ["save_slot_delete_continue", [], "Continue", "続ける", "계속", "继续", "繼續"],
+    ["save_slot_delete_permanent", [], "Permanently delete", "完全に削除", "영구 삭제", "永久删除", "永久刪除"],
+    ["save_slot_deleting", [], "Deleting save slot…", "セーブスロットを削除しています…", "세이브 슬롯을 삭제하고 있습니다…", "正在删除存档槽…", "正在刪除存檔欄位…"],
+    ["save_slot_deleted", [], "Save slot deleted.", "セーブスロットを削除しました。", "세이브 슬롯을 삭제했습니다.", "存档槽已删除。", "已刪除存檔欄位。"],
+    ["save_slot_delete_failed", [], "Could not delete the save slot", "セーブスロットを削除できませんでした", "슬롯 삭제 실패", "无法删除存档槽", "無法刪除存檔欄位"],
+    ["save_slot_delete_failed_info", [], "The save may have changed or the files could not be removed. Check the refreshed slot list and try again.", "セーブが変更されたか、ファイルを削除できませんでした。更新された一覧を確認してから再度お試しください。", "세이브가 변경되었거나 파일을 삭제하지 못했습니다. 새로 고친 슬롯 목록을 확인한 뒤 다시 시도해 주세요.", "存档可能已改变，或无法删除文件。请检查刷新后的槽位列表再重试。", "存檔可能已變更，或無法刪除檔案。請檢查重新整理後的欄位清單，再重試。"]
   ]
 }

@@ -388,7 +388,7 @@ public final class MainActivity extends Activity implements SceneRenderer.Assets
                 }).create();slotConfirmation=confirm;confirm.setOnDismissListener(dialog->{if(slotConfirmation==confirm)slotConfirmation=null;flow.confirmClosed();finish.run();});confirm.show();
             };
             boolean available=action.equals("save")||pausedScene.json.optBoolean("canSave");
-            picker[0]=pull&&readerPullDialog instanceof SlotGridDialog?(SlotGridDialog)readerPullDialog:new SlotGridDialog(this,slotThumbnails,action.equals("save"),available,selection);picker[0].selection(available,selection);picker[0].transfers(()->saveTransfer.choose(picker[0],true),()->saveTransfer.choose(picker[0],false));
+            picker[0]=pull&&readerPullDialog instanceof SlotGridDialog?(SlotGridDialog)readerPullDialog:new SlotGridDialog(this,slotThumbnails,action.equals("save"),available,selection);picker[0].selection(available,selection);picker[0].transfers(()->saveTransfer.choose(picker[0],true),()->saveTransfer.choose(picker[0],false));picker[0].deletion(entry->saveTransfer.delete(picker[0],entry));
 
             slotDialog=picker[0];picker[0].setOnDismissListener(dialog->{if(slotDialog==picker[0])slotDialog=null;flow.listClosed();finish.run();});if(pull)prepareReaderPullDialog(picker[0],pullSerial);if(!picker[0].isShowing())picker[0].show();if(pull)readerPullDialogShown(pullSerial);
         });

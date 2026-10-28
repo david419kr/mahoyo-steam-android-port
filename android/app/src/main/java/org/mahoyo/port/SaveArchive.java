@@ -74,6 +74,13 @@ final class SaveArchive {
         return plan;
     }
     private static void remember(Plan plan,File file)throws IOException {if(Files.isSymbolicLink(file.toPath())||file.exists()&&!file.isFile())throw new IOException("Unsafe save target");plan.expected.put(file,file.isFile()?hash(file):"");}
+    static Plan deletion(File saves,File thumbs,int slot,long modified,long size,String selectedHash)throws Exception {
+        validSlot(slot);File save=new File(saves,"slot"+slot+".whs"),thumbnail=new File(thumbs,"slot"+slot+".thumb");
+        if(!save.isFile()||save.lastModified()!=modified||save.length()!=size)throw new IOException("Selected save changed");
+        Plan plan=new Plan(null,saves.getCanonicalFile(),thumbs.getCanonicalFile(),new TreeMap<>(),Collections.emptyList());remember(plan,save);remember(plan,thumbnail);
+        if(!selectedHash.isEmpty()&&!selectedHash.equals(plan.expected.get(save)))throw new IOException("Selected save checksum changed");
+        plan.replacements.put(save,null);plan.replacements.put(thumbnail,null);return plan;
+    }
     static void apply(Plan plan,File journal,boolean overwriteApproved,CheckedAction afterFiles)throws Exception {
         if(!overwriteApproved&&!plan.overwrites.isEmpty())throw new IOException("Overwrite approval required");
         recover(plan.saves,plan.thumbs,journal);for(Map.Entry<File,String> item:plan.expected.entrySet()){String current=item.getKey().isFile()?hash(item.getKey()):"";if(!current.equals(item.getValue()))throw new IOException("Save data changed; import again");}
