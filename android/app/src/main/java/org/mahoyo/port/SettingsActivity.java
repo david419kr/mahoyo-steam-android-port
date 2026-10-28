@@ -23,7 +23,8 @@ public final class SettingsActivity extends Activity {
         android.os.ResultReceiver preview=getIntent().getParcelableExtra("previewReady");
         if(preview!=null)panel.getViewTreeObserver().addOnDrawListener(new android.view.ViewTreeObserver.OnDrawListener(){private boolean sent;@Override public void onDraw(){if(sent)return;sent=true;panel.post(()->{panel.getViewTreeObserver().removeOnDrawListener(this);preview.send(0,null);});}});
     }
-    @Override protected void onResume(){super.onResume();if(orientation.canDetectOrientation())orientation.enable();}
+    @Override protected void onResume(){super.onResume();AppUpdates.resumeInstall(this);if(orientation.canDetectOrientation())orientation.enable();}
+    @Override protected void onDestroy(){AppUpdates.detach(this);super.onDestroy();}
     @Override protected void onPause(){orientation.disable();super.onPause();}
     @Override public void onSaveInstanceState(Bundle state){state.putInt("tab",panel.currentTab());state.putInt("orientation",getRequestedOrientation());super.onSaveInstanceState(state);}
     @Override public void finish(){super.finish();overridePendingTransition(R.anim.settings_stay,R.anim.settings_exit_bottom);}

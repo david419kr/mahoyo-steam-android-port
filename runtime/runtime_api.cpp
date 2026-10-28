@@ -316,7 +316,7 @@ struct Runtime final:mahoyo::vm::Host {
     mahoyo::input_region::Controller inputRegion;
     uint64_t inputJumpRelease=0,inputJumpPreviousPc=0;
     bool hidden=false,automatic=false,skipping=false,paused=false;
-    int textLine=0,activeSlot=1;uint64_t version=1,audioId=0,tick=0,deadline=0,platformLast=0;bool havePlatformTime=false;
+    int textLine=0,activeSlot=1;uint64_t version=1,audioId=0,tick=0,deadline=0,platformLast=0;bool havePlatformTime=false,saveTransferHadActiveSlot=false;
     uint64_t wavePlatformLast=0;bool wavePlatformEnabled=false,wavePlatformSeen=false;
     mahoyo::wait_clock::Clock waitClock;
     void captureWaitClock(){if(transition.active&&wait=="transitionReady"&&!transition.waitClockCaptured){transition.waitClockAge=waitClock.age(tick);transition.waitClockCaptured=true;}}
@@ -1261,20 +1261,45 @@ struct Runtime final:mahoyo::vm::Host {
     }
     std::filesystem::path savePath(int slot) const {return root.parent_path()/"savedata"/("slot"+std::to_string(slot)+".whs");}
     std::filesystem::path seenPath() const {return root.parent_path()/"savedata/seen-images.whp";}
-    void loadSeenImages(){
-        if(!std::filesystem::exists(seenPath()))return;
+    std::set<std::string> readSeenImages() const {
+        std::set<std::string> result;if(!std::filesystem::exists(seenPath()))return result;
         const auto document=mahoyo::save::read(seenPath());std::string bytes(document.hostExtra.begin(),document.hostExtra.end());std::istringstream rows(bytes);std::string signature,name;std::getline(rows,signature);
         if(signature!="WOHSEEN1")throw mahoyo::vm::Error("Invalid image-unlock database");
-        while(rows>>std::quoted(name)){if(!safeName(name)||name.find_first_of("\r\n")!=std::string::npos||name.size()>4096)throw mahoyo::vm::Error("Invalid image-unlock name");seenImages.insert(name);}
+        while(rows>>std::quoted(name)){if(!safeName(name)||name.find_first_of("\r\n")!=std::string::npos||name.size()>4096)throw mahoyo::vm::Error("Invalid image-unlock name");result.insert(name);}
         if(!rows.eof())throw mahoyo::vm::Error("Invalid image-unlock database entry");
+        return result;
     }
+    void loadSeenImages(){auto values=readSeenImages();seenImages.insert(values.begin(),values.end());}
     std::filesystem::path trophyPath() const {return root.parent_path()/"savedata/trophies.whp";}
-    void loadTrophies(){
-        if(!std::filesystem::exists(trophyPath()))return;
+    std::set<int> readTrophies() const {
+        std::set<int> result;if(!std::filesystem::exists(trophyPath()))return result;
         auto document=mahoyo::save::read(trophyPath());std::istringstream input(std::string(document.hostExtra.begin(),document.hostExtra.end()));std::string tag;size_t count;
         if(!(input>>tag>>count)||tag!="WOHTROPHY1"||count>26)throw mahoyo::vm::Error("Invalid local trophy registry");
-        for(size_t i=0;i<count;++i){int id;if(!(input>>id)||id<1||id>26||!trophies.insert(id).second)throw mahoyo::vm::Error("Invalid local trophy ID");}
+        for(size_t i=0;i<count;++i){int id;if(!(input>>id)||id<1||id>26||!result.insert(id).second)throw mahoyo::vm::Error("Invalid local trophy ID");}
         if(input>>tag)throw mahoyo::vm::Error("Unexpected local trophy data");
+        return result;
+    }
+    void loadTrophies(){auto values=readTrophies();trophies.insert(values.begin(),values.end());}
+    void refreshImportedProgress(){
+        // Validate every registry before adopting any imported values in the live VM.
+        auto imported=mahoyo::shared::read(sharedPath());auto images=readSeenImages();auto awards=readTrophies();
+        images.insert(seenImages.begin(),seenImages.end());awards.insert(trophies.begin(),trophies.end());
+        auto variables=machine?machine->sharedVariables():sharedState.variables;auto flags=machine?machine->sharedFlags():sharedState.flags;
+        if(imported){
+            if(machine&&(imported->variables.size()>variables.size()||imported->flags.size()>flags.size()))throw mahoyo::save::Error("Imported progress exceeds VM limits");
+            bool pristine=std::all_of(variables.begin(),variables.end(),[](int32_t value){return value==0;});for(size_t i=0;i<flags.size();++i)if(i!=321&&flags[i])pristine=false;
+            const auto previousVariables=variables.size();
+            variables.resize(std::max(variables.size(),imported->variables.size()));flags.resize(std::max(flags.size(),imported->flags.size()));
+            for(size_t i=0;i<imported->variables.size();++i){if(i==26)variables[i]|=imported->variables[i];else if(pristine||i>=previousVariables)variables[i]=imported->variables[i];}
+            for(size_t i=0;i<imported->flags.size();++i)flags[i]|=imported->flags[i];
+        }
+        for(auto flag:pendingFrontendFlags)if(flag<flags.size())flags[flag]=1;
+        if(machine){for(size_t i=0;i<variables.size();++i)machine->setVariable(i,variables[i],true);for(size_t i=0;i<flags.size();++i)machine->setFlag(i,flags[i]!=0,true);}
+        if(imported){sharedState.generation=std::max(sharedState.generation,imported->generation);sharedLoaded=true;sharedWritePending=variables!=imported->variables||flags!=imported->flags;}
+        sharedState.variables=std::move(variables);sharedState.flags=std::move(flags);seenImages.swap(images);trophies.swap(awards);
+        if(onlyInitialTitleCommon()){sharedLoaded=false;sharedState.generation=0;pendingFrontendFlags.insert(321);}
+        if(!saveTransferHadActiveSlot||!std::filesystem::exists(savePath(activeSlot))){std::filesystem::file_time_type latest=std::filesystem::file_time_type::min();for(int slot=1;slot<=12;slot++){std::error_code ec;auto stamp=std::filesystem::last_write_time(savePath(slot),ec);if(!ec&&stamp>latest){latest=stamp;activeSlot=slot;}}}
+        saveTransferHadActiveSlot=std::filesystem::exists(savePath(activeSlot));
     }
     void unlockTrophy(int selector,Machine& vm){
         auto gate=[&](std::initializer_list<int> flags){return std::all_of(flags.begin(),flags.end(),[&](int index){return vm.flag(size_t(index),true);});};
@@ -1970,6 +1995,12 @@ struct Runtime final:mahoyo::vm::Host {
             if(type=="language"){if(!mahoyo::language::supported(languageAssets.edition(),payload))throw mahoyo::vm::Error("Language not available in this edition");pendingLanguage=payload;applyPendingLanguage();++version;return;}
             if(type=="particlesReady"){particleOverlays.acknowledge(version,payload,tick,paused);return;}
             notice.clear();
+            if(type=="backupPrepare"||type=="progressImport"){
+                try{if(!paused&&mode!="title")throw mahoyo::save::Error("Save transfer requires a paused game");
+                    if(type=="backupPrepare"){if(!flushShared())return;saveTransferHadActiveSlot=std::filesystem::exists(savePath(activeSlot));notice="Save backup ready.";}
+                    else{refreshImportedProgress();notice="Imported progress refreshed.";}
+                }catch(const std::exception&){notice="Save transfer preparation failed.";}++version;return;
+            }
             if(inputRegion.restricted()&&(type=="advance"||type=="auto"||type=="skip"||type=="hide"||type=="history"||type=="title"||type=="action"||type=="load"||type=="movieSkip"))return;
             if(type=="inputUiReady"||type=="inputJumpReleased"||type=="inputPointer"||type=="inputCancel"){
                 inputCommand(type,payload);++version;return;

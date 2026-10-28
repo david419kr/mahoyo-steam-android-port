@@ -82,7 +82,7 @@ final class SettingsPanel extends LinearLayout {
             TextView hint=label("화면비가 바뀌어도 진행은 유지됩니다. 두 손가락 탭으로 메뉴를 표시하거나 숨길 수 있습니다.",14);hint.setTextColor(0xffa7b9d0);hint.setPadding(0,dp(18),0,dp(18));content.addView(hint);
         }else if(tab==1){
             language();textSpeed();autoDelay();
-            volume("음악","bgm");volume("음성","voice");volume("효과음","se");
+            volume("음악","bgm");volume("음성","voice");volume("효과음","se");updates();
             Button installation=button(getContext().getString(R.string.setup_manage));installation.setOnClickListener(v->getContext().startActivity(new android.content.Intent(getContext(),InstallActivity.class).putExtra("manage",true)));content.addView(installation,new LinearLayout.LayoutParams(-1,dp(48)));
             TextView hint=label("하단 분리와 자동 배치는 화면 탭에서 선택할 수 있습니다. 대화창을 위아래로 밀어 이전 문장을 읽고, 탭하여 진행합니다.",14);hint.setTextColor(0xffa7b9d0);hint.setPadding(0,dp(18),0,dp(18));content.addView(hint);
         }else{
@@ -90,6 +90,12 @@ final class SettingsPanel extends LinearLayout {
         }
     }
     private String tr(String text){return UiText.text(getContext(),text);}
+    private void updates(){
+        LinearLayout card=sliderCard();Switch automatic=new Switch(getContext());automatic.setText(UiText.key(getContext(),"update_automatic"));automatic.setTextColor(INK);automatic.setTextSize(14);automatic.setChecked(AppUpdates.enabled(getContext()));card.addView(automatic,new LinearLayout.LayoutParams(-1,dp(48)));automatic.setOnCheckedChangeListener((button,value)->AppUpdates.prefs(getContext()).edit().putBoolean("enabled",value).apply());
+        TextView hint=label(UiText.key(getContext(),"update_automatic_hint"),13);hint.setTextColor(0xffa7b9d0);card.addView(hint);
+        Button check=button(UiText.key(getContext(),"update_check"));check.setOnClickListener(v->AppUpdates.manual((android.app.Activity)getContext()));card.addView(check,new LinearLayout.LayoutParams(-1,dp(46)));
+        Button reset=button(UiText.key(getContext(),"update_reset"));reset.setOnClickListener(v->{AppUpdates.reset(getContext());automatic.setChecked(true);Toast.makeText(getContext(),UiText.key(getContext(),"update_reset_done"),Toast.LENGTH_SHORT).show();});card.addView(reset,new LinearLayout.LayoutParams(-1,dp(46)));
+    }
     private void language(){
         String[] values=LanguagePolicy.choices(GameLanguage.korean(getContext()));String selected=GameLanguage.preference(getContext());
         LinearLayout row=sliderCard();row.addView(label("언어",14));LinearLayout choices=new LinearLayout(getContext());row.addView(choices);
