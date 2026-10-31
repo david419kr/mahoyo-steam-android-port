@@ -5,10 +5,17 @@ import android.content.SharedPreferences;
 
 final class DisplayPrefs {
     final SharedPreferences values;
-    DisplayPrefs(Context context) { values=context.getSharedPreferences("display",Context.MODE_PRIVATE); }
+    DisplayPrefs(Context context) {
+        values=context.getSharedPreferences("display",Context.MODE_PRIVATE);
+        if(values.contains("eventCover")||values.contains("bgCover")){
+            // Preserve the previous effective fit/fill choice when removing the duplicate controls.
+            values.edit().putBoolean("dynamic",values.getBoolean("dynamic",true)&&values.getBoolean("eventCover",true)).remove("eventCover").remove("bgCover").apply();
+        }
+    }
     boolean dynamic(){return values.getBoolean("dynamic",true);}
-    boolean cover(boolean event){return values.getBoolean(event?"eventCover":"bgCover",true);}
     boolean ambient(){return values.getBoolean("ambient",true);}
+    int ambientBlurPercent(){return Math.max(0,Math.min(100,values.getInt("ambientBlurPercent",50)));}
+    int ambientDimPercent(){return Math.max(0,Math.min(100,values.getInt("ambientDimPercent",54)));}
     int renderPercent(){return Math.max(50,Math.min(100,values.getInt("renderPercent",100)));}
     int renderDimension(int pixels){return Math.max(1,Math.round(pixels*renderPercent()/100f));}
     int filter(){return 0;} // Ignore legacy filter preferences; bilinear is the only supported setting.

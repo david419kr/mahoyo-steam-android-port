@@ -70,11 +70,14 @@ final class SettingsPanel extends LinearLayout {
         styleChoice(displayTab,tab==0,true);styleChoice(gameTab,tab==1,true);styleChoice(helpTab,tab==2,true);content.removeAllViews();
         if(tab==0){
             options("표시 모드","dynamic",new String[]{"원본 16:9","동적"},prefs.dynamic()?1:0,true);
-            options("배경","bgCover",new String[]{"전체 표시","꽉 채움"},prefs.cover(false)?1:0,true);
-            options("이벤트 CG","eventCover",new String[]{"전체 표시","꽉 채움"},prefs.cover(true)?1:0,true);
             typography("렌더링 해상도","renderPercent",50,100,prefs.renderPercent());
             TextView resolutionHint=label("게임 이미지의 가로·세로 해상도에 각각 적용됩니다. 50%는 픽셀 수가 25%입니다. 대사와 메뉴는 기기 해상도를 유지합니다.",13);resolutionHint.setTextColor(0xffa7b9d0);resolutionHint.setPadding(0,0,0,dp(10));content.addView(resolutionHint);
             options("여백","ambient",new String[]{"검정","이미지색"},prefs.ambient()?1:0,true);
+            if(prefs.ambient()){
+                typography("여백 블러 강도","ambientBlurPercent",0,100,prefs.ambientBlurPercent());
+                typography("여백 배경 농도","ambientDimPercent",0,100,prefs.ambientDimPercent());
+                TextView ambientHint=label("농도 0%는 원래 이미지색, 100%는 검정입니다.",13);ambientHint.setTextColor(0xffa7b9d0);ambientHint.setPadding(0,0,0,dp(10));content.addView(ambientHint);
+            }
             options("대화창","dialogue",new String[]{"원본 전체 화면","하단 분리","자동"},prefs.dialogueMode(),false);
             typography("전체화면 배경 농도","fullscreenDimPercent",0,100,prefs.fullscreenDimPercent());
             TextView dimHint=label("0%는 검정 배경을 끕니다. 글자와 장식은 유지됩니다.",13);dimHint.setTextColor(0xffa7b9d0);dimHint.setPadding(0,0,0,dp(10));content.addView(dimHint);

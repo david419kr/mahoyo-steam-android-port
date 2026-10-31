@@ -22,15 +22,16 @@ final class Viewport {
         int reserved=Math.max(0,Math.min(panelHeight,Math.round(content.height())-1));panel=new RectF(content.left,content.bottom-reserved,content.right,content.bottom);area=new RectF(content.left,content.top,content.right,panel.top);
         scale=Math.min(area.width()/designWidth,area.height()/designHeight);x=area.centerX()-designWidth*scale/2;y=reserved>0?area.bottom-designHeight*scale:area.centerY()-designHeight*scale/2;
         frame=transform(0,0,designWidth,designHeight);
-        letterboxes=new RectF[]{new RectF(area.left,area.top,area.right,frame.top),new RectF(area.left,frame.bottom,area.right,area.bottom),new RectF(area.left,frame.top,frame.left,frame.bottom),new RectF(frame.right,frame.top,area.right,frame.bottom)};
+        letterboxes=letterboxes();
     }
     /** Keep the existing dynamic composition, then normalize its content to a native capture grid. */
     private Viewport(Viewport source,int width,int height,boolean surfaceNormalized){
         normalizedSource=source;this.surfaceNormalized=surfaceNormalized;normalizationArea=surfaceNormalized?new RectF(0,0,source.width,source.height):source.content;this.width=width;this.height=height;bar=0;menu=false;dynamic=source.dynamic;designWidth=source.designWidth;designHeight=source.designHeight;
         content=normalized(source.content);area=normalized(source.area);panel=normalized(source.panel);frame=normalized(source.frame);
         scale=source.scale*Math.min(width/normalizationArea.width(),height/normalizationArea.height());x=frame.left;y=frame.top;
-        letterboxes=new RectF[source.letterboxes.length];for(int i=0;i<letterboxes.length;i++)letterboxes[i]=normalized(source.letterboxes[i]);
+        letterboxes=letterboxes();
     }
+    private RectF[] letterboxes(){int[] edge=AmbientEdge.rect(width,height,frame.left,frame.top,frame.right,frame.bottom);return new RectF[]{new RectF(area.left,area.top,area.right,edge[1]),new RectF(area.left,edge[3],area.right,area.bottom),new RectF(area.left,edge[1],edge[0],edge[3]),new RectF(edge[2],edge[1],area.right,edge[3])};}
     Viewport normalizedContent(int width,int height){if(width<=0||height<=0||content.width()<=0||content.height()<=0)throw new IllegalArgumentException("Invalid content capture extent");return new Viewport(this,width,height,false);}
     Viewport scaledSurface(int width,int height){if(width<1||height<1||this.width==width&&this.height==height)return this;return new Viewport(surfaceLayout(),width,height,true);}
     Viewport surfaceLayout(){return surfaceNormalized?normalizedSource.surfaceLayout():this;}

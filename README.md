@@ -57,7 +57,7 @@ The QR refreshes automatically. The **?** button next to QR sharing explains the
 
 Swipe in the opposite direction to close a menu. If dialogue or a menu can scroll, reach the scroll edge before swiping farther. You can reverse a menu-opening swipe to cancel it.
 
-In **Settings → Display**, choose the original 16:9 view or an adaptive layout, fit or fill images, and full-screen or bottom-panel dialogue. **Automatic** dialogue layout adapts to the available screen space. Text size and margins are adjustable.
+In **Settings → Display**, choose the original 16:9 view (fit the complete image) or an adaptive layout (fill and crop), and full-screen or bottom-panel dialogue. **Automatic** dialogue layout adapts to the available screen space. Text size and margins are adjustable.
 
 In History, use the rewind button and confirm to return to that dialogue scene. History stored in existing saves is supported too. Save files are not overwritten. Restoration may take a moment; if the destination cannot be verified, your current progress is kept.
 

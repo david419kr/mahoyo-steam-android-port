@@ -35,6 +35,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     private final WarmPolicy warm=new WarmPolicy(32);
     private final WindowMask windowMask=new WindowMask();
     private final PlainImageProgram plainImage=new PlainImageProgram();
+    private final AmbientBlur ambientBlurRenderer=new AmbientBlur();
     private boolean plainEnabled=true,identityChildStage;
     private final WaveRenderer waveRenderer=new WaveRenderer();
     private final GlobalScreenWaveRenderer screenWaveRenderer=new GlobalScreenWaveRenderer();
@@ -75,7 +76,6 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     private volatile Viewport viewport;
     private String renderedEpoch="";
     private volatile boolean dynamic=true,ambient=true;
-    private volatile boolean bgCover=true,eventCover=true;
     private volatile boolean hiddenText;
     private volatile TextOverlay.RenderState textRenderState;
     private volatile int filter;
@@ -85,6 +85,8 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     private final DestinationState mainDestination=new DestinationState(),screenDestination=new DestinationState();
     private volatile int screenDestinationTextureCount;
     private boolean destinationCopyVerified,framebufferLogged;
+    private int ambientBrightnessUniform;
+    private volatile int ambientBlur=50,ambientDim=54;
     private int colorModeUniform,contrastUniform,brightnessUniform,rgbUniform,sepiaUniform,premultipliedUniform,blendFlagUniform,rawOutputUniform;
     private int noiseSamplerUniform,noiseOrientationUniform,noiseFinal28Uniform;
     private Texture transitionFrame,nativeTextTexture;
@@ -107,7 +109,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     static final String MASK_FRAGMENT="#version 300 es\nprecision highp float;precision highp int;uniform sampler2D uOldFrame;uniform sampler2D uRule;uniform vec4 uArea;uniform float uHeight;uniform int uProgress;uniform int uStrength;in vec2 vUv;out vec4 frag;"+
         "float nativeMaskAlpha(float m,int p,int s){if(s==0)return p==0?1.:0.;float hi=min(2.,float(p)/128.);float lo=max(-1.,float(p)/128.-float(s)/256.);float x=clamp((m-lo)/(hi-lo),0.,1.);return x*x*(3.-2.*x);}"+
         "void main(){vec2 pixel=vec2(gl_FragCoord.x,uHeight-gl_FragCoord.y);vec2 ruleUv=(pixel-uArea.xy)/uArea.zw;float a=nativeMaskAlpha(texture(uRule,ruleUv).r,uProgress,uStrength);vec3 old=texture(uOldFrame,vUv).rgb;frag=vec4(old*a,a);}";
-    static final String FRAGMENT="#version 300 es\nprecision highp float;precision highp int;uniform highp sampler2D uImage;uniform highp sampler2D uDestination;uniform highp sampler2D uSepia;uniform vec2 uViewport;uniform vec2 uSize;uniform int uKernel;uniform int uBlur;uniform int uBlend;uniform int uBlendFlag;uniform int uColorMode;uniform int uContrast;uniform int uBrightness;uniform int uRgb;uniform int uPremultiplied;uniform int uRawOutput;uniform float uOpacity;uniform vec4 uTint;uniform vec4 uBounds;in vec2 vUv;out vec4 frag;"+
+    static final String FRAGMENT="#version 300 es\nprecision highp float;precision highp int;uniform highp sampler2D uImage;uniform highp sampler2D uDestination;uniform highp sampler2D uSepia;uniform vec2 uViewport;uniform vec2 uSize;uniform int uKernel;uniform int uBlur;uniform int uBlend;uniform int uBlendFlag;uniform int uColorMode;uniform int uContrast;uniform int uBrightness;uniform int uRgb;uniform int uPremultiplied;uniform int uRawOutput;uniform float uOpacity;uniform vec4 uTint;uniform vec4 uBounds;uniform float uAmbientBrightness;in vec2 vUv;out vec4 frag;"+
         "uniform sampler2D uNoise;uniform int uNoiseOrientation;uniform int uNoiseFinal28;uniform sampler2D uAtlas;uniform int uCount;uniform float uAtlasSide;uniform vec4 uCenter;uniform vec4 uColor;uniform vec4 uDst[8];uniform vec4 uSrc[8];"+
         "bool containsPixel(vec2 p,vec4 r){return all(greaterThanEqual(p,r.xy))&&all(lessThan(p,r.zw));}"+
         "bool containsPatchPixel(vec2 p,vec4 r){return containsPixel(p,vec4(min(r.xy,r.zw),max(r.xy,r.zw)));}"+
@@ -126,7 +128,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
         "ivec3 nativeColor(ivec3 c){int gray=nativeGray(c.r,c.g,c.b);if(uColorMode==6)return ivec3(nativeByte(0,uBrightness,uContrast),nativeByte(gray,uBrightness,uContrast),nativeByte(0,uBrightness,uContrast));if(uColorMode==7)return ivec3(nativeByte(gray,uBrightness,uContrast),nativeByte(0,uBrightness,uContrast),nativeByte(0,uBrightness,uContrast));if(uColorMode==5)return ivec3(nativeByte(0,uBrightness,uContrast),nativeByte(0,uBrightness,uContrast),nativeByte(gray,uBrightness,uContrast));ivec3 sepia=ivec3(0);if(uColorMode==3)sepia=ivec3(floor(texelFetch(uSepia,ivec2(gray,0),0).rgb*255.+.5));else if(nativeChannelPalette(uColorMode)){sepia.r=int(floor(texelFetch(uSepia,ivec2(nativePaletteIndex(c.r,gray,uColorMode),0),0).r*255.+.5));sepia.g=int(floor(texelFetch(uSepia,ivec2(nativePaletteIndex(c.g,gray,uColorMode),0),0).g*255.+.5));sepia.b=int(floor(texelFetch(uSepia,ivec2(nativePaletteIndex(c.b,gray,uColorMode),0),0).b*255.+.5));}ivec3 solid=ivec3((uRgb>>16)&255,(uRgb>>8)&255,uRgb&255);return ivec3(nativeByte(nativePalette(c.r,gray,uColorMode,solid.r,sepia.r),uBrightness,uContrast),nativeByte(nativePalette(c.g,gray,uColorMode,solid.g,sepia.g),uBrightness,uContrast),nativeByte(nativePalette(c.b,gray,uColorMode,solid.b,sepia.b),uBrightness,uContrast));}"+
         "vec4 sourceTexel(ivec2 p){ivec2 lo=ivec2(floor(uBounds.xy*uSize));ivec2 hi=ivec2(floor(uBounds.zw*uSize));vec4 c=texelFetch(uImage,clamp(p,lo,hi),0);if(uPremultiplied!=0)c.rgb=c.a>.000001?c.rgb/c.a:vec3(0.);if(uColorMode!=0||uBrightness!=0||uContrast!=0)c.rgb=vec3(nativeColor(ivec3(floor(c.rgb*255.+.5))))/255.;return c;}"+
         "vec4 sampleImage(vec2 uv){vec2 p=uv*uSize-.5;ivec2 base=ivec2(floor(p));vec2 f=p-vec2(base);if(uKernel==0){vec4 top=mix(sourceTexel(base),sourceTexel(base+ivec2(1,0)),f.x);vec4 bottom=mix(sourceTexel(base+ivec2(0,1)),sourceTexel(base+ivec2(1,1)),f.x);return mix(top,bottom,f.y);}vec4 c=vec4(0.);float total=0.;for(int y=-2;y<=3;y++)for(int x=-2;x<=3;x++){float w=weight(float(x)-f.x)*weight(float(y)-f.y);c+=sourceTexel(base+ivec2(x,y))*w;total+=w;}return clamp(c/max(total,.0001),0.,1.);}"+
-        "vec4 ambientTap(vec2 uv){float lod=clamp(log2(max(1.,min(uSize.x,uSize.y)/8.)),0.,10.);vec2 pad=vec2(exp2(lod)*.5)/uSize;vec2 lo=min(uBounds.xy+pad,(uBounds.xy+uBounds.zw)*.5),hi=max(uBounds.zw-pad,lo);return textureLod(uImage,clamp(uv,lo,hi),lod);}"+
+        "vec4 ambientTap(vec2 uv){return textureLod(uImage,clamp(uv,uBounds.xy,uBounds.zw),0.);}"+
         "vec3 nativeBlendRgb(int mode,vec3 d,vec3 s){"+
         "if(mode==11)return min(d+s,vec3(1.));"+
         "if(mode==12)return max(1.-(1.-d)*1.003921627998352/(s+.003921568859368563),vec3(0.));"+
@@ -156,7 +158,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
         "vec2 nativeNoiseUv(vec2 uv,int orientation){return vec2((orientation&2)==0?uv.x:1.-uv.x,(orientation&1)==0?uv.y:1.-uv.y);}"+
         "vec3 nativeNoisePoint(vec2 q){ivec2 n=textureSize(uNoise,0);return texelFetch(uNoise,clamp(ivec2(floor(q*vec2(n))),ivec2(0),n-ivec2(1)),0).rgb;}"+
         "vec3 nativeNoise78(vec2 uv,int q){return min(nativeNoisePoint(nativeNoiseUv(uv,q)),nativeNoisePoint(nativeNoiseUv(fract(uv*2.),q^3))*(192./255.));}"+
-        NoiseSpecial.SHADER+"void main(){vec4 c=vec4(0.);if(uBlur==1){float total=0.;for(int y=-2;y<=2;y++)for(int x=-2;x<=2;x++){float w=exp(-float(x*x+y*y)*.36);vec4 tap=ambientTap(vUv+vec2(float(x),float(y))*.07);tap.rgb*=tap.a;c+=tap*w;total+=w;}c/=total;c.rgb*=.46;c.a=1.;}else c=sampleImage(vUv);"+
+        NoiseSpecial.SHADER+"void main(){vec4 c=vec4(0.);if(uBlur==1){c=ambientTap(vUv);c.rgb*=uAmbientBrightness;c.a=1.;}else c=sampleImage(vUv);"+
         "if(uRawOutput==6){vec2 pixel=vec2(gl_FragCoord.x,1080.-gl_FragCoord.y);frag=vec4(nativeNoise82(pixel/vec2(1920.,1080.),uNoiseOrientation),c.a);return;}"+
         "if(uRawOutput==8){frag=vec4(1.,1.,1.,c.a);return;}"+
         "if(uRawOutput==9){vec2 pixel=vec2(gl_FragCoord.x,1080.-gl_FragCoord.y);frag=vec4(nativeNoisePoint(nativeNoiseUv(pixel/vec2(1920.,1080.),uNoiseOrientation)),1.);return;}"+
@@ -168,7 +170,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
 
     SceneRenderer(GLSurfaceView view,Assets assets,Consumer<Scene> committed,Consumer<String> errors,MoviePlayer movies){this.view=view;this.assets=assets;this.committed=committed;this.errors=errors;this.movies=movies;}
     void update(Scene value,Viewport vp,DisplayPrefs prefs,boolean hidden){update(value,vp,prefs,hidden,null);}
-    void update(Scene value,Viewport vp,DisplayPrefs prefs,boolean hidden,TextOverlay.RenderState textState){desired=value;viewport=vp;textRenderState=textState;dynamic=prefs.dynamic();ambient=prefs.ambient();bgCover=prefs.cover(false);eventCover=prefs.cover(true);filter=Math.max(0,Math.min(2,prefs.filter()));hiddenText=hidden;if(!value.preloadKey.equals(warmInputKey)){warmInputKey=value.preloadKey;view.queueEvent(()->updateWarmHints(value));}String id=movieId(value);if(movieRenderGate.request(id,frameKey(vp),value.transition!=null,id.equals(movieFrameId)))view.requestRender();}
+    void update(Scene value,Viewport vp,DisplayPrefs prefs,boolean hidden,TextOverlay.RenderState textState){desired=value;viewport=vp;textRenderState=textState;dynamic=prefs.dynamic();ambient=prefs.ambient();ambientBlur=prefs.ambientBlurPercent();ambientDim=prefs.ambientDimPercent();filter=Math.max(0,Math.min(2,prefs.filter()));hiddenText=hidden;if(!value.preloadKey.equals(warmInputKey)){warmInputKey=value.preloadKey;view.queueEvent(()->updateWarmHints(value));}String id=movieId(value);if(movieRenderGate.request(id,frameKey(vp),value.transition!=null,id.equals(movieFrameId)))view.requestRender();}
     boolean ready(Scene value){return languageTarget.isEmpty()&&!alphaRuleNeedsRebuild&&!alphaRuleFrameFailed&&scene==value&&(value.transition==null||transitionState.ready(value.transition.id,transitionFrameKey(value,viewport)));}
     // GL-thread transaction: retain the old image until all newly selected assets are resident.
     void switchLanguage(String target,Runnable change,Runnable complete){
@@ -186,19 +188,19 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     }
     String waveDebugState(){return waveRenderer.debugState()+" "+screenWaveRenderer.debugState()+" screenWaveCopyTextures="+screenDestinationTextureCount;}
     String noiseDebugState(){return noiseRenderer.debugState();}
-    void shutdown(){stopped=true;loader.shutdownNow();hintResolver.shutdownNow();view.queueEvent(()->{if(hasGlContext()){windowMask.release();plainImage.release();waveRenderer.release();screenWaveRenderer.release();releaseScreenDestination();noiseRenderer.release();alphaRuleRenderer.release();}});}
+    void shutdown(){stopped=true;loader.shutdownNow();hintResolver.shutdownNow();view.queueEvent(()->{if(hasGlContext()){windowMask.release();plainImage.release();ambientBlurRenderer.release();waveRenderer.release();screenWaveRenderer.release();releaseScreenDestination();noiseRenderer.release();alphaRuleRenderer.release();}});}
     @Override public void onSurfaceCreated(GL10 unused,EGLConfig config){
         int[] textureBounds={0};GLES30.glGetIntegerv(GLES30.GL_MAX_TEXTURE_SIZE,textureBounds,0);if(textureBounds[0]<=0)throw new IllegalStateException("GPU texture limit unavailable");textureLimit=textureBounds[0];
         generation++;textures.clear();pending.clear();failed.clear();unsupportedBlends.clear();unsupportedColors.clear();colorPaletteTextures.clear();failedColorPalettes.clear();destinationErrors.clear();destinationTexture=0;destinationWidth=0;destinationHeight=0;destinationCopyVerified=false;framebufferLogged=false;destinationCopyFormat=0;
         warm.clear();preparedImages=null;warmResolving=false;warmInputKey="";warmResolvedKey="";warmDesired=null;
         mainDestination.clear();screenDestination.clear();screenDestinationTextureCount=0;
-        windowMask.contextLost();plainImage.contextLost();windowErrors.clear();waveRenderer.contextLost();screenWaveRenderer.contextLost();waveErrors.clear();windowImageStage=false;windowChildStage=false;
+        windowMask.contextLost();plainImage.contextLost();ambientBlurRenderer.contextLost();windowErrors.clear();waveRenderer.contextLost();screenWaveRenderer.contextLost();waveErrors.clear();windowImageStage=false;windowChildStage=false;
         noiseRenderer.contextLost();noiseErrors.clear();alphaRuleRenderer.contextLost();alphaRuleNeedsRebuild=true;
         transitionFrame=null;nativeTextTexture=null;nativeTextKey="";transitionState.clear();languageFrame=null;renderedEpoch="";
         movieFrame=null;movieFrameId="";movieFramebuffer=0;movieProgram=0;movieGpuFailure="";
         program=GLES30.glCreateProgram();int v=shader(GLES30.GL_VERTEX_SHADER,VERTEX),f=shader(GLES30.GL_FRAGMENT_SHADER,FRAGMENT);GLES30.glAttachShader(program,v);GLES30.glAttachShader(program,f);GLES30.glLinkProgram(program);int[] ok=new int[1];GLES30.glGetProgramiv(program,GLES30.GL_LINK_STATUS,ok,0);if(ok[0]==0)throw new IllegalStateException(GLES30.glGetProgramInfoLog(program));GLES30.glDeleteShader(v);GLES30.glDeleteShader(f);
         int[] white=new int[1];GLES30.glGenTextures(1,white,0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,white[0]);ByteBuffer pixel=ByteBuffer.allocateDirect(4);pixel.put(new byte[]{-1,-1,-1,-1}).position(0);GLES30.glTexImage2D(GLES30.GL_TEXTURE_2D,0,GLES30.GL_RGBA,1,1,0,GLES30.GL_RGBA,GLES30.GL_UNSIGNED_BYTE,pixel);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MIN_FILTER,GLES30.GL_LINEAR);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MAG_FILTER,GLES30.GL_LINEAR);solid=new Texture(white[0],1,1);
-        position=GLES30.glGetAttribLocation(program,"aPosition");uv=GLES30.glGetAttribLocation(program,"aUv");sampler=GLES30.glGetUniformLocation(program,"uImage");size=GLES30.glGetUniformLocation(program,"uSize");kernel=GLES30.glGetUniformLocation(program,"uKernel");opacity=GLES30.glGetUniformLocation(program,"uOpacity");blur=GLES30.glGetUniformLocation(program,"uBlur");tint=GLES30.glGetUniformLocation(program,"uTint");boundsUniform=GLES30.glGetUniformLocation(program,"uBounds");GLES30.glEnable(GLES30.GL_BLEND);GLES30.glBlendFunc(GLES30.GL_ONE,GLES30.GL_ONE_MINUS_SRC_ALPHA);
+        position=GLES30.glGetAttribLocation(program,"aPosition");uv=GLES30.glGetAttribLocation(program,"aUv");sampler=GLES30.glGetUniformLocation(program,"uImage");size=GLES30.glGetUniformLocation(program,"uSize");kernel=GLES30.glGetUniformLocation(program,"uKernel");opacity=GLES30.glGetUniformLocation(program,"uOpacity");blur=GLES30.glGetUniformLocation(program,"uBlur");tint=GLES30.glGetUniformLocation(program,"uTint");boundsUniform=GLES30.glGetUniformLocation(program,"uBounds");ambientBrightnessUniform=GLES30.glGetUniformLocation(program,"uAmbientBrightness");GLES30.glEnable(GLES30.GL_BLEND);GLES30.glBlendFunc(GLES30.GL_ONE,GLES30.GL_ONE_MINUS_SRC_ALPHA);
         blendUniform=GLES30.glGetUniformLocation(program,"uBlend");destinationUniform=GLES30.glGetUniformLocation(program,"uDestination");viewportUniform=GLES30.glGetUniformLocation(program,"uViewport");
         // The GL surface can exist before Steam metadata is ready; load palettes only when rendering a scene.
         colorModeUniform=GLES30.glGetUniformLocation(program,"uColorMode");contrastUniform=GLES30.glGetUniformLocation(program,"uContrast");brightnessUniform=GLES30.glGetUniformLocation(program,"uBrightness");rgbUniform=GLES30.glGetUniformLocation(program,"uRgb");sepiaUniform=GLES30.glGetUniformLocation(program,"uSepia");
@@ -297,7 +299,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
         for(JSONObject layer:s.layers){if(layer.optInt("parent",-1)<0)particle=renderParticles(s,vp,particle,layer.optDouble("z",0),minimumPriority,maximumPriority);if(layer.optInt("parent",-1)<0&&(layer.optDouble("z",0)<minimumPriority||layer.optDouble("z",0)>maximumPriority))continue;if(layer.optInt("parent",-1)>=0){int parent=layer.optInt("parent",-1);boolean exists=false;for(JSONObject other:s.layers)if(other.optInt("id",-2)==parent){exists=true;break;}if(!exists)windowError(new IllegalArgumentException("Missing native window parent "+parent));continue;}if(!Residency.visible(layer.optDouble("alpha",1))&&!zeroAlphaWave40(layer))continue;int blend=layer.optInt("blend",0);if(!BlendSupport.supported(blend)){if(unsupportedBlends.add(blend))errors.accept("미지원 원본 합성 모드: "+blend);continue;}if(!BlendSupport.rootContext(blend,layer.optInt("parent",-1)>=0,layer.optJSONObject("window")!=null,layer.optJSONObject("wave")!=null||layer.optInt("decimalMode",0)%10!=0)){windowError(new IllegalArgumentException("Unsupported root blend18 window/wave/noise context"));continue;}int colorMode=layer.optInt("colorMode",0);if(!ColorSupport.supported(colorMode)){if(unsupportedColors.add(colorMode))errors.accept("미지원 원본 색상 모드: "+colorMode);continue;}if(colorMode==3||ColorSupport.channelPalette(colorMode)){if(!colorPaletteTextures.containsKey(colorMode))loadColorPalette(colorMode);Integer palette=colorPaletteTextures.get(colorMode);if(palette==null)continue;GLES30.glActiveTexture(GLES30.GL_TEXTURE2);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,palette);GLES30.glActiveTexture(GLES30.GL_TEXTURE0);}String image=layer.optString("image","");if(image.isEmpty()&&!layer.has("color"))continue;String key=image.isEmpty()?"":imageKey(image);Texture texture=image.isEmpty()?solid:textures.get(key);if(texture==null){load(key);continue;}
             GLES30.glUniform1i(colorModeUniform,colorMode);GLES30.glUniform1i(contrastUniform,layer.optInt("colorValue",0));GLES30.glUniform1i(brightnessUniform,layer.optInt("brightness",0));GLES30.glUniform1i(rgbUniform,layer.optInt("rgb",0));GLES30.glUniform1i(sepiaUniform,2);
             String kind=layer.optString("kind","image");boolean event=kind.equals("event")||kind.equals("cg");boolean background=event||kind.equals("background")||kind.equals("bg");
-            boolean cover=s.cover(event?eventCover:bgCover);
+            boolean cover=s.cover(dynamic);
             if(background&&dynamic&&cover)fillsArea=true;
             scissor(vp.clip(background,cover,dynamic));
             float x=(float)layer.optDouble("x",0),y=(float)layer.optDouble("y",0),w=(float)layer.optDouble("w",s.width),h=(float)layer.optDouble("h",s.height),a=(float)layer.optDouble("alpha",1);
@@ -323,11 +325,11 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
             if(!sprite.inPriorityRange(minimum,maximum)||sprite.opacity8==0)continue;
             try{Texture texture=textures.get(imageKey(sprite.resource));if(texture==null)throw new IllegalStateException("Particle texture not ready: "+sprite.resource);
             if(sprite.source[0]+sprite.source[2]>texture.originalWidth||sprite.source[1]+sprite.source[3]>texture.originalHeight)throw new IllegalArgumentException("Particle atlas source outside texture");
-            resetColor();scissor(vp.clip(true,s.cover(eventCover),dynamic));
+            resetColor();scissor(vp.clip(true,s.cover(dynamic),dynamic));
             float u0=sprite.source[0]/texture.originalWidth,v0=sprite.source[1]/texture.originalHeight,u1=(sprite.source[0]+sprite.source[2])/texture.originalWidth,v1=(sprite.source[1]+sprite.source[3])/texture.originalHeight;
             GLES30.glUniform4f(boundsUniform,u0+.5f/texture.width,v0+.5f/texture.height,u1-.5f/texture.width,v1-.5f/texture.height);
             GLES30.glUniform1i(blendUniform,0);GLES30.glUniform1i(blendFlagUniform,0);GLES30.glUniform1i(rawOutputUniform,0);GLES30.glUniform2f(viewportUniform,width,height);
-            vertices.clear();for(int i=0;i<4;i++){RectF point=vp.image(sprite.quad[i*2],sprite.quad[i*2+1],0,0,true,s.cover(eventCover),dynamic,s.width,s.height);vertices.put(point.left/width*2-1).put(1-point.top/height*2).put(i<2?u0:u1).put(i%2==0?v0:v1);}vertices.flip();
+            vertices.clear();for(int i=0;i<4;i++){RectF point=vp.image(sprite.quad[i*2],sprite.quad[i*2+1],0,0,true,s.cover(dynamic),dynamic,s.width,s.height);vertices.put(point.left/width*2-1).put(1-point.top/height*2).put(i<2?u0:u1).put(i%2==0?v0:v1);}vertices.flip();
             bindVertices(position,uv);GLES30.glActiveTexture(GLES30.GL_TEXTURE0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,texture.id);GLES30.glUniform1i(sampler,0);GLES30.glUniform2f(size,texture.width,texture.height);GLES30.glUniform1i(kernel,filter);GLES30.glUniform1i(premultipliedUniform,texture.premultiplied?1:0);GLES30.glUniform1i(blur,0);GLES30.glUniform1f(opacity,sprite.alpha());GLES30.glUniform4f(tint,1,1,1,1);GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP,0,4);
             }catch(RuntimeException error){particleFrameFailed=true;errors.accept("원본 particle: "+error.getMessage());return cursor;}
         }return cursor;
@@ -541,7 +543,7 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     private static void noiseTokens(Scene value,Set<String> tokens){if(value==null)return;for(JSONObject layer:value.layers){JSONObject noise=layer.optJSONObject("noise");if(noise!=null)tokens.add(noise.optString("token",""));}if(value.transition!=null&&value.transition.mode==0)noiseTokens(value.transition.old,tokens);}
     private void trimNoise(Scene current,Scene next){Set<String> tokens=new HashSet<>();noiseTokens(current,tokens);noiseTokens(next,tokens);noiseRenderer.retain(tokens);noisePresented.keySet().retainAll(tokens);noiseOld.keySet().retainAll(tokens);noiseRendered.keySet().retainAll(tokens);}
     private void pinNoiseFrames(Set<String> keys,Scene value){if(value==null)return;for(JSONObject layer:value.layers){JSONObject noise=layer.optJSONObject("noise");if(noise==null)continue;String token=noise.optString("token","");int selector=noise.optInt("selector",0);if(selector==1||selector==2)keys.add(imageKey(selector==1?"noise0.mzp":"noise1.mzp"));String image=layer.optString("image","");if(!image.isEmpty())keys.add(imageKey(image));for(NoiseClock.Frame<JSONObject> frame:Arrays.asList(noiseOld.get(token),noisePresented.get(token),noiseRenderer.current(token)))if(frame!=null)keys.add(imageKey(frame.source.optString("image","")));}}
-    private String frameKey(Viewport vp){if(vp!=null)vp=vp.scaledSurface(width,height);return vp==null?"":width+"x"+height+":"+vp.area.left+","+vp.area.top+","+vp.area.right+","+vp.area.bottom+":"+vp.content.left+","+vp.content.top+","+vp.content.right+","+vp.content.bottom+":"+vp.x+","+vp.y+","+vp.scale+":"+dynamic+":"+ambient+":"+bgCover+":"+eventCover+":"+filter+":"+hiddenText;}
+    private String frameKey(Viewport vp){if(vp!=null)vp=vp.scaledSurface(width,height);return vp==null?"":width+"x"+height+":"+vp.area.left+","+vp.area.top+","+vp.area.right+","+vp.area.bottom+":"+vp.content.left+","+vp.content.top+","+vp.content.right+","+vp.content.bottom+":"+vp.x+","+vp.y+","+vp.scale+":"+dynamic+":"+ambient+":"+ambientBlur+":"+ambientDim+":"+filter+":"+hiddenText;}
     private String transitionFrameKey(Scene value,Viewport vp){String key=frameKey(vp);return value.transition==null||textRenderState==null?key:key+":"+textRenderState.captureKey(value.transition.old);}
     private static String movieId(Scene value){return value==null||value.movie==null?"":value.movie.optString("id","");}
     private void updateMovieFrame(MoviePlayer.Frame frame){
@@ -585,16 +587,22 @@ final class SceneRenderer implements GLSurfaceView.Renderer {
     private void releaseNativeText(){release(nativeTextTexture);nativeTextTexture=null;nativeTextKey="";}
     private void scissor(RectF r){int left=Math.round(r.left),right=Math.round(r.right),top=Math.round(r.top),bottom=Math.round(r.bottom);GLES30.glScissor(left,height-bottom,Math.max(0,right-left),Math.max(0,bottom-top));}
     private void drawAmbient(Viewport vp){
-        // Blur the completed scene, including its transforms and crossfading layers.
         if(!captureDestination())return;
-        GLES30.glActiveTexture(GLES30.GL_TEXTURE0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,destinationTexture);
-        GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D);if(drainDestinationErrors("ambient mipmaps",true))return;
-        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MIN_FILTER,GLES30.GL_LINEAR_MIPMAP_LINEAR);GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D,GLES30.GL_TEXTURE_MAG_FILTER,GLES30.GL_LINEAR);
-        GLES30.glUniform1i(colorModeUniform,0);GLES30.glUniform1i(contrastUniform,0);GLES30.glUniform1i(brightnessUniform,0);
-        Texture composed=new Texture(destinationTexture,width,height);
-        JSONArray source=new JSONArray();source.put(Math.round(vp.area.left));source.put(Math.round(height-vp.area.top));source.put(Math.round(vp.area.width()));source.put(-Math.round(vp.area.height()));
-        RectF sampleBounds=new RectF(vp.frame.left,height-vp.frame.bottom,vp.frame.right,height-vp.frame.top);
-        for(RectF band:vp.letterboxes)if(band.width()>.5f&&band.height()>.5f){scissor(band);draw(composed,vp.area,1,true,source,0xffffffff,0,0,sampleBounds,.5f,.5f);}
+        try{
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0);GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,destinationTexture);linearTexture();
+            float[] edge=AmbientEdge.bounds(width,height,vp.frame.left,vp.frame.top,vp.frame.right,vp.frame.bottom);
+            Texture composed;JSONArray source=new JSONArray();RectF sampleBounds=null;
+            if(ambientBlur>0){
+                float[] area={vp.area.left/width,1-vp.area.bottom/height,vp.area.right/width,1-vp.area.top/height};
+                AmbientBlur.Target result=ambientBlurRenderer.render(destinationTexture,width,height,area,edge,ambientBlur);
+                composed=new Texture(result.texture,result.width,result.height);source.put(0);source.put(result.height);source.put(result.width);source.put(-result.height);
+            }else{
+                composed=new Texture(destinationTexture,width,height);source.put(vp.area.left);source.put(height-vp.area.top);source.put(vp.area.width());source.put(-vp.area.height());
+                sampleBounds=new RectF(edge[0]*width-.5f,edge[1]*height-.5f,edge[2]*width+.5f,edge[3]*height+.5f);
+            }
+            resetColor();GLES30.glUniform1f(ambientBrightnessUniform,1-ambientDim/100f);
+            for(RectF band:vp.letterboxes)if(band.width()>.5f&&band.height()>.5f){scissor(band);draw(composed,vp.area,1,true,source,0xffffffff,0,0,sampleBounds,.5f,.5f);}
+        }catch(Exception error){String message="Ambient blur: "+error.getMessage();if(destinationErrors.add(message))errors.accept(message);}
     }
     private void draw(Texture t,RectF dst,float alpha,boolean ambientPass,JSONArray source,int color,float rotation,int blend,RectF sampleBounds,float pivotX,float pivotY){
         draw(t,dst,alpha,ambientPass,source,color,rotation,blend,sampleBounds,pivotX,pivotY,0);
