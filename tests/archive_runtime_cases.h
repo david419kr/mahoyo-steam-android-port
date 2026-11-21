@@ -20,9 +20,15 @@ static void prepareArchive(Fixture& f,bool leaf12c=false) {
 }
 static std::string archiveObject(const std::string& state){auto begin=state.find("\"archive\":");check(begin!=std::string::npos,"Archive snapshot field exists");begin+=10;return state.substr(begin,state.find(",\"modal\":",begin)-begin);}
 static void nativeArchiveLifecycle() {
+    {
+        Fixture f(teatimeProgram(3));prepareArchive(f);auto state=f.command("archiveOpen");
+        auto gen=uint64_t(number(archiveObject(state),"id"));
+        state=woh_command(f.handle,"archivePlay",(std::to_string(gen)+" 2").c_str());
+        check(waiting(state,"archive")&&number(state,"instructions")==0&&state.find("Archive entry is locked")!=std::string::npos,"locked placeholders cannot start a replay");f.passed=true;
+    }
     for(bool leaf:{false,true}){
         Fixture f(teatimeProgram(3));prepareArchive(f,leaf);f.command("textSpeed","0");auto title=f.command("title"),state=f.command("archiveOpen");auto catalog=archiveObject(state);auto gen=uint64_t(number(catalog,"id"));
-        check(waiting(state,"archive")&&state.find("Synthetic 1\"")!=std::string::npos&&state.find("Synthetic 2\"")==std::string::npos&&number(state,"instructions")==0&&!boolean(state,"canSave"),"catalog hides locked rows, has no gameplay VM and cannot save");
+        check(waiting(state,"archive")&&state.find("Synthetic 1\"")!=std::string::npos&&state.find("Synthetic 2\"")==std::string::npos&&state.find("preview_2.mzp")==std::string::npos&&state.find("\"id\":2,\"group\":1,\"unlocked\":false,\"label\":\"\",\"preview\":\"\"")!=std::string::npos&&number(state,"instructions")==0&&!boolean(state,"canSave"),"catalog preserves locked placeholders without leaking titles/previews and cannot save");
         state=f.command("archivePlay",(std::to_string(gen+1)+" 1").c_str());check(waiting(state,"archive"),"stale Archive generations cannot start a replay");
         state=f.command("archivePlay",(std::to_string(gen)+" 1").c_str());check(waiting(state,"input")&&number(state,"z")==1001&&state.find("\"module\":\"replay.chs\"")!=std::string::npos,"Archive runs its CHS bootstrap with shared8 ChapterType before the original F3 replacement");
         f.command("save","2");auto document=mahoyo::save::read(f.root/"savedata/slot2.whs");InspectHost inspector;mahoyo::vm::Machine vm(inspector);vm.loadState(document.vm);check(vm.variable(500)==1&&vm.variable(26)==1&&vm.variable(459)==0&&vm.variable(8,true)==1001,"replay saves retain the original VM context without another host schema");
