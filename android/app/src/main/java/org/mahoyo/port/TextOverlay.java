@@ -186,11 +186,12 @@ final class TextOverlay extends View {
     static final class NativeTextToken {
         final String base;final RubyReading ruby;final boolean newline,noWrap,italic;final Integer color;final int shadow;
         NativeTextToken(String base,RubyReading ruby,boolean newline,boolean noWrap,boolean italic,Integer color,int shadow){this.base=base;this.ruby=ruby;this.newline=newline;this.noWrap=noWrap;this.italic=italic;this.color=color;this.shadow=shadow;}
+        static boolean spacing(NativeTextToken token){if(token.base.isEmpty()||!token.ruby.text.isEmpty())return false;for(int at=0;at<token.base.length();){int cp=token.base.codePointAt(at);if(!Character.isWhitespace(cp)&&!Character.isSpaceChar(cp))return false;at+=Character.charCount(cp);}return true;}
+        static boolean lineEndAfter(List<NativeTextToken> tokens,int index){int next=index+1;while(next<tokens.size()&&!tokens.get(next).newline&&(tokens.get(next).base.isEmpty()||spacing(tokens.get(next))))next++;return next==tokens.size()||tokens.get(next).newline;}
         static boolean hangingAt(List<NativeTextToken> tokens,int index){
             NativeTextToken token=tokens.get(index);String value=token.base;
             if(!token.ruby.text.isEmpty()||value.codePointCount(0,value.length())!=1||!".,。、，．!?！？:;：；」』\"'”’)]}）］｝〉》】〕〗〙〛…‥".contains(value))return false;
-            int next=index+1;while(next<tokens.size()&&!tokens.get(next).newline&&tokens.get(next).base.isEmpty())next++;
-            return next==tokens.size()||tokens.get(next).newline;
+            return lineEndAfter(tokens,index);
         }
         static List<NativeTextToken> parse(String text){
             ArrayList<NativeTextToken> tokens=new ArrayList<>();boolean noWrap=false,italic=false;int index=0,shadow=0xff000000;Integer color=null;
@@ -234,26 +235,28 @@ final class TextOverlay extends View {
         Glyph(String base,String reading,int start,float x,float y,float rubyX,float rubyY,boolean italic,Integer color,int shadow){this.color=color;this.shadow=shadow;this.italic=italic;this.base=base;this.reading=reading;this.start=start;count=base.codePointCount(0,base.length());this.x=x;this.y=y;this.rubyX=rubyX;this.rubyY=rubyY;}
     }
     private static final class Paragraph {
-        final Glyph[] glyphs;final float top,height,firstBaseline,rubyTop,rightEdge;final int color;
+        final Glyph[] glyphs;final float top,height,firstBaseline,rubyTop,rightEdge;final int color,characters;
         Paragraph(String text,float top,float width,float font,float nativeFont,int color,TextPaint paint){this.top=top;this.color=color;ArrayList<Glyph> glyphs=new ArrayList<>();paint.setTypeface(NORMAL_FACE);paint.setTextSize(font);float x=0,first=-paint.ascent()+font*.65f,y=first;int characters=0;
             // Panel offsets adapt native raster pixels to the independently sized mobile font.
             float offsetScale=font/nativeFont,readingTop=Float.POSITIVE_INFINITY,inkRight=width;Rect readingBounds=new Rect();List<NativeTextToken> tokens=NativeTextToken.parse(text);
             for(int index=0;index<tokens.size();index++){NativeTextToken token=tokens.get(index);if(token.newline){x=0;y+=font*1.65f;continue;}String base=token.base,reading=token.ruby.text;
+                // Invisible source padding must not wrap punctuation or become the wait cursor's anchor.
+                if(NativeTextToken.spacing(token)&&NativeTextToken.lineEndAfter(tokens,index)){characters+=base.codePointCount(0,base.length());continue;}
                 paint.setTypeface(token.italic?ITALIC_FACE:NORMAL_FACE);float measured=paint.measureText(base);boolean hanging=x>0&&x<=width+.01f&&NativeTextToken.hangingAt(tokens,index);
                 if(!token.noWrap&&x+measured>width&&x>0&&!hanging){x=0;y+=font*1.65f;}
                 if(hanging&&x+measured>width)inkRight=Math.max(inkRight,x+measured+Math.max(1,font*.065f)/2+1);
                 paint.setTextSize(font*.45f);float rubyX=token.ruby.left(x,measured,paint.measureText(reading),offsetScale),rubyY=y-font*1.05f+token.ruby.y*offsetScale;
                 if(!reading.isEmpty()){paint.getTextBounds(reading,0,reading.length(),readingBounds);float inkTop=Math.min(paint.getFontMetrics().top,readingBounds.top);readingTop=Math.min(readingTop,rubyY+inkTop-Math.max(1,paint.getTextSize()*.065f)/2-1);}
                 paint.setTextSize(font);Glyph glyph=new Glyph(base,reading,characters,x,y,rubyX,rubyY,token.italic,token.color,token.shadow);glyphs.add(glyph);characters+=glyph.count;x+=measured;}
-            this.glyphs=glyphs.toArray(new Glyph[0]);firstBaseline=first;rubyTop=readingTop;rightEdge=inkRight;height=text.isEmpty()?0:y-first+font*1.65f;}
+            this.glyphs=glyphs.toArray(new Glyph[0]);this.characters=characters;firstBaseline=first;rubyTop=readingTop;rightEdge=inkRight;height=text.isEmpty()?0:y-first+font*1.65f;}
         int firstLine(float y){int lo=0,hi=glyphs.length;while(lo<hi){int mid=(lo+hi)>>>1;if(glyphs[mid].y<y)lo=mid+1;else hi=mid;}return lo;}
     }
     private static final class PanelLayout {
         final Paragraph[] paragraphs;final float width,font,rightEdge;final String document;
         PanelLayout(Scene scene,float width,float font,TextPaint paint){paint.setTextLocale(Locale.forLanguageTag(scene.json.optString("language","ja")));this.width=width;this.font=font;ArrayList<Paragraph> paragraphs=new ArrayList<>();StringBuilder document=new StringBuilder();float y=0,inkRight=width;for(JSONObject item:scene.texts){String text=item.optString("text","");Paragraph paragraph=new Paragraph(text,y,width,font,(float)item.optDouble("fontSize",40),color(item.opt("color"),Color.WHITE),paint);paragraphs.add(paragraph);inkRight=Math.max(inkRight,paragraph.rightEdge);y+=paragraph.height;if(document.length()>0)document.append('\n');document.append(text);}this.paragraphs=paragraphs.toArray(new Paragraph[0]);this.document=document.toString();rightEdge=inkRight;}
         float visibleHeight(Scene scene){float height=0;for(int i=0;i<paragraphs.length;i++){Paragraph paragraph=paragraphs[i];int visible=scene.texts.get(i).optInt("visibleCharacters",Integer.MAX_VALUE);for(int j=paragraph.glyphs.length-1;j>=0;j--){Glyph glyph=paragraph.glyphs[j];if(visible>glyph.start){height=Math.max(height,paragraph.top+glyph.y+font*.25f);break;}}}return height;}
-        int anchor(float offset){int before=0;for(Paragraph paragraph:paragraphs){for(Glyph glyph:paragraph.glyphs)if(paragraph.top+glyph.y>=offset+font*.8f)return before+glyph.start;before+=paragraph.glyphs.length==0?0:paragraph.glyphs[paragraph.glyphs.length-1].start+paragraph.glyphs[paragraph.glyphs.length-1].count;}return before;}
-        float offsetFor(int anchor){int before=0;for(Paragraph paragraph:paragraphs){for(Glyph glyph:paragraph.glyphs)if(before+glyph.start>=anchor)return Math.max(0,paragraph.top+glyph.y-paragraph.firstBaseline);before+=paragraph.glyphs.length==0?0:paragraph.glyphs[paragraph.glyphs.length-1].start+paragraph.glyphs[paragraph.glyphs.length-1].count;}return 0;}
+        int anchor(float offset){int before=0;for(Paragraph paragraph:paragraphs){for(Glyph glyph:paragraph.glyphs)if(paragraph.top+glyph.y>=offset+font*.8f)return before+glyph.start;before+=paragraph.characters;}return before;}
+        float offsetFor(int anchor){int before=0;for(Paragraph paragraph:paragraphs){for(Glyph glyph:paragraph.glyphs)if(before+glyph.start>=anchor)return Math.max(0,paragraph.top+glyph.y-paragraph.firstBaseline);before+=paragraph.characters;}return 0;}
     }
     // The same native-pixel glyph/ruby renderer is used inside the frozen GL frame.
     static Bitmap capture(Scene scene,Viewport viewport,int width,int height){return capture(scene,viewport,width,height,null);}
