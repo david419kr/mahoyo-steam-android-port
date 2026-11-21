@@ -6,7 +6,7 @@ import java.util.*;
 import javax.swing.*;
 import org.json.*;
 
-/** Desktop views for the same unlocked archive/gallery/music DTOs used on Android. */
+/** Desktop views for the same archive/gallery/music DTOs used on Android. */
 final class DesktopExtraUi {
   private final DesktopDialogs.Host host;
   private final GameResources resources;
@@ -88,25 +88,125 @@ final class DesktopExtraUi {
     ArchiveCatalog model = ArchiveCatalog.parse(state.optJSONObject("archive"));
     if (model == null) return;
     JDialog d = dialog("Archive");
-    JPanel cards = new JPanel(new GridLayout(0, 4, 8, 8));
+    Dimension available = DesktopOverlays.available(d);
+    d.setSize(Math.min(1100, available.width), Math.min(820, available.height));
+    Color background = new Color(0x0b1423);
+    JPanel root = new JPanel(new BorderLayout(0, 10));
+    root.setBackground(background);
+    root.setBorder(BorderFactory.createEmptyBorder(12, 16, 16, 16));
+    JPanel top = new JPanel(new BorderLayout());
+    top.setOpaque(false);
+    JLabel heading = new JLabel(text.text("Archive"));
+    heading.setFont(heading.getFont().deriveFont(Font.BOLD, 20f));
+    heading.setForeground(new Color(0xeaf1fc));
+    top.add(heading, BorderLayout.WEST);
+    JButton back = button(text.text(model.backLabel()), d::dispose);
+    top.add(back, BorderLayout.EAST);
+    root.add(top, BorderLayout.NORTH);
+    JPanel sections = new JPanel();
+    sections.setLayout(new BoxLayout(sections, BoxLayout.Y_AXIS));
+    sections.setBackground(background);
+    int columns = Math.max(1, Math.min(4, (d.getWidth() - 64) / 244));
     boolean[] selected = {false};
-    for (ArchiveCatalog.Entry item : model.entries) {
-      JButton card =
-          button(
-              item.label,
-              () -> {
-                host.call("archivePlay", model.play(item.id));
-                selected[0] = true;
-                d.dispose();
-              });
-      card.setIcon(image(item.preview, 220, 124));
-      card.setHorizontalTextPosition(SwingConstants.CENTER);
-      card.setVerticalTextPosition(SwingConstants.BOTTOM);
-      cards.add(card);
+    JButton initial = null;
+    for (int start = 0; start < model.entries.size(); ) {
+      ArchiveCatalog.Entry first = model.entries.get(start);
+      JPanel section = new JPanel(new BorderLayout(0, 10));
+      section.setOpaque(false);
+      section.setAlignmentX(Component.LEFT_ALIGNMENT);
+      JLabel header = new JLabel(image(first.header, 320, 54));
+      header.setHorizontalAlignment(SwingConstants.LEFT);
+      section.add(header, BorderLayout.NORTH);
+      JPanel cards = new JPanel(new GridLayout(0, columns, 8, 8));
+      cards.setOpaque(false);
+      int count = 0;
+      while (start < model.entries.size() && model.entries.get(start).group == first.group) {
+        ArchiveCatalog.Entry item = model.entries.get(start++);
+        JButton card =
+            button(
+                "",
+                () -> {
+                  host.call("archivePlay", model.play(item.id));
+                  selected[0] = true;
+                  d.dispose();
+                });
+        card.setEnabled(item.unlocked);
+        card.setFocusable(item.unlocked);
+        card.setLayout(new BorderLayout(0, 6));
+        card.setUI(new javax.swing.plaf.basic.BasicButtonUI());
+        card.setBackground(new Color(item.unlocked ? 0x1e3047 : 0x101d2e));
+        card.setForeground(new Color(0xe5eefb));
+        card.setBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0x405674)),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        card.setPreferredSize(new Dimension(236, 204));
+        JPanel status = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        status.setOpaque(false);
+        status.setPreferredSize(new Dimension(1, 21));
+        if (item.unread()) {
+          JLabel badge = new JLabel(text.text("未読"));
+          badge.setOpaque(true);
+          badge.setBackground(new Color(0x345d82));
+          badge.setForeground(new Color(0xeaf4ff));
+          badge.setBorder(BorderFactory.createEmptyBorder(2, 7, 2, 7));
+          status.add(badge);
+        }
+        card.add(status, BorderLayout.NORTH);
+        card.add(
+            new JLabel(item.unlocked ? image(item.preview, 212, 116) : archiveLock()),
+            BorderLayout.CENTER);
+        String title = item.label.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        JLabel label =
+            new JLabel(
+                item.unlocked
+                    ? "<html><div style='width:150px;text-align:center'>" + title + "</div></html>"
+                    : " ",
+                SwingConstants.CENTER);
+        label.setFont(label.getFont().deriveFont(14f));
+        label.setForeground(new Color(0xe5eefb));
+        label.setPreferredSize(new Dimension(212, 38));
+        card.add(label, BorderLayout.SOUTH);
+        card.getAccessibleContext()
+            .setAccessibleName(
+                item.unlocked
+                    ? item.label + text.text(item.read ? "　既読" : "　未読")
+                    : text.text("未解放"));
+        cards.add(card);
+        if (item.unlocked && (initial == null || item.id == model.selected)) initial = card;
+        count++;
+      }
+      while (count++ % columns != 0) cards.add(Box.createGlue());
+      section.add(cards, BorderLayout.CENTER);
+      section.setMaximumSize(new Dimension(Integer.MAX_VALUE, section.getPreferredSize().height));
+      sections.add(section);
+      sections.add(Box.createVerticalStrut(22));
     }
-    d.add(new JScrollPane(cards));
+    JScrollPane scroll = new JScrollPane(sections);
+    scroll.setBorder(BorderFactory.createEmptyBorder());
+    scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    scroll.getVerticalScrollBar().setUnitIncrement(28);
+    root.add(scroll, BorderLayout.CENTER);
+    d.setContentPane(root);
+    DesktopDialogFocus.install(d, initial == null ? back : initial, true);
+    DesktopDialogFocus.select(d, initial == null ? back : initial, true);
+    SwingUtilities.invokeLater(() -> DesktopDialogFocus.restore(d));
     DesktopOverlays.show(d);
     if (!selected[0]) host.call("archiveBack", model.back());
+  }
+
+  private static ImageIcon archiveLock() {
+    java.awt.image.BufferedImage bitmap =
+        new java.awt.image.BufferedImage(36, 36, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+    Graphics2D g = bitmap.createGraphics();
+    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    g.setColor(new Color(0x70839b));
+    g.setStroke(new BasicStroke(2));
+    g.drawArc(11, 3, 14, 20, 0, 180);
+    g.drawRoundRect(7, 13, 22, 19, 3, 3);
+    g.drawLine(18, 20, 18, 25);
+    g.dispose();
+    return new ImageIcon(bitmap);
   }
 
   private void gallery() {
