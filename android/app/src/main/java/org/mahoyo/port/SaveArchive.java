@@ -42,6 +42,9 @@ final class SaveArchive {
             byte[] buffer=new byte[65536];for(Map.Entry<String,File> item:archive.files.entrySet()){ZipEntry entry=new ZipEntry(item.getKey());entry.setTime(archive.times.get(item.getKey()));zip.putNextEntry(entry);try(InputStream input=new BufferedInputStream(new FileInputStream(item.getValue()))){copy(input,zip,MAX_SAVE,buffer);}zip.closeEntry();}}
     }
     static Archive read(InputStream input,File workspace)throws Exception {
+        return read(input,workspace,false);
+    }
+    static Archive read(InputStream input,File workspace,boolean allowEmpty)throws Exception {
         Archive result=new Archive(workspace);Set<String> seen=new HashSet<>();byte[] manifest=null;long total=0;int count=0;
         try(ZipInputStream zip=new ZipInputStream(new BufferedInputStream(input))){ZipEntry entry;byte[] buffer=new byte[65536];while((entry=zip.getNextEntry())!=null){if(++count>64)throw new IOException("Too many archive entries");String name=entry.getName();
                 if(name.indexOf('\\')>=0||name.startsWith("/")||name.contains("..")||!seen.add(name))throw new IOException("Unsafe or duplicate backup entry");
@@ -50,7 +53,7 @@ final class SaveArchive {
                 try(OutputStream output=new FileOutputStream(staged)){size=copy(zip,output,Math.min(limit,MAX_TOTAL-total),buffer);}total+=size;zip.closeEntry();
                 if(name.equals(MANIFEST))manifest=small(staged);else{result.files.put(name,staged);result.times.put(name,Math.max(0,entry.getTime()));}
             }
-            if(manifest==null||result.files.isEmpty())throw new IOException("Not a save backup");JSONObject metadata=new JSONObject(new String(manifest,java.nio.charset.StandardCharsets.UTF_8));
+            if(manifest==null||!allowEmpty&&result.files.isEmpty())throw new IOException("Not a save backup");JSONObject metadata=new JSONObject(new String(manifest,java.nio.charset.StandardCharsets.UTF_8));
             if(metadata.optInt("schema")!=1||!metadata.optString("application").equals("org.mahoyo.port.unofficial"))throw new IOException("Unsupported save backup");JSONArray rows=metadata.getJSONArray("files");if(rows.length()!=result.files.size())throw new IOException("Backup manifest mismatch");Set<String> declared=new HashSet<>();
             for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);String name=row.getString("name");File file=result.files.get(name);if(file==null||!declared.add(name)||file.length()!=row.getLong("size")||!hash(file).equals(row.getString("sha256")))throw new IOException("Backup checksum mismatch");long modified=row.optLong("modified",0);if(modified<0)throw new IOException("Invalid save date");result.times.put(name,modified);if(modified>0&&!file.setLastModified(modified))throw new IOException("Cannot preserve save date");}
             for(Map.Entry<String,File> item:result.files.entrySet()){String name=item.getKey();if(name.startsWith("saves/slot"))SlotSaveMetadata.read(item.getValue());else if(name.startsWith("saves/"))SaveCommon.validate(name.substring(6),small(item.getValue()));else{File save=result.files.get("saves/slot"+number(name)+".whs");if(save==null)throw new IOException("Thumbnail has no matching save");checkThumbnail(item.getValue(),SlotSaveMetadata.read(save));}}
@@ -72,6 +75,21 @@ final class SaveArchive {
         for(Map.Entry<Integer,Integer> slot:slots.entrySet()){int source=slot.getKey(),target=slot.getValue();File save=new File(saves,"slot"+target+".whs"),thumbnail=new File(thumbs,"slot"+target+".thumb");remember(plan,thumbnail);plan.replacements.put(save,archive.files.get("saves/slot"+source+".whs"));plan.replacements.put(thumbnail,archive.files.get("thumbnails/slot"+source+".thumb"));}
         for(String name:SaveCommon.NAMES){File source=archive.files.get("saves/"+name);if(source==null)continue;File target=new File(saves,name);remember(plan,target);byte[] merged=SaveCommon.merge(name,target.isFile()?small(target):null,small(source));File staged=File.createTempFile("merged-", ".whp",archive.root);try(FileOutputStream stream=new FileOutputStream(staged)){stream.write(merged);stream.getFD().sync();}plan.replacements.put(target,staged);}
         return plan;
+    }
+    /** An authenticated sync already chose each winning slot; retain its number exactly. */
+    static Plan exactPlan(Archive archive,File saves,File thumbs)throws Exception {
+        saves=saves.getCanonicalFile();thumbs=thumbs.getCanonicalFile();saves.mkdirs();thumbs.mkdirs();
+        TreeMap<Integer,Integer> slots=new TreeMap<>();ArrayList<Integer> overwrites=new ArrayList<>();
+        Plan plan=new Plan(archive,saves,thumbs,slots,overwrites);
+        for(Map.Entry<String,File> item:archive.files.entrySet()){
+            String name=item.getKey();boolean thumbnail=name.startsWith("thumbnails/");File target=new File(thumbnail?thumbs:saves,name.substring(name.indexOf('/')+1));
+            if(target.isFile()&&hash(target).equals(hash(item.getValue())))continue;
+            plan.replacements.put(target,item.getValue());
+            if(name.matches("saves/slot[0-9]+\\.whs")){int slot=number(name);slots.put(slot,slot);if(target.exists())overwrites.add(slot);
+                if(!archive.files.containsKey("thumbnails/slot"+slot+".thumb")){File old=new File(thumbs,"slot"+slot+".thumb");if(old.exists())plan.replacements.put(old,null);}
+            }
+        }
+        for(File file:plan.replacements.keySet())remember(plan,file);return plan;
     }
     private static void remember(Plan plan,File file)throws IOException {if(Files.isSymbolicLink(file.toPath())||file.exists()&&!file.isFile())throw new IOException("Unsafe save target");plan.expected.put(file,file.isFile()?hash(file):"");}
     static Plan deletion(File saves,File thumbs,int slot,long modified,long size,String selectedHash)throws Exception {
