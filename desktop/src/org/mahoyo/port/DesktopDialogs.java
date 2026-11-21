@@ -389,6 +389,7 @@ final class DesktopDialogs implements AutoCloseable {
     JScrollPane scroll = new JScrollPane(rows);
     scroll.getVerticalScrollBar().setUnitIncrement(36);
     d.add(scroll);
+    JButton lastAction = null;
     for (HistoryModel.Group group : model.groups) {
       JPanel row = new JPanel(new BorderLayout(8, 8));
       JPanel text = new JPanel();
@@ -418,14 +419,28 @@ final class DesktopDialogs implements AutoCloseable {
       rewind.setEnabled(group.rewindable);
       JButton replay = button("▶", () -> host.call("historyReplay", group.payload(model.revision)));
       replay.setEnabled(group.playable);
+      if (replay.isEnabled()) lastAction = replay;
+      if (rewind.isEnabled()) lastAction = rewind;
       actions.add(replay);
       actions.add(rewind);
       row.add(actions, BorderLayout.EAST);
       rows.add(row);
       rows.add(Box.createVerticalStrut(12));
     }
+    JButton initialFocus = lastAction;
+    if (initialFocus != null)
+      d.setFocusTraversalPolicy(
+          new LayoutFocusTraversalPolicy() {
+            @Override
+            public Component getDefaultComponent(Container root) {
+              return initialFocus;
+            }
+          });
     SwingUtilities.invokeLater(
-        () -> scroll.getVerticalScrollBar().setValue(scroll.getVerticalScrollBar().getMaximum()));
+        () -> {
+          if (initialFocus != null) initialFocus.requestFocusInWindow();
+          scroll.getVerticalScrollBar().setValue(scroll.getVerticalScrollBar().getMaximum());
+        });
     DesktopOverlays.show(d);
     JSONObject now = host.call("historyPreview", "");
     String pair = HistoryModel.replayPair(now.optJSONObject("historyReplay"));

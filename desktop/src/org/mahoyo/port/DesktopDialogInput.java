@@ -19,7 +19,7 @@ final class DesktopDialogInput {
           if (active() != expected) return;
           Component focused = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
           if (focused == null || SwingUtilities.getWindowAncestor(focused) != expected)
-            focused = null;
+              focused = expected.getMostRecentFocusOwner();
           if (action == DesktopGamepad.Action.CANCEL || action == DesktopGamepad.Action.MENU) {
             if (focused instanceof JComboBox<?> combo && combo.isPopupVisible()) {
               combo.hidePopup();
