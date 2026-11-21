@@ -21,6 +21,10 @@ final class DesktopDialogs implements AutoCloseable {
     void language(String language);
 
     void open(boolean open, boolean settings);
+
+    int[] windowSize();
+
+    void windowSize(int percent);
   }
 
   private final Host host;
@@ -215,7 +219,8 @@ final class DesktopDialogs implements AutoCloseable {
           }
           grid.revalidate();
           grid.repaint();
-          if (initial != null) initial.requestFocusInWindow();
+          DesktopDialogFocus.install(d, initial, true);
+          DesktopDialogFocus.restore(d);
         });
     DesktopOverlays.show(d);
   }
@@ -274,6 +279,41 @@ final class DesktopDialogs implements AutoCloseable {
     JPanel display = column(), game = column();
     tabs.addTab(translations.text("화면"), new JScrollPane(display));
     tabs.addTab(translations.text("게임"), new JScrollPane(game));
+    JPanel sizing = new JPanel(new BorderLayout(12, 4));
+    sizing.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+    String sizeLabel =
+        switch (resources.language()) {
+          case "ko" -> "창 크기";
+          case "ja" -> "ウィンドウサイズ";
+          case "zh-Hans" -> "窗口大小";
+          case "zh-Hant" -> "視窗大小";
+          default -> "Window size";
+        };
+    sizing.add(new JLabel(sizeLabel), BorderLayout.WEST);
+    String[] labels = new String[DesktopWindowState.PRESETS.length];
+    for (int i = 0; i < labels.length; i++) {
+      int p = DesktopWindowState.PRESETS[i];
+      DesktopWindowState.Size size = DesktopWindowState.preset(p);
+      labels[i] = p + "% · " + size.width() + " × " + size.height();
+    }
+    JComboBox<String> sizes = new JComboBox<>(labels);
+    int[] actual = host.windowSize();
+    int percent = DesktopWindowState.percent(actual[0], actual[1]);
+    if (percent < 0)
+      ((DefaultComboBoxModel<String>) sizes.getModel())
+          .setSelectedItem(actual[0] + " × " + actual[1]);
+    else
+      for (int i = 0; i < labels.length; i++)
+        if (DesktopWindowState.PRESETS[i] == percent) sizes.setSelectedIndex(i);
+    sizes.addActionListener(
+        event -> {
+          int index = sizes.getSelectedIndex();
+          if (index >= 0) host.windowSize(DesktopWindowState.PRESETS[index]);
+        });
+    sizing.add(sizes);
+    display.add(sizing);
+    display.add(Box.createVerticalStrut(10));
+
     choice(
         display,
         "Display mode",
@@ -417,10 +457,10 @@ final class DesktopDialogs implements AutoCloseable {
                 d.dispose();
               });
       rewind.setEnabled(group.rewindable);
+      DesktopDialogFocus.browseDisabled(rewind);
       JButton replay = button("▶", () -> host.call("historyReplay", group.payload(model.revision)));
       replay.setEnabled(group.playable);
-      if (replay.isEnabled()) lastAction = replay;
-      if (rewind.isEnabled()) lastAction = rewind;
+      lastAction = rewind;
       actions.add(replay);
       actions.add(rewind);
       row.add(actions, BorderLayout.EAST);
@@ -428,17 +468,10 @@ final class DesktopDialogs implements AutoCloseable {
       rows.add(Box.createVerticalStrut(12));
     }
     JButton initialFocus = lastAction;
-    if (initialFocus != null)
-      d.setFocusTraversalPolicy(
-          new LayoutFocusTraversalPolicy() {
-            @Override
-            public Component getDefaultComponent(Container root) {
-              return initialFocus;
-            }
-          });
+    DesktopDialogFocus.install(d, initialFocus, true);
     SwingUtilities.invokeLater(
         () -> {
-          if (initialFocus != null) initialFocus.requestFocusInWindow();
+          DesktopDialogFocus.restore(d);
           scroll.getVerticalScrollBar().setValue(scroll.getVerticalScrollBar().getMaximum());
         });
     DesktopOverlays.show(d);

@@ -19,7 +19,8 @@ final class DesktopDialogInput {
           if (active() != expected) return;
           Component focused = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
           if (focused == null || SwingUtilities.getWindowAncestor(focused) != expected)
-              focused = expected.getMostRecentFocusOwner();
+            focused = expected.getMostRecentFocusOwner();
+          focused = DesktopDialogFocus.current(expected, focused);
           if (action == DesktopGamepad.Action.CANCEL || action == DesktopGamepad.Action.MENU) {
             if (focused instanceof JComboBox<?> combo && combo.isPopupVisible()) {
               combo.hidePopup();
@@ -72,15 +73,13 @@ final class DesktopDialogInput {
           }
           Component target = next(expected, focused, dx, dy);
           if (target != null) {
-            target.requestFocusInWindow();
-            if (target instanceof JComponent component)
-              component.scrollRectToVisible(
-                  new Rectangle(0, 0, target.getWidth(), target.getHeight()));
+            DesktopDialogFocus.select(expected, target, true);
           }
         });
   }
 
   static Component next(Container root, Component from, int dx, int dy) {
+    from = DesktopDialogFocus.current(root, from);
     java.util.List<Component> candidates = new ArrayList<>();
     collect(root, candidates);
     if (candidates.isEmpty()) return null;
@@ -114,7 +113,7 @@ final class DesktopDialogInput {
 
   private static void collect(Container parent, java.util.List<Component> result) {
     for (Component c : parent.getComponents()) {
-      if (!c.isVisible() || !c.isEnabled()) continue;
+      if (!c.isVisible() || !c.isEnabled() && !DesktopDialogFocus.browsable(c)) continue;
       if (c.isFocusable()
           && (c instanceof AbstractButton
               || c instanceof JComboBox<?>

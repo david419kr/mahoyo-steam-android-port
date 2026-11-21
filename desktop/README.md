@@ -4,6 +4,13 @@ Extract the complete folder, then open **Mahoyo.exe**. On first launch, select
 your Steam game folder containing `WoH.exe`. Keep the bundled subfolders together.
 Java does not need to be installed separately. Windows x64 and OpenGL 3.3 are required.
 
+A clean profile starts with a 1920×1080 client viewport. The last windowed size
+and fullscreen state are restored after closing the game. Settings → Display
+offers 50%,75%,100%,150% and 200% sizes relative to 1920×1080. The client viewport
+includes the in-game menu bars and excludes the Windows title bar/borders.
+Toggling in-game menus never changes the window size. Choosing a size preset
+returns to windowed mode; custom mouse resizing remains available.
+
 The launcher reads the Steam 1.1 game files directly. Its icon is extracted from
 the original Steam executable when building; other game assets are not bundled.
 Existing game files are not modified. Settings include adaptive/original

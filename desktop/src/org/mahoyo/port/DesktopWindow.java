@@ -32,12 +32,16 @@ final class DesktopWindow {
   private SceneRenderer renderer;
   private Scene scene;
   private Viewport viewport;
-  private int width = Integer.getInteger("mahoyo.width", 1280),
-      height = Integer.getInteger("mahoyo.height", 720),
+  private int width = Integer.getInteger("mahoyo.width", DesktopWindowState.NATIVE_WIDTH),
+      height = Integer.getInteger("mahoyo.height", DesktopWindowState.NATIVE_HEIGHT),
       bufferWidth,
       bufferHeight;
   private final DesktopSurface sceneSurface = new DesktopSurface();
-  private int oldX = 100, oldY = 100, oldW = 1280, oldH = 720;
+  private int oldX = 100,
+      oldY = 100,
+      oldW = DesktopWindowState.NATIVE_WIDTH,
+      oldH = DesktopWindowState.NATIVE_HEIGHT;
+  private final DesktopWindowState windowState;
   private boolean fullscreen, menu, hidden;
   private DesktopInput input;
   private DesktopCursor mouseCursor;
@@ -72,6 +76,7 @@ final class DesktopWindow {
     this.resources = resources;
     this.engine = engine;
     prefs = new DisplayPrefs(context);
+    windowState = new DesktopWindowState(context);
     text = new TextOverlay(context);
     text.setPanelScale(prefs.dialogueScale());
   }
@@ -83,7 +88,14 @@ final class DesktopWindow {
     GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
     GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
     GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_COMPAT_PROFILE);
-    if (Boolean.getBoolean("mahoyo.smoke")) GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+    boolean explicitSize =
+        System.getProperty("mahoyo.width") != null || System.getProperty("mahoyo.height") != null;
+    if (!explicitSize) {
+      DesktopWindowState.Size saved = windowState.size();
+      width = saved.width();
+      height = saved.height();
+    }
+    GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
     window = GLFW.glfwCreateWindow(width, height, "WITCH ON THE HOLY NIGHT — Unofficial", 0, 0);
     if (window == 0) throw new IOException("Cannot create OpenGL window");
     DesktopIcon.apply(window);
@@ -114,6 +126,25 @@ final class DesktopWindow {
 
               public Bitmap capture() {
                 return captureNextFrame();
+              }
+
+              public int[] windowSize() {
+                return onGl(
+                    () -> {
+                      int[] w = {0}, h = {0};
+                      GLFW.glfwGetWindowSize(window, w, h);
+                      return new int[] {w[0], h[0]};
+                    });
+              }
+
+              public void windowSize(int percent) {
+                commands.add(
+                    () -> {
+                      if (fullscreen) fullscreen();
+                      DesktopWindowState.Size size = DesktopWindowState.preset(percent);
+                      GLFW.glfwSetWindowSize(window, size.width(), size.height());
+                      if (dialogOpen) overlays.raise();
+                    });
               }
 
               public void language(String target) {
@@ -339,6 +370,8 @@ final class DesktopWindow {
           }
         });
     if (Boolean.getBoolean("mahoyo.smoke.play")) command("action", "start");
+    if (!explicitSize && windowState.fullscreen()) fullscreen();
+    if (!Boolean.getBoolean("mahoyo.smoke")) GLFW.glfwShowWindow(window);
     int frames = 0, movieFrames = 0;
     long sceneNs = 0, overlayNs = 0, totalNs = 0, maxOverlayNs = 0;
     int samples = 0;
@@ -608,6 +641,11 @@ final class DesktopWindow {
         }
       }
     } finally {
+      if (!Boolean.getBoolean("mahoyo.smoke")) {
+        int[] w = {0}, h = {0};
+        GLFW.glfwGetWindowSize(window, w, h);
+        windowState.save(fullscreen ? oldW : w[0], fullscreen ? oldH : h[0], fullscreen);
+      }
       java.util.concurrent.CompletableFuture<Bitmap> capture;
       while ((capture = captures.poll()) != null)
         capture.completeExceptionally(new IOException("The game window closed"));

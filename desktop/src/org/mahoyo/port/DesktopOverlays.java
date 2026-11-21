@@ -66,6 +66,7 @@ final class DesktopOverlays implements AutoCloseable {
     if (focus) {
       dialog.toFront();
       dialog.requestFocus();
+      SwingUtilities.invokeLater(() -> DesktopDialogFocus.restore(dialog));
     }
   }
 
