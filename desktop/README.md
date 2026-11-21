@@ -33,16 +33,19 @@ device recognized by GLFW's built-in gamepad mappings.
 | Xbox position | PlayStation | Action during play |
 |---|---|---|
 | A (bottom) | Cross | Advance / confirm |
-| B (right) | Circle | Cancel / close |
+| B (right) | Circle | Advance (including while rails are visible); cancel inside dialogs |
 | Y (top) | Triangle | Toggle menu |
 | X (left) | Square | History |
 | D-pad up | D-pad up | History |
 | D-pad left / right | D-pad left / right | Save / load |
 | D-pad down | D-pad down | Settings |
 | Hold RB | Hold R1 | Skip until released |
+| Start / Menu | Options | Toggle fullscreen |
+| LB | L1 | Original 16:9 / adaptive display |
 | View / Back / Select | Create / Share / Select | Show or hide dialogue |
 
-Opening the menu starts in neutral: A still advances the game. D-pad left selects
+Opening the menu starts in neutral: A still advances the game. B advances even
+with a rail item selected, without closing the rails. D-pad left selects
 Save on the left rail; right selects Skip on the right rail. Up/down move within
 the selected rail. Pressing toward the center returns to neutral; release and
 press again to enter the opposite rail. D-pad shortcuts apply only with the menu hidden.

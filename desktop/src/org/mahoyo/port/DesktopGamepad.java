@@ -17,7 +17,9 @@ final class DesktopGamepad implements AutoCloseable {
     DOWN,
     LEFT,
     RIGHT,
-    TOGGLE_TEXT
+    TOGGLE_TEXT,
+    TOGGLE_FULLSCREEN,
+    TOGGLE_DISPLAY
   }
 
   static final int VERTICAL =
@@ -94,7 +96,9 @@ final class DesktopGamepad implements AutoCloseable {
       GLFW.GLFW_GAMEPAD_BUTTON_DPAD_DOWN,
       GLFW.GLFW_GAMEPAD_BUTTON_DPAD_LEFT,
       GLFW.GLFW_GAMEPAD_BUTTON_DPAD_RIGHT,
-      GLFW.GLFW_GAMEPAD_BUTTON_BACK
+      GLFW.GLFW_GAMEPAD_BUTTON_BACK,
+      GLFW.GLFW_GAMEPAD_BUTTON_START,
+      GLFW.GLFW_GAMEPAD_BUTTON_LEFT_BUMPER
     };
     Action[] actions = Action.values();
     for (int i = 0; i < indices.length; i++)

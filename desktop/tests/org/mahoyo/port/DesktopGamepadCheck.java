@@ -27,7 +27,9 @@ public final class DesktopGamepadCheck {
         GLFW.GLFW_GAMEPAD_BUTTON_DPAD_DOWN,
         GLFW.GLFW_GAMEPAD_BUTTON_DPAD_LEFT,
         GLFW.GLFW_GAMEPAD_BUTTON_DPAD_RIGHT,
-        GLFW.GLFW_GAMEPAD_BUTTON_BACK
+        GLFW.GLFW_GAMEPAD_BUTTON_BACK,
+        GLFW.GLFW_GAMEPAD_BUTTON_START,
+        GLFW.GLFW_GAMEPAD_BUTTON_LEFT_BUMPER
       };
       for (int b : buttons) {
         pad.update(0, button(b), true, game, 0, true, ++now);
@@ -36,8 +38,17 @@ public final class DesktopGamepadCheck {
       }
       if (!events.equals(
           List.of(
-              "ACCEPT", "CANCEL", "MENU", "HISTORY", "UP", "DOWN", "LEFT", "RIGHT", "TOGGLE_TEXT")))
-        throw new AssertionError(events);
+              "ACCEPT",
+              "CANCEL",
+              "MENU",
+              "HISTORY",
+              "UP",
+              "DOWN",
+              "LEFT",
+              "RIGHT",
+              "TOGGLE_TEXT",
+              "TOGGLE_FULLSCREEN",
+              "TOGGLE_DISPLAY"))) throw new AssertionError(events);
       events.clear();
       int r1 = button(GLFW.GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER);
       pad.update(0, r1, true, game, 0, true, ++now);

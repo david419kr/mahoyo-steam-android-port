@@ -266,7 +266,7 @@ final class DesktopWindow {
             () -> dialogs.open("history"),
             this::fullscreen,
             this::toggleMenu,
-            () -> prefs.values.edit().putBoolean("dynamic", !prefs.dynamic()).apply(),
+            this::toggleDisplay,
             value -> {
               keyboardSkip = value;
               updateHeldSkip();
@@ -692,6 +692,17 @@ final class DesktopWindow {
     padHighlight = false;
   }
 
+  private void toggleDisplay() {
+    prefs.values.edit().putBoolean("dynamic", !prefs.dynamic()).apply();
+  }
+
+  private void controllerPointer() {
+    String down = inputRegion.pointer(true, true);
+    if (!down.isEmpty()) command("inputPointer", down);
+    String up = inputRegion.pointer(false, true);
+    if (!up.isEmpty()) command("inputPointer", up);
+  }
+
   private void readerAdvance() {
     mouseCursor.advance(cursorMayHide());
     advance();
@@ -718,6 +729,14 @@ final class DesktopWindow {
       return;
     }
     if (!windowFocused || scene == null) return;
+    if (action == DesktopGamepad.Action.TOGGLE_FULLSCREEN) {
+      fullscreen();
+      return;
+    }
+    if (action == DesktopGamepad.Action.TOGGLE_DISPLAY) {
+      toggleDisplay();
+      return;
+    }
     boolean accept = action == DesktopGamepad.Action.ACCEPT,
         cancel = action == DesktopGamepad.Action.CANCEL,
         menuButton = action == DesktopGamepad.Action.MENU;
@@ -728,16 +747,10 @@ final class DesktopWindow {
                 : action == DesktopGamepad.Action.RIGHT ? 1 : 0,
         dy = action == DesktopGamepad.Action.UP ? -1 : action == DesktopGamepad.Action.DOWN ? 1 : 0;
     if (cancel) {
-      if (menu) {
-        menu = false;
-        menuFocus.clear();
-        return;
+      if (!controls.active()) {
+        if (inputRegion.captures()) controllerPointer();
+        else if (scene.json.optString("scene").equals("play")) readerAdvance();
       }
-      if (hidden) {
-        hidden = false;
-        return;
-      }
-      if (scene.movie != null) command("movieSkip", scene.movie.optString("id"));
       return;
     }
     if (menuButton) {
@@ -780,10 +793,7 @@ final class DesktopWindow {
     }
     if (inputRegion.captures()) {
       if (accept) {
-        String down = inputRegion.pointer(true, true);
-        if (!down.isEmpty()) command("inputPointer", down);
-        String up = inputRegion.pointer(false, true);
-        if (!up.isEmpty()) command("inputPointer", up);
+        controllerPointer();
       } else if (action == DesktopGamepad.Action.DOWN) dialogs.open("settings");
       return;
     }
@@ -926,7 +936,7 @@ final class DesktopWindow {
           y = rails ? ((i % 4) + .5f) * height / 4 : height - bar / 2f,
           baseline = y - (paint.ascent() + paint.descent()) / 2;
       String label = translations.text(names[i]);
-        float left = x - (icon + 10 + paint.measureText(label)) / 2;
+      float left = x - (icon + 10 + paint.measureText(label)) / 2;
       canvas.drawBitmap(
           DesktopMenuIcons.icon(i),
           null,
