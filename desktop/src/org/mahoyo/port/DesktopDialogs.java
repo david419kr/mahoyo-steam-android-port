@@ -138,6 +138,7 @@ final class DesktopDialogs implements AutoCloseable {
     store.list(
         entries -> {
           if (!d.isDisplayable()) return;
+          JButton initial = null;
           for (SlotThumbnailStore.Entry entry : entries) {
             JPanel card = new JPanel(new BorderLayout());
             JButton select = new JButton();
@@ -153,12 +154,14 @@ final class DesktopDialogs implements AutoCloseable {
                   BorderLayout.CENTER);
             JTextArea label = new JTextArea(entry.exists ? entry.text : "Empty");
             label.setEditable(false);
+            label.setFocusable(false);
             label.setOpaque(false);
             label.setLineWrap(true);
             label.setWrapStyleWord(true);
             label.setRows(2);
             select.add(label, BorderLayout.SOUTH);
             select.setEnabled(saving || entry.exists);
+            if (initial == null && select.isEnabled()) initial = select;
             select.addActionListener(
                 e -> {
                   if (saving
@@ -212,6 +215,7 @@ final class DesktopDialogs implements AutoCloseable {
           }
           grid.revalidate();
           grid.repaint();
+          if (initial != null) initial.requestFocusInWindow();
         });
     d.setVisible(true);
   }

@@ -25,6 +25,9 @@ final class DesktopControls {
   private String language = "";
   private JSONObject modal;
   private String saving = "";
+  private int selection;
+  private boolean padFocus;
+  private String selectionKey = "";
 
   DesktopControls(GameResources resources, BiConsumer<String, String> command) {
     this.resources = resources;
@@ -37,8 +40,19 @@ final class DesktopControls {
       pictures.clear();
       captions.clear();
     }
-    choices.state(ChoiceModel.parse(scene.json.optJSONObject("choice")));
+    ChoiceModel incoming = ChoiceModel.parse(scene.json.optJSONObject("choice"));
+    choices.state(incoming);
     modal = scene.json.optJSONObject("modal");
+    String key =
+        (incoming == null ? "" : incoming.revision)
+            + "/"
+            + (modal == null ? "" : modal.optString("id") + "/" + modal.optString("revision"));
+    if (!selectionKey.equals(key)) {
+      selectionKey = key;
+      selection = 0;
+      padFocus = false;
+      hits.clear();
+    }
   }
 
   void presented(Scene scene) {
@@ -52,7 +66,11 @@ final class DesktopControls {
         + "/"
         + (modal == null ? "" : modal.toString())
         + "/"
-        + resources.language();
+        + resources.language()
+        + "/"
+        + selection
+        + "/"
+        + padFocus;
   }
 
   boolean visible() {
@@ -90,7 +108,7 @@ final class DesktopControls {
             RectF rect = viewport.transform(item.x, item.y, item.width, item.height);
             paint.setColor(0xffffffff);
             canvas.drawBitmap(image, null, rect, paint);
-            hits.add(new Hit(rect, () -> select(item.ordinal)));
+            if (item.enabled) hits.add(new Hit(rect, () -> select(item.ordinal)));
           } catch (Exception error) {
             throw new IllegalStateException(error);
           }
@@ -154,6 +172,25 @@ final class DesktopControls {
         }
       }
     }
+    if (padFocus && !hits.isEmpty()) {
+      selection = Math.min(selection, hits.size() - 1);
+      paint.setShader(null);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(2);
+      paint.setColor(0xff9fcfff);
+      canvas.drawRect(hits.get(selection).rect, paint);
+    }
+  }
+
+  void navigate(int direction) {
+    if (!hits.isEmpty()) {
+      selection = Math.floorMod(selection + direction, hits.size());
+      padFocus = true;
+    }
+  }
+
+  void accept() {
+    if (!hits.isEmpty()) hits.get(Math.min(selection, hits.size() - 1)).action.run();
   }
 
   private void select(int ordinal) {

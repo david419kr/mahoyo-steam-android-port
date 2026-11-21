@@ -42,6 +42,18 @@ final class DesktopWindow {
   private DesktopInput input;
   private DesktopCursor mouseCursor;
   private boolean windowFocused = true;
+  private DesktopGamepad gamepad;
+  private boolean keyboardSkip, padSkip, appliedSkip, padHighlight;
+  private int menuSelection, titleSelection;
+
+  private enum PadContext {
+    GAME,
+    MENU,
+    NATIVE,
+    TITLE,
+    BLOCKED
+  }
+
   private volatile boolean syncBusy;
   private DesktopSaveSync saveSync;
   private final DesktopText translations;
@@ -70,6 +82,7 @@ final class DesktopWindow {
     window = GLFW.glfwCreateWindow(width, height, "WITCH ON THE HOLY NIGHT — Unofficial", 0, 0);
     if (window == 0) throw new IOException("Cannot create OpenGL window");
     GLFW.glfwMakeContextCurrent(window);
+    windowFocused = GLFW.glfwGetWindowAttrib(window, GLFW.GLFW_FOCUSED) == GLFW.GLFW_TRUE;
     GL.createCapabilities();
     GLFW.glfwSwapInterval(1);
     audio =
@@ -250,7 +263,17 @@ final class DesktopWindow {
             this::fullscreen,
             () -> menu = !menu,
             () -> prefs.values.edit().putBoolean("dynamic", !prefs.dynamic()).apply(),
-            value -> command("skip", value ? "1" : "0"));
+            value -> {
+              keyboardSkip = value;
+              updateHeldSkip();
+            });
+    gamepad =
+        new DesktopGamepad(
+            this::padAction,
+            value -> {
+              padSkip = value;
+              updateHeldSkip();
+            });
     GLFW.glfwSetKeyCallback(window, (w, key, scan, action, mods) -> input.key(key, action, mods));
     GLFW.glfwSetCursorPosCallback(window, (w, x, y) -> mouseCursor.mouse(System.nanoTime()));
     GLFW.glfwSetCursorEnterCallback(
@@ -390,6 +413,26 @@ final class DesktopWindow {
             region == null ? "0" : region.optString("trigger", "0"),
             region == null ? "0" : region.optString("epoch", "0"),
             region == null ? "0" : region.optString("jumpRelease", "0"));
+        java.awt.Window dialog = dialogOpen ? DesktopDialogInput.active() : null;
+        Object padContext =
+            dialog != null
+                ? dialog
+                : syncBusy || inputRegion.restricted()
+                    ? PadContext.BLOCKED
+                    : controls.active()
+                        ? PadContext.NATIVE
+                        : showMenu()
+                            ? PadContext.MENU
+                            : scene.json.optString("scene").equals("play")
+                                ? PadContext.GAME
+                                : PadContext.TITLE;
+        gamepad.poll(
+            System.nanoTime(),
+            !syncBusy && (dialog != null || windowFocused && !dialogOpen),
+            padContext,
+            padContext != PadContext.GAME,
+            (padContext == PadContext.GAME || padContext == PadContext.MENU)
+                && scene.json.optString("scene").equals("play"));
         movies.update(scene.movie, dialogOpen || syncBusy);
         audio.update(scene.json.optJSONArray("audio"));
         audio.updateHistory(scene.json.optJSONObject("historyReplay"));
@@ -429,6 +472,7 @@ final class DesktopWindow {
                         || TextOverlay.fullscreenBackdropAlpha(scene) > 0
                         || viewport.panel.height() > 0))
                 || showMenu()
+                || padHighlight && !scene.actions.isEmpty()
                 || controls.visible()
                 || syncBusy;
         if (overlayNeeded) {
@@ -445,7 +489,13 @@ final class DesktopWindow {
                   + "x"
                   + height
                   + "/"
-                  + syncBusy;
+                  + syncBusy
+                  + "/"
+                  + padHighlight
+                  + "/"
+                  + menuSelection
+                  + "/"
+                  + titleSelection;
           boolean changed = !key.equals(overlayKey), rasterChanged = false;
           if (changed) {
             if (overlayBitmap == null
@@ -457,6 +507,9 @@ final class DesktopWindow {
             cursor = canvas.cursor;
             controls.draw(canvas, viewport);
             if (showMenu()) drawMenu(canvas);
+            else if (padHighlight
+                && !controls.active()
+                && !scene.json.optString("scene").equals("play")) drawActionFocus(canvas);
             if (syncBusy) {
               Paint busy = new Paint();
               busy.setColor(0xdd080f1d);
@@ -535,6 +588,7 @@ final class DesktopWindow {
         }
       }
     } finally {
+      if (gamepad != null) gamepad.close();
       if (saveSync != null) saveSync.close();
       dialogs.close();
       audio.close();
@@ -620,6 +674,132 @@ final class DesktopWindow {
   private void advance() {
     if (hidden) hidden = false;
     else command("advance", "");
+  }
+
+  private void updateHeldSkip() {
+    boolean value = keyboardSkip || padSkip;
+    if (value != appliedSkip) {
+      appliedSkip = value;
+      command("skip", value ? "1" : "0");
+    }
+  }
+
+  private void padAction(DesktopGamepad.Action action) {
+    if (syncBusy) return;
+    if (dialogOpen) {
+      java.awt.Window dialog = DesktopDialogInput.active();
+      if (dialog != null) DesktopDialogInput.send(dialog, action);
+      return;
+    }
+    if (!windowFocused || scene == null) return;
+    boolean accept = action == DesktopGamepad.Action.ACCEPT,
+        cancel = action == DesktopGamepad.Action.CANCEL,
+        menuButton = action == DesktopGamepad.Action.MENU;
+    int
+        dx =
+            action == DesktopGamepad.Action.LEFT
+                ? -1
+                : action == DesktopGamepad.Action.RIGHT ? 1 : 0,
+        dy = action == DesktopGamepad.Action.UP ? -1 : action == DesktopGamepad.Action.DOWN ? 1 : 0;
+    if (cancel) {
+      if (menu) {
+        menu = false;
+        return;
+      }
+      if (hidden) {
+        hidden = false;
+        return;
+      }
+      if (scene.movie != null) command("movieSkip", scene.movie.optString("id"));
+      return;
+    }
+    if (menuButton) {
+      menu = !menu;
+      menuSelection = 0;
+      padHighlight = menu;
+      return;
+    }
+    if (showMenu()) {
+      if (action == DesktopGamepad.Action.HISTORY && scene.json.optString("scene").equals("play")) {
+        dialogs.open("history");
+        return;
+      }
+      if (action == DesktopGamepad.Action.TOGGLE_TEXT) {
+        hidden = !hidden;
+        return;
+      }
+      if (dx != 0 || dy != 0) {
+        menuSelection =
+            Math.floorMod(
+                menuSelection + (width > height * 16f / 9f && dx != 0 ? dx * 4 : dx + dy), 8);
+        padHighlight = true;
+      } else if (accept) {
+        int bar = menuBar();
+        boolean rails = width > height * 16f / 9f;
+        click(
+            rails
+                ? (menuSelection < 4 ? bar / 2f : width - bar / 2f)
+                : (menuSelection + .5f) * width / 8,
+            rails ? ((menuSelection % 4) + .5f) * height / 4 : height - bar / 2f);
+      }
+      return;
+    }
+    if (controls.active()) {
+      if (dx != 0 || dy != 0) controls.navigate(dx + dy);
+      else if (accept) controls.accept();
+      return;
+    }
+    if (inputRegion.captures()) {
+      if (accept) {
+        String down = inputRegion.pointer(true, true);
+        if (!down.isEmpty()) command("inputPointer", down);
+        String up = inputRegion.pointer(false, true);
+        if (!up.isEmpty()) command("inputPointer", up);
+      } else if (action == DesktopGamepad.Action.DOWN) dialogs.open("settings");
+      return;
+    }
+    if (scene.json.optString("scene").equals("play")) {
+      switch (action) {
+        case TOGGLE_TEXT -> hidden = !hidden;
+        case ACCEPT -> {
+          mouseCursor.advance(cursorMayHide());
+          advance();
+        }
+        case HISTORY, UP -> dialogs.open("history");
+        case LEFT -> dialogs.open("save");
+        case RIGHT -> dialogs.open("load");
+        case DOWN -> dialogs.open("settings");
+        default -> {}
+      }
+    } else if (!scene.actions.isEmpty()) {
+      if (dx != 0 || dy != 0) {
+        titleSelection = Math.floorMod(titleSelection + dx + dy, scene.actions.size());
+        padHighlight = true;
+      } else if (accept && viewport != null) {
+        JSONObject item = scene.actions.get(Math.min(titleSelection, scene.actions.size() - 1));
+        click(
+            viewport.x
+                + ((float) item.optDouble("x") + (float) item.optDouble("w") / 2) * viewport.scale,
+            viewport.y
+                + ((float) item.optDouble("y") + (float) item.optDouble("h") / 2) * viewport.scale);
+      }
+    }
+  }
+
+  private void drawActionFocus(Canvas canvas) {
+    if (viewport == null || scene.actions.isEmpty()) return;
+    JSONObject item = scene.actions.get(Math.min(titleSelection, scene.actions.size() - 1));
+    Paint focus = new Paint(Paint.ANTI_ALIAS_FLAG);
+    focus.setColor(0xff9fcfff);
+    focus.setStyle(Paint.Style.STROKE);
+    focus.setStrokeWidth(2);
+    canvas.drawRect(
+        viewport.transform(
+            (float) item.optDouble("x"),
+            (float) item.optDouble("y"),
+            (float) item.optDouble("w"),
+            (float) item.optDouble("h")),
+        focus);
   }
 
   private boolean cursorMayHide() {
@@ -720,6 +900,19 @@ final class DesktopWindow {
           y = rails ? ((i % 4) + .5f) * height / 4 : height - bar / 2f;
       String label = translations.text(names[i]);
       canvas.drawText(label, x - paint.measureText(label) / 2, y + 6, paint);
+    }
+    if (padHighlight) {
+      Paint focus = new Paint(Paint.ANTI_ALIAS_FLAG);
+      focus.setColor(0xff9fcfff);
+      focus.setStyle(Paint.Style.STROKE);
+      focus.setStrokeWidth(2);
+      if (rails) {
+        float l = menuSelection < 4 ? 0 : width - bar, t = (menuSelection % 4) * height / 4f;
+        canvas.drawRect(l + 2, t + 2, l + bar - 2, t + height / 4f - 2, focus);
+      } else {
+        float l = menuSelection * width / 8f;
+        canvas.drawRect(l + 2, height - bar + 2, l + width / 8f - 2, height - 2, focus);
+      }
     }
   }
 
