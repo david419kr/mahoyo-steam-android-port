@@ -919,23 +919,21 @@ final class DesktopWindow {
     } else canvas.drawRect(0, height - bar, width, height, paint);
     String[] names = {"Save", "Load", "History", "Auto", "Skip", "Hide", "Title", "Settings"};
     paint.setColor(0xffe5eefb);
-    paint.setTextSize(rails ? 16 : 14);
-    float icon = rails ? 32 : 22, total = icon + 7 + paint.getTextSize();
+    paint.setTextSize(rails ? 22 : 16);
+    float icon = rails ? 28 : 22;
     for (int i = 0; i < 8; i++) {
       float x = rails ? (i < 4 ? bar / 2f : width - bar / 2f) : (i + .5f) * width / 8,
           y = rails ? ((i % 4) + .5f) * height / 4 : height - bar / 2f,
-          top = y - total / 2;
+          baseline = y - (paint.ascent() + paint.descent()) / 2;
+      String label = translations.text(names[i]);
+      float left =
+          rails ? (i < 4 ? 0 : width - bar) + 10 : x - (icon + 10 + paint.measureText(label)) / 2;
       canvas.drawBitmap(
           DesktopMenuIcons.icon(i),
           null,
-          new RectF(x - icon / 2, top, x + icon / 2, top + icon),
+          new RectF(left, y - icon / 2, left + icon, y + icon / 2),
           paint);
-      String label = translations.text(names[i]);
-      canvas.drawText(
-          label,
-          x - paint.measureText(label) / 2,
-          top + icon + 7 + paint.getTextSize() * .8f,
-          paint);
+      canvas.drawText(label, left + icon + 10, baseline, paint);
     }
     int selected = menuFocus.selected();
     if (selected >= 0) {
