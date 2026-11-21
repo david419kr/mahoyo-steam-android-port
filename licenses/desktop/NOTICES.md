@@ -1,7 +1,9 @@
 # Windows distribution notices
 
 The port's own code is MIT licensed. See LICENSE.txt. Game and Korean patch files
-are supplied by the user and are not included in this distribution.
+are supplied by the user. The Windows launcher icon is extracted from the user's
+Steam executable at build time and remains the property of the game's rights
+holders. Other game assets and Korean patch data are not bundled.
 
 Bundled components:
 

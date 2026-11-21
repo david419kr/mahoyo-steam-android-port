@@ -4,8 +4,9 @@ Extract the complete folder, then open **Mahoyo.exe**. On first launch, select
 your Steam game folder containing `WoH.exe`. Keep the bundled subfolders together.
 Java does not need to be installed separately. Windows x64 and OpenGL 3.3 are required.
 
-The launcher reads the Steam 1.1 game files directly. Original game assets are not
-included. Existing game files are not modified. Settings include adaptive/original
+The launcher reads the Steam 1.1 game files directly. Its icon is extracted from
+the original Steam executable when building; other game assets are not bundled.
+Existing game files are not modified. Settings include adaptive/original
 display, dialogue placement, ambient margins, native-resolution text and render scale.
 
 | Control | Action |

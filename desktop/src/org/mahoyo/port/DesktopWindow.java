@@ -81,6 +81,7 @@ final class DesktopWindow {
     if (Boolean.getBoolean("mahoyo.smoke")) GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
     window = GLFW.glfwCreateWindow(width, height, "WITCH ON THE HOLY NIGHT — Unofficial", 0, 0);
     if (window == 0) throw new IOException("Cannot create OpenGL window");
+    DesktopIcon.apply(window);
     GLFW.glfwMakeContextCurrent(window);
     windowFocused = GLFW.glfwGetWindowAttrib(window, GLFW.GLFW_FOCUSED) == GLFW.GLFW_TRUE;
     GL.createCapabilities();
