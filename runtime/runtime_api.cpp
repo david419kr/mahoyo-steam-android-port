@@ -543,8 +543,9 @@ struct Runtime final:mahoyo::vm::Host {
     std::string archiveJson() const {
         if(mode!="archive"||!archiveCatalog)return "null";
         std::ostringstream out;out<<"{\"id\":"<<archiveGeneration<<",\"selected\":"<<archiveSelected<<",\"checkpoint\":"<<archiveCheckpoint<<",\"entries\":[";bool first=true;
-        for(const auto& e:archiveCatalog->entries)if(mahoyo::archive::Catalog::eligible(e,commonFlags())){
-            if(!first)out<<',';first=false;out<<"{\"id\":"<<e.story<<",\"group\":"<<e.group<<",\"label\":"<<quote(menuMessage("SYSMES_ARCHIVE_"+std::string(e.story<=10?"00":"0")+std::to_string(e.story-1),e.label))<<",\"preview\":"<<quote(resourceName(e.preview))<<",\"header\":"<<quote(resourceName(archiveCatalog->headers.at(e.group)))<<",\"read\":"<<(mahoyo::archive::Catalog::read(e,commonFlags())?"true":"false")<<'}';}
+        for(const auto& e:archiveCatalog->entries){
+            const bool unlocked=mahoyo::archive::Catalog::eligible(e,commonFlags());
+            if(!first)out<<',';first=false;out<<"{\"id\":"<<e.story<<",\"group\":"<<e.group<<",\"unlocked\":"<<(unlocked?"true":"false")<<",\"label\":"<<quote(unlocked?menuMessage("SYSMES_ARCHIVE_"+std::string(e.story<=10?"00":"0")+std::to_string(e.story-1),e.label):"")<<",\"preview\":"<<quote(unlocked?resourceName(e.preview):"")<<",\"header\":"<<quote(resourceName(archiveCatalog->headers.at(e.group)))<<",\"read\":"<<(unlocked&&mahoyo::archive::Catalog::read(e,commonFlags())?"true":"false")<<'}';}
         return out.str()+"]}";
     }
     void openArchive(int selected,int checkpoint) {
