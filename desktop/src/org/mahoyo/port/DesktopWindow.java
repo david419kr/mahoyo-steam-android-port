@@ -31,6 +31,8 @@ final class DesktopWindow {
   private Thread glThread;
   private SceneRenderer renderer;
   private Scene scene;
+  private Scene committedScene;
+  private final MainHaltReturn haltReturn = new MainHaltReturn();
   private Viewport viewport;
   private int width = Integer.getInteger("mahoyo.width", DesktopWindowState.NATIVE_WIDTH),
       height = Integer.getInteger("mahoyo.height", DesktopWindowState.NATIVE_HEIGHT),
@@ -186,6 +188,7 @@ final class DesktopWindow {
               }
             },
             s -> {
+              if (scene == s) committedScene = s;
               if (syncBusy) return;
               if (s.transition != null && s.json.optString("waiting").equals("transitionReady")) {
                 String ack = s.json.optString("alphaRulePrepareAck");
@@ -437,6 +440,7 @@ final class DesktopWindow {
           stateJson = frame.toString();
         }
         scene = new Scene(stateJson);
+        haltReturn.observe(scene);
         controls.state(scene);
         String saveRequest = controls.takeSave();
         if (saveRequest != null)
@@ -585,6 +589,7 @@ final class DesktopWindow {
         }
         mouseCursor.update(cursorMayHide(), System.nanoTime());
         GLFW.glfwSwapBuffers(window);
+        maybeReturnToTitle();
         if (Boolean.getBoolean("mahoyo.profile")
             && frames >= Integer.getInteger("mahoyo.profile.warmup", 20)) {
           samples++;
@@ -683,6 +688,53 @@ final class DesktopWindow {
       }
     javax.imageio.ImageIO.write(image, "png", new java.io.File(".local/windows/title-render.png"));
     System.out.println("Windows shared scene renderer completed a bounded render check");
+  }
+
+  static boolean normalMainHalt(JSONObject value) {
+    if (!"play".equals(value.optString("scene"))
+        || !"end".equals(value.optString("waiting"))
+        || !value.optString("error", "").isEmpty()
+        || value.optString("module", "").isEmpty()) return false;
+    for (String key :
+        new String[] {"movie", "transition", "choice", "modal", "archive", "gallery", "musicRoom"})
+      if (value.optJSONObject(key) != null) return false;
+    JSONObject region = value.optJSONObject("inputRegion");
+    return region == null
+        || (!region.optBoolean("active")
+            && !region.optBoolean("readyPending")
+            && "0".equals(region.optString("request", "0"))
+            && "0".equals(region.optString("jumpRelease", "0")));
+  }
+
+  private void maybeReturnToTitle() {
+    Scene value = scene;
+    if (value == null) return;
+    boolean ready =
+        windowFocused
+            && !dialogOpen
+            && !syncBusy
+            && !controls.active()
+            && committedScene == value
+            && normalMainHalt(value.json)
+            && renderer.ready(value)
+            && movies.releasedForInput();
+    MainHaltReturn.Ticket ticket =
+        haltReturn.claim(
+            value,
+            ready,
+            value.json.optLong("version", -1),
+            value.json.optString("module", ""),
+            value.json.optLong("instructions", -1),
+            value.json.optLong("modulePc", -1));
+    if (ticket == null) return;
+    JSONObject fresh = new JSONObject(NativeBridge.snapshot(engine));
+    if (haltReturn.consume(
+        ticket,
+        normalMainHalt(fresh),
+        fresh.optLong("version", -1),
+        fresh.optString("module", ""),
+        fresh.optLong("instructions", -1),
+        fresh.optLong("modulePc", -1))) command("title", "");
   }
 
   private void command(String type, String payload) {
