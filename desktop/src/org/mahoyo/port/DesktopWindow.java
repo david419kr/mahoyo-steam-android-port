@@ -40,6 +40,8 @@ final class DesktopWindow {
   private int oldX = 100, oldY = 100, oldW = 1280, oldH = 720;
   private boolean fullscreen, menu, hidden;
   private DesktopInput input;
+  private DesktopCursor mouseCursor;
+  private boolean windowFocused = true;
   private volatile boolean syncBusy;
   private DesktopSaveSync saveSync;
   private final DesktopText translations;
@@ -228,21 +230,51 @@ final class DesktopWindow {
             height = y;
           }
         });
+    mouseCursor =
+        new DesktopCursor(
+            System.nanoTime(),
+            visible ->
+                GLFW.glfwSetInputMode(
+                    window,
+                    GLFW.GLFW_CURSOR,
+                    visible ? GLFW.GLFW_CURSOR_NORMAL : GLFW.GLFW_CURSOR_HIDDEN));
     input =
         new DesktopInput(
             () -> syncBusy || dialogOpen || inputRegion.restricted() || controls.active(),
-            this::advance,
+            () -> {
+              mouseCursor.advance(cursorMayHide());
+              advance();
+            },
             () -> hidden = !hidden,
             () -> dialogs.open("history"),
             this::fullscreen,
             () -> menu = !menu,
+            () -> prefs.values.edit().putBoolean("dynamic", !prefs.dynamic()).apply(),
             value -> command("skip", value ? "1" : "0"));
     GLFW.glfwSetKeyCallback(window, (w, key, scan, action, mods) -> input.key(key, action, mods));
-    GLFW.glfwSetScrollCallback(window, (w, x, y) -> input.wheel(y));
-    GLFW.glfwSetWindowFocusCallback(window, (w, focused) -> input.focus(focused));
+    GLFW.glfwSetCursorPosCallback(window, (w, x, y) -> mouseCursor.mouse(System.nanoTime()));
+    GLFW.glfwSetCursorEnterCallback(
+        window,
+        (w, entered) -> {
+          if (entered) mouseCursor.mouse(System.nanoTime());
+        });
+    GLFW.glfwSetScrollCallback(
+        window,
+        (w, x, y) -> {
+          mouseCursor.mouse(System.nanoTime());
+          input.wheel(y);
+        });
+    GLFW.glfwSetWindowFocusCallback(
+        window,
+        (w, focused) -> {
+          windowFocused = focused;
+          input.focus(focused);
+          if (!focused) mouseCursor.mouse(System.nanoTime());
+        });
     GLFW.glfwSetMouseButtonCallback(
         window,
         (w, button, action, mods) -> {
+          mouseCursor.mouse(System.nanoTime());
           if (syncBusy || dialogOpen) return;
           if (inputRegion.captures()) {
             if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT
@@ -445,6 +477,7 @@ final class DesktopWindow {
           cursor = null;
         }
         long overlayFinished = System.nanoTime();
+        mouseCursor.update(cursorMayHide(), System.nanoTime());
         GLFW.glfwSwapBuffers(window);
         if (Boolean.getBoolean("mahoyo.profile")
             && frames >= Integer.getInteger("mahoyo.profile.warmup", 20)) {
@@ -587,6 +620,18 @@ final class DesktopWindow {
   private void advance() {
     if (hidden) hidden = false;
     else command("advance", "");
+  }
+
+  private boolean cursorMayHide() {
+    return fullscreen
+        && windowFocused
+        && !dialogOpen
+        && !syncBusy
+        && !showMenu()
+        && !controls.active()
+        && !inputRegion.restricted()
+        && scene != null
+        && scene.json.optString("scene").equals("play");
   }
 
   private void click(float x, float y) {

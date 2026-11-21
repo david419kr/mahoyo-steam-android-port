@@ -16,6 +16,11 @@ display, dialogue placement, ambient margins, native-resolution text and render 
 | Hold Ctrl | Fast-forward; release to stop |
 | Wheel up / Up arrow | History |
 | Alt+Enter | Borderless fullscreen / restore window |
+| Shift+Enter | Original 16:9 / adaptive display |
+
+During fullscreen play, the mouse pointer hides after two seconds of inactivity
+or immediately when Enter advances dialogue. Moving the mouse restores it.
+Menus and windowed mode keep the pointer visible.
 
 Korean patch: in Settings, select the existing `patch_KR` folder (or its parent)
 containing `mahoyo_kr.dll` and the three `mahoyo_KR*.dat` files, then restart.

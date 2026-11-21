@@ -9,7 +9,7 @@ import org.lwjgl.glfw.GLFW;
 /** PC bindings; a held skip key is always released on focus loss. */
 final class DesktopInput {
   private final BooleanSupplier blocked;
-  private final Runnable advance, toggleText, history, fullscreen, toggleMenu;
+  private final Runnable advance, toggleText, history, fullscreen, toggleMenu, toggleDisplay;
   private final Consumer<Boolean> skip;
   private final Set<Integer> controls = new HashSet<>();
   private boolean skipping;
@@ -21,6 +21,7 @@ final class DesktopInput {
       Runnable history,
       Runnable fullscreen,
       Runnable toggleMenu,
+      Runnable toggleDisplay,
       Consumer<Boolean> skip) {
     this.blocked = blocked;
     this.advance = advance;
@@ -28,6 +29,7 @@ final class DesktopInput {
     this.history = history;
     this.fullscreen = fullscreen;
     this.toggleMenu = toggleMenu;
+    this.toggleDisplay = toggleDisplay;
     this.skip = skip;
   }
 
@@ -45,6 +47,8 @@ final class DesktopInput {
     if (action != GLFW.GLFW_PRESS || blocked.getAsBoolean()) return;
     if ((key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)
         && (modifiers & GLFW.GLFW_MOD_ALT) != 0) fullscreen.run();
+    else if ((key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)
+        && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) toggleDisplay.run();
     else if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) advance.run();
     else if (key == GLFW.GLFW_KEY_SPACE) toggleText.run();
     else if (key == GLFW.GLFW_KEY_UP) history.run();
