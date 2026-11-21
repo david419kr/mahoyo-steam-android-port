@@ -11,6 +11,10 @@ includes the in-game menu bars and excludes the Windows title bar/borders.
 Toggling in-game menus never changes the window size. Choosing a size preset
 returns to windowed mode; custom mouse resizing remains available.
 
+Save/load opens on the most recently saved slot. All twelve slots use a 4×3
+grid without scrollbars when they fit the monitor; smaller screens use fewer
+columns and scrolling as needed.
+
 The launcher reads the Steam 1.1 game files directly. Its icon is extracted from
 the original Steam executable when building; other game assets are not bundled.
 Existing game files are not modified. Settings include adaptive/original

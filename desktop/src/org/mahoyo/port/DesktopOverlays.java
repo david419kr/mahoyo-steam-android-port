@@ -35,6 +35,29 @@ final class DesktopOverlays implements AutoCloseable {
     dialog.setVisible(true);
   }
 
+  private Rectangle workArea() {
+    try (var stack = org.lwjgl.system.MemoryStack.stackPush()) {
+      MONITORINFOEX info = MONITORINFOEX.malloc(stack).cbSize(MONITORINFOEX.SIZEOF);
+      long monitor = User32.MonitorFromWindow(game, User32.MONITOR_DEFAULTTONEAREST);
+      if (!User32.GetMonitorInfo(monitor, info))
+        throw new IllegalStateException("Cannot read the game monitor work area");
+      RECT r = info.rcWork();
+      return new Rectangle(r.left(), r.top(), r.right() - r.left(), r.bottom() - r.top());
+    }
+  }
+
+  static Dimension available(Window dialog) {
+    if (current == null) throw new IllegalStateException("The game window is not ready");
+    Rectangle work = current.workArea();
+    var scale = dialog.getGraphicsConfiguration().getDefaultTransform();
+    return new Dimension(
+        (int) (work.width / scale.getScaleX()) - 32, (int) (work.height / scale.getScaleY()) - 32);
+  }
+
+  static void resized(Dialog dialog) {
+    if (current != null) current.prepare(dialog, false);
+  }
+
   void prepare(Dialog dialog, boolean focus) {
     if (!SwingUtilities.isEventDispatchThread())
       throw new IllegalStateException("Dialog ownership must run on the UI thread");
@@ -53,6 +76,9 @@ final class DesktopOverlays implements AutoCloseable {
         throw new IllegalStateException("Cannot position the game overlay");
       int x = parent.left() + (parent.right() - parent.left() - (child.right() - child.left())) / 2,
           y = parent.top() + (parent.bottom() - parent.top() - (child.bottom() - child.top())) / 2;
+      Rectangle work = workArea();
+      x = Math.max(work.x, Math.min(x, work.x + work.width - (child.right() - child.left())));
+      y = Math.max(work.y, Math.min(y, work.y + work.height - (child.bottom() - child.top())));
       User32.SetWindowPos(
           null,
           target,

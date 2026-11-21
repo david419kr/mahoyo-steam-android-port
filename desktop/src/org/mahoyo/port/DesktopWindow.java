@@ -958,9 +958,14 @@ final class DesktopWindow {
 
   private void drawMenu(Canvas canvas) {
     Paint paint = new Paint();
-    paint.setColor(0xff17263a);
+    paint.setColor(0xff000000);
     int bar = menuBar();
     boolean rails = width > height * 16f / 9f;
+    if (rails) {
+      canvas.drawRect(0, 0, bar, height, paint);
+      canvas.drawRect(width - bar, 0, width, height, paint);
+    } else canvas.drawRect(0, height - bar, width, height, paint);
+    paint.setColor(0x8017263a);
     if (rails) {
       canvas.drawRect(0, 0, bar, height, paint);
       canvas.drawRect(width - bar, 0, width, height, paint);

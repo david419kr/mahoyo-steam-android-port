@@ -138,13 +138,17 @@ final class DesktopDialogs implements AutoCloseable {
     toolbar.add(button("Close", d::dispose));
     root.add(toolbar, BorderLayout.NORTH);
     JPanel grid = new JPanel(new GridLayout(0, 4, 8, 8));
-    root.add(new JScrollPane(grid), BorderLayout.CENTER);
+    JScrollPane scroll = new JScrollPane(grid);
+    root.add(scroll, BorderLayout.CENTER);
     store.list(
         entries -> {
           if (!d.isDisplayable()) return;
           JButton initial = null;
+          int latest = DesktopSlotLayout.latest(entries);
           for (SlotThumbnailStore.Entry entry : entries) {
             JPanel card = new JPanel(new BorderLayout());
+            card.setPreferredSize(
+                new Dimension(DesktopSlotLayout.CARD_WIDTH, DesktopSlotLayout.CARD_HEIGHT));
             JButton select = new JButton();
             select.setLayout(new BorderLayout());
             JLabel number = new JLabel(String.format("%02d", entry.slot));
@@ -163,9 +167,12 @@ final class DesktopDialogs implements AutoCloseable {
             label.setLineWrap(true);
             label.setWrapStyleWord(true);
             label.setRows(2);
+            label.setPreferredSize(
+                new Dimension(192, label.getFontMetrics(label.getFont()).getHeight() * 2));
             select.add(label, BorderLayout.SOUTH);
             select.setEnabled(saving || entry.exists);
             if (initial == null && select.isEnabled()) initial = select;
+            if (entry.slot == latest) initial = select;
             select.addActionListener(
                 e -> {
                   if (saving
@@ -220,7 +227,38 @@ final class DesktopDialogs implements AutoCloseable {
           grid.revalidate();
           grid.repaint();
           DesktopDialogFocus.install(d, initial, true);
-          DesktopDialogFocus.restore(d);
+          Dimension available = DesktopOverlays.available(d);
+          Insets frame = d.getInsets(), padding = root.getInsets(), edge = scroll.getInsets();
+          int overhead =
+              frame.left + frame.right + padding.left + padding.right + edge.left + edge.right;
+          grid.setLayout(
+              new GridLayout(
+                  0,
+                  DesktopSlotLayout.columns(available.width - overhead),
+                  DesktopSlotLayout.GAP,
+                  DesktopSlotLayout.GAP));
+          root.remove(scroll);
+          root.add(grid, BorderLayout.CENTER);
+          d.pack();
+          Dimension preferred = d.getSize();
+          if (preferred.width <= available.width && preferred.height <= available.height) {
+            d.setMinimumSize(preferred);
+          } else {
+            root.remove(grid);
+            scroll.setViewportView(grid);
+            root.add(scroll, BorderLayout.CENTER);
+            d.pack();
+            Dimension scrolling = d.getSize();
+            d.setSize(
+                Math.min(
+                    available.width,
+                    scrolling.width + scroll.getVerticalScrollBar().getPreferredSize().width),
+                Math.min(available.height, scrolling.height));
+          }
+          d.validate();
+          DesktopOverlays.resized(d);
+          DesktopDialogFocus.select(d, initial, true);
+          SwingUtilities.invokeLater(() -> DesktopDialogFocus.restore(d));
         });
     DesktopOverlays.show(d);
   }
