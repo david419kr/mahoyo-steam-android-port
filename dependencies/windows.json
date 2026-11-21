@@ -1,0 +1,66 @@
+{
+  "artifacts": [
+    {
+      "path": "lib/iced-x86.jar",
+      "url": "https://repo.maven.apache.org/maven2/io/github/icedland/iced/iced-x86/1.21.0/iced-x86-1.21.0.jar",
+      "sha256": "7e3bd186a4a96a20c980c67f75fd522c23fbedb51ee817eb7c5117e4815cc7d7"
+    },
+    {
+      "path": "lib/json.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/json/json/20260719/json-20260719.jar",
+      "sha256": "c243f45f9590c12694a4142ed3f07fc70dfb71e4daebd05ae234bf92a2da92a6"
+    },
+    {
+      "path": "lib/lwjgl-3.3.6-natives-windows.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl/3.3.6/lwjgl-3.3.6-natives-windows.jar",
+      "sha256": "a8d8edda34718bf70f68d14de1295b5bfc0f477a9607a3a9705d9e2d88538a8c"
+    },
+    {
+      "path": "lib/lwjgl-3.3.6.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl/3.3.6/lwjgl-3.3.6.jar",
+      "sha256": "b00e2781b74cc829db9d39fb68746b25bb7b94ce61d46293457dbccddabd999c"
+    },
+    {
+      "path": "lib/lwjgl-glfw-3.3.6-natives-windows.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-glfw/3.3.6/lwjgl-glfw-3.3.6-natives-windows.jar",
+      "sha256": "7492d3f62a868f857173d85360bb58716cd3fe8563da18419dde858aed2deb41"
+    },
+    {
+      "path": "lib/lwjgl-glfw-3.3.6.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-glfw/3.3.6/lwjgl-glfw-3.3.6.jar",
+      "sha256": "b29c938ecc4997ce256a831aeca2033dab9829b5c21e72ebeb64aecd9e08450c"
+    },
+    {
+      "path": "lib/lwjgl-opengl-3.3.6-natives-windows.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-opengl/3.3.6/lwjgl-opengl-3.3.6-natives-windows.jar",
+      "sha256": "b54a9d98686284947270e11e94c02aa15c30522119e7b80fcf0c98da6fa3c83c"
+    },
+    {
+      "path": "lib/lwjgl-opengl-3.3.6.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-opengl/3.3.6/lwjgl-opengl-3.3.6.jar",
+      "sha256": "bb0430e0a5fd7b7b5770ae517960b2ea9887bb08d04f3a0cb1aae145332e1310"
+    },
+    {
+      "path": "lib/lwjgl-stb-3.3.6-natives-windows.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-stb/3.3.6/lwjgl-stb-3.3.6-natives-windows.jar",
+      "sha256": "9775db666eee0682cf09e3a03e148f34e03ae51a00d1e412d52d19a8b6ce3302"
+    },
+    {
+      "path": "lib/lwjgl-stb-3.3.6.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-stb/3.3.6/lwjgl-stb-3.3.6.jar",
+      "sha256": "ae658e15933e691b2ddba940a6e24b41a38ad6f02fd458e5e3b3ea91e222a6ab"
+    },
+    {
+      "path": "jre21.zip",
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_windows_hotspot_21.0.13.1_2.zip",
+      "sha256": "e15ee1e54a5a3b38027a09cedfa87bc3348d7dd3ce50866dd3d9671d7fffc6c1",
+      "extract": "jre"
+    },
+    {
+      "path": "ffmpeg-pinned.zip",
+      "url": "https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/autobuild-2026-11-20-12-40/ffmpeg-n8.1.3-39-g660b5aa7db-win64-lgpl-shared-8.1.zip",
+      "sha256": "bf6109642e7da71905cadcb0b8dbab8c2a0a72f8a1a4c88c2dbcda771aa358cd",
+      "extract": "ffmpeg-pinned"
+    }
+  ]
+}

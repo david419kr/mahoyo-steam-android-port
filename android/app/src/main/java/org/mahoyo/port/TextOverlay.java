@@ -123,6 +123,7 @@ final class TextOverlay extends View {
         // Graphics-only ticks retain the Canvas display list; dialogue/cursor/scroll changes still redraw at native resolution.
         if(!visualKey.equals(presentedVisualKey)){presentedVisualKey=visualKey;invalidate();}}
     RenderState update(Scene scene,Viewport viewport,boolean hidden){present(scene,viewport,hidden);return presentedState;}
+    String visualKey(){return presentedVisualKey;}
     @Override protected void onDraw(Canvas canvas){
         super.onDraw(canvas);removeCallbacks(cursorFrame);
         // Keep live dialogue on Canvas across graphics transitions; outgoing movie/title can capture it.
@@ -256,6 +257,16 @@ final class TextOverlay extends View {
     }
     // The same native-pixel glyph/ruby renderer is used inside the frozen GL frame.
     static Bitmap capture(Scene scene,Viewport viewport,int width,int height){return capture(scene,viewport,width,height,null);}
+    /** Shared rich-text layout for desktop history cards, including native ruby offsets. */
+    static Bitmap captureHistory(String value,int width,float font,float nativeFont,int color,boolean italic)throws org.json.JSONException {
+        String text=(italic?"@i":"")+value;TextPaint paint=new TextPaint(Paint.ANTI_ALIAS_FLAG|Paint.SUBPIXEL_TEXT_FLAG);
+        Paragraph layout=new Paragraph(text,0,width,font,nativeFont,color,paint);
+        float padding=font*.3f+Math.max(0,Float.isFinite(layout.rubyTop)?-layout.rubyTop:0),scale=font/nativeFont;
+        int height=Math.max(1,(int)Math.ceil(layout.height+2*padding));
+        JSONObject item=new JSONObject().put("text",text).put("x",0).put("y",padding/scale).put("w",width/scale).put("h",height/scale).put("fontSize",nativeFont).put("color",color).put("visibleCharacters",Integer.MAX_VALUE);
+        Scene scene=new Scene(new JSONObject().put("scene","history").put("designWidth",width/scale).put("designHeight",height/scale).put("text",item).toString());
+        return capture(scene,new Viewport(width,height,0,false,false,scene.width,scene.height),width,height);
+    }
     static float fullscreenBackdropAlpha(Scene scene){
         if(scene.movie!=null||!scene.json.optString("scene","play").equals("play"))return 0;
         double fixed=scene.json.optDouble("windowAlphaFixed16",-1);
