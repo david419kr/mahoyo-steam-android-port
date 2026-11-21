@@ -20,6 +20,12 @@ final class DesktopGamepad implements AutoCloseable {
     TOGGLE_TEXT
   }
 
+  static final int VERTICAL =
+      (1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_UP) | (1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_DOWN);
+  static final int DIRECTIONS =
+      VERTICAL
+          | (1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_LEFT)
+          | (1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_RIGHT);
   private final Consumer<Action> action;
   private final Consumer<Boolean> skip;
   private final GLFWGamepadState state = GLFWGamepadState.calloc();
@@ -33,8 +39,7 @@ final class DesktopGamepad implements AutoCloseable {
     this.skip = skip;
   }
 
-  void poll(
-      long now, boolean enabled, Object context, boolean repeatDirections, boolean skipAllowed) {
+  void poll(long now, boolean enabled, Object context, int repeatMask, boolean skipAllowed) {
     if (now < nextPoll) return;
     nextPoll = now + 8_000_000L;
     if (device < 0 && now >= nextScan) {
@@ -55,7 +60,7 @@ final class DesktopGamepad implements AutoCloseable {
         nextScan = 0;
       }
     }
-    update(device, buttons, enabled, context, repeatDirections, skipAllowed, now);
+    update(device, buttons, enabled, context, repeatMask, skipAllowed, now);
   }
 
   void update(
@@ -63,7 +68,7 @@ final class DesktopGamepad implements AutoCloseable {
       int buttons,
       boolean enabled,
       Object context,
-      boolean repeatDirections,
+      int repeatMask,
       boolean skipAllowed,
       long now) {
     if (source != this.source || context != this.context || !enabled || !this.enabled) {
@@ -94,13 +99,8 @@ final class DesktopGamepad implements AutoCloseable {
     Action[] actions = Action.values();
     for (int i = 0; i < indices.length; i++)
       if ((pressed & (1 << indices[i])) != 0) action.accept(actions[i]);
-    int direction =
-        current
-            & ((1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_UP)
-                | (1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_DOWN)
-                | (1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_LEFT)
-                | (1 << GLFW.GLFW_GAMEPAD_BUTTON_DPAD_RIGHT));
-    if (!repeatDirections || Integer.bitCount(direction) != 1) {
+    int direction = current & repeatMask;
+    if (Integer.bitCount(direction) != 1) {
       repeat = 0;
       return;
     }

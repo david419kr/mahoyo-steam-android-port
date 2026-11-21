@@ -217,7 +217,7 @@ final class DesktopDialogs implements AutoCloseable {
           grid.repaint();
           if (initial != null) initial.requestFocusInWindow();
         });
-    d.setVisible(true);
+    DesktopOverlays.show(d);
   }
 
   private void transfer(boolean importing, JDialog owner) {
@@ -341,7 +341,7 @@ final class DesktopDialogs implements AutoCloseable {
     slider(game, "Sound effects", 0, 100, prefs.volume("se"), "volume_se");
     slider(game, "Text speed", 0, 100, prefs.textSpeed(), "textSpeed");
     slider(game, "Auto delay (ms)", 500, 10000, prefs.autoDelay(), "autoDelay");
-    d.setVisible(true);
+    DesktopOverlays.show(d);
   }
 
   private JPanel column() {
@@ -426,7 +426,7 @@ final class DesktopDialogs implements AutoCloseable {
     }
     SwingUtilities.invokeLater(
         () -> scroll.getVerticalScrollBar().setValue(scroll.getVerticalScrollBar().getMaximum()));
-    d.setVisible(true);
+    DesktopOverlays.show(d);
     JSONObject now = host.call("historyPreview", "");
     String pair = HistoryModel.replayPair(now.optJSONObject("historyReplay"));
     if (!pair.isEmpty()) host.call("historyReplayStop", pair);

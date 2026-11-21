@@ -17,7 +17,7 @@ public final class DesktopGamepadCheck {
     try (DesktopGamepad pad =
         new DesktopGamepad(a -> events.add(a.name()), v -> events.add("skip:" + v))) {
       long now = 0;
-      pad.update(0, 0, true, game, false, true, now);
+      pad.update(0, 0, true, game, 0, true, now);
       int[] buttons = {
         GLFW.GLFW_GAMEPAD_BUTTON_A,
         GLFW.GLFW_GAMEPAD_BUTTON_B,
@@ -30,9 +30,9 @@ public final class DesktopGamepadCheck {
         GLFW.GLFW_GAMEPAD_BUTTON_BACK
       };
       for (int b : buttons) {
-        pad.update(0, button(b), true, game, false, true, ++now);
-        pad.update(0, button(b), true, game, false, true, ++now);
-        pad.update(0, 0, true, game, false, true, ++now);
+        pad.update(0, button(b), true, game, 0, true, ++now);
+        pad.update(0, button(b), true, game, 0, true, ++now);
+        pad.update(0, 0, true, game, 0, true, ++now);
       }
       if (!events.equals(
           List.of(
@@ -40,34 +40,34 @@ public final class DesktopGamepadCheck {
         throw new AssertionError(events);
       events.clear();
       int r1 = button(GLFW.GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER);
-      pad.update(0, r1, true, game, false, true, ++now);
-      pad.update(0, r1, false, game, false, true, ++now);
-      pad.update(0, r1, true, game, false, true, ++now);
-      pad.update(0, r1, true, game, false, true, ++now);
+      pad.update(0, r1, true, game, 0, true, ++now);
+      pad.update(0, r1, false, game, 0, true, ++now);
+      pad.update(0, r1, true, game, 0, true, ++now);
+      pad.update(0, r1, true, game, 0, true, ++now);
       if (!events.equals(List.of("skip:true", "skip:false")))
         throw new AssertionError("Focus regain restarted held skip: " + events);
-      pad.update(0, 0, true, game, false, true, ++now);
-      pad.update(0, r1, true, game, false, true, ++now);
-      pad.update(-1, 0, true, game, false, true, ++now);
+      pad.update(0, 0, true, game, 0, true, ++now);
+      pad.update(0, r1, true, game, 0, true, ++now);
+      pad.update(-1, 0, true, game, 0, true, ++now);
       if (!events.equals(List.of("skip:true", "skip:false", "skip:true", "skip:false")))
         throw new AssertionError("Disconnect left skip held: " + events);
       events.clear();
       int accept = button(GLFW.GLFW_GAMEPAD_BUTTON_A);
-      pad.update(0, accept, true, dialog, true, false, ++now);
-      pad.update(0, accept, true, dialog, true, false, ++now);
+      pad.update(0, accept, true, dialog, DesktopGamepad.DIRECTIONS, false, ++now);
+      pad.update(0, accept, true, dialog, DesktopGamepad.DIRECTIONS, false, ++now);
       if (!events.isEmpty())
         throw new AssertionError("Held button activated a newly opened dialog");
-      pad.update(0, 0, true, dialog, true, false, ++now);
-      pad.update(0, accept, true, dialog, true, false, ++now);
+      pad.update(0, 0, true, dialog, DesktopGamepad.DIRECTIONS, false, ++now);
+      pad.update(0, accept, true, dialog, DesktopGamepad.DIRECTIONS, false, ++now);
       if (!events.equals(List.of("ACCEPT"))) throw new AssertionError(events);
       events.clear();
-      pad.update(0, 0, true, dialog, true, false, 1000);
+      pad.update(0, 0, true, dialog, DesktopGamepad.DIRECTIONS, false, 1000);
       int down = button(GLFW.GLFW_GAMEPAD_BUTTON_DPAD_DOWN);
-      pad.update(0, down, true, dialog, true, false, 2000);
-      pad.update(0, down, true, dialog, true, false, 200_000_000);
-      pad.update(0, down, true, dialog, true, false, 400_000_000);
-      pad.update(0, down, true, dialog, true, false, 450_000_000);
-      pad.update(0, down, true, dialog, true, false, 510_000_000);
+      pad.update(0, down, true, dialog, DesktopGamepad.DIRECTIONS, false, 2000);
+      pad.update(0, down, true, dialog, DesktopGamepad.DIRECTIONS, false, 200_000_000);
+      pad.update(0, down, true, dialog, DesktopGamepad.DIRECTIONS, false, 400_000_000);
+      pad.update(0, down, true, dialog, DesktopGamepad.DIRECTIONS, false, 450_000_000);
+      pad.update(0, down, true, dialog, DesktopGamepad.DIRECTIONS, false, 510_000_000);
       if (!events.equals(List.of("DOWN", "DOWN", "DOWN")))
         throw new AssertionError("Menu direction repeat: " + events);
     }

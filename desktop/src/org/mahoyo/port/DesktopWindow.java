@@ -44,7 +44,12 @@ final class DesktopWindow {
   private boolean windowFocused = true;
   private DesktopGamepad gamepad;
   private boolean keyboardSkip, padSkip, appliedSkip, padHighlight;
-  private int menuSelection, titleSelection;
+  private final DesktopMenuFocus menuFocus = new DesktopMenuFocus();
+  private int titleSelection;
+  private DesktopOverlays overlays;
+  private final java.util.concurrent.ConcurrentLinkedQueue<
+          java.util.concurrent.CompletableFuture<Bitmap>>
+      captures = new java.util.concurrent.ConcurrentLinkedQueue<>();
 
   private enum PadContext {
     GAME,
@@ -108,7 +113,7 @@ final class DesktopWindow {
               }
 
               public Bitmap capture() {
-                return onGl(() -> snapshotBitmap());
+                return captureNextFrame();
               }
 
               public void language(String target) {
@@ -130,6 +135,7 @@ final class DesktopWindow {
                     () -> {
                       command(open ? "pause" : "resume", "");
                       audio.pause(open, !settings);
+                      if (!open) GLFW.glfwFocusWindow(window);
                     });
               }
             },
@@ -230,7 +236,7 @@ final class DesktopWindow {
     GLFW.glfwSetWindowCloseCallback(
         window,
         w -> {
-          if (syncBusy) GLFW.glfwSetWindowShouldClose(window, false);
+          if (syncBusy || dialogOpen) GLFW.glfwSetWindowShouldClose(window, false);
         });
 
     bufferWidth = width;
@@ -255,14 +261,11 @@ final class DesktopWindow {
     input =
         new DesktopInput(
             () -> syncBusy || dialogOpen || inputRegion.restricted() || controls.active(),
-            () -> {
-              mouseCursor.advance(cursorMayHide());
-              advance();
-            },
+            this::readerAdvance,
             () -> hidden = !hidden,
             () -> dialogs.open("history"),
             this::fullscreen,
-            () -> menu = !menu,
+            this::toggleMenu,
             () -> prefs.values.edit().putBoolean("dynamic", !prefs.dynamic()).apply(),
             value -> {
               keyboardSkip = value;
@@ -275,6 +278,7 @@ final class DesktopWindow {
               padSkip = value;
               updateHeldSkip();
             });
+    overlays = new DesktopOverlays(window);
     GLFW.glfwSetKeyCallback(window, (w, key, scan, action, mods) -> input.key(key, action, mods));
     GLFW.glfwSetCursorPosCallback(window, (w, x, y) -> mouseCursor.mouse(System.nanoTime()));
     GLFW.glfwSetCursorEnterCallback(
@@ -293,6 +297,7 @@ final class DesktopWindow {
         (w, focused) -> {
           windowFocused = focused;
           input.focus(focused);
+          if (focused && dialogOpen) overlays.raise();
           if (!focused) mouseCursor.mouse(System.nanoTime());
         });
     GLFW.glfwSetMouseButtonCallback(
@@ -320,7 +325,7 @@ final class DesktopWindow {
           }
           if (action != GLFW.GLFW_RELEASE) return;
           if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            menu = !menu;
+            toggleMenu();
             return;
           }
           if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
@@ -418,22 +423,28 @@ final class DesktopWindow {
         Object padContext =
             dialog != null
                 ? dialog
-                : syncBusy || inputRegion.restricted()
+                : syncBusy
                     ? PadContext.BLOCKED
-                    : controls.active()
-                        ? PadContext.NATIVE
-                        : showMenu()
-                            ? PadContext.MENU
-                            : scene.json.optString("scene").equals("play")
-                                ? PadContext.GAME
-                                : PadContext.TITLE;
+                    : showMenu()
+                        ? PadContext.MENU
+                        : inputRegion.restricted()
+                            ? PadContext.BLOCKED
+                            : controls.active()
+                                ? PadContext.NATIVE
+                                : scene.json.optString("scene").equals("play")
+                                    ? PadContext.GAME
+                                    : PadContext.TITLE;
         gamepad.poll(
             System.nanoTime(),
             !syncBusy && (dialog != null || windowFocused && !dialogOpen),
             padContext,
-            padContext != PadContext.GAME,
+            padContext == PadContext.MENU
+                ? (menuFocus.selected() < 0 ? 0 : DesktopGamepad.VERTICAL)
+                : padContext == PadContext.GAME ? 0 : DesktopGamepad.DIRECTIONS,
             (padContext == PadContext.GAME || padContext == PadContext.MENU)
-                && scene.json.optString("scene").equals("play"));
+                && scene.json.optString("scene").equals("play")
+                && !controls.active()
+                && !inputRegion.restricted());
         movies.update(scene.movie, dialogOpen || syncBusy);
         audio.update(scene.json.optJSONArray("audio"));
         audio.updateHistory(scene.json.optJSONObject("historyReplay"));
@@ -494,7 +505,7 @@ final class DesktopWindow {
                   + "/"
                   + padHighlight
                   + "/"
-                  + menuSelection
+                  + menuFocus.selected()
                   + "/"
                   + titleSelection;
           boolean changed = !key.equals(overlayKey), rasterChanged = false;
@@ -531,6 +542,14 @@ final class DesktopWindow {
           cursor = null;
         }
         long overlayFinished = System.nanoTime();
+        java.util.concurrent.CompletableFuture<Bitmap> capture;
+        while ((capture = captures.poll()) != null) {
+          try {
+            capture.complete(DesktopThumbnail.capture(width, height, viewport.content));
+          } catch (Throwable failure) {
+            capture.completeExceptionally(failure);
+          }
+        }
         mouseCursor.update(cursorMayHide(), System.nanoTime());
         GLFW.glfwSwapBuffers(window);
         if (Boolean.getBoolean("mahoyo.profile")
@@ -589,6 +608,10 @@ final class DesktopWindow {
         }
       }
     } finally {
+      java.util.concurrent.CompletableFuture<Bitmap> capture;
+      while ((capture = captures.poll()) != null)
+        capture.completeExceptionally(new IOException("The game window closed"));
+      if (overlays != null) overlays.close();
       if (gamepad != null) gamepad.close();
       if (saveSync != null) saveSync.close();
       dialogs.close();
@@ -652,24 +675,26 @@ final class DesktopWindow {
     return onGl(() -> new JSONObject(NativeBridge.command(engine, type, payload)));
   }
 
-  private Bitmap snapshotBitmap() {
-    ByteBuffer b = ByteBuffer.allocateDirect(width * height * 4);
-    GL33C.glReadBuffer(GL33C.GL_FRONT);
-    GL33C.glReadPixels(0, 0, width, height, GL33C.GL_RGBA, GL33C.GL_UNSIGNED_BYTE, b);
-    Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-    int[] pixels = new int[width * height];
-    for (int y = 0; y < height; y++)
-      for (int x = 0; x < width; x++) {
-        int i = (y * width + x) * 4;
-        pixels[(height - 1 - y) * width + x] =
-            0xff000000
-                | ((b.get(i) & 255) << 16)
-                | ((b.get(i + 1) & 255) << 8)
-                | (b.get(i + 2) & 255);
-      }
-    image.setPixels(pixels, 0, width, 0, 0, width, height);
-    GL33C.glReadBuffer(GL33C.GL_BACK);
-    return image;
+  private Bitmap captureNextFrame() {
+    var future = new java.util.concurrent.CompletableFuture<Bitmap>();
+    captures.add(future);
+    try {
+      return future.get(30, java.util.concurrent.TimeUnit.SECONDS);
+    } catch (Exception failure) {
+      captures.remove(future);
+      throw new IllegalStateException("Cannot capture the game frame", failure);
+    }
+  }
+
+  private void toggleMenu() {
+    menu = !menu;
+    menuFocus.clear();
+    padHighlight = false;
+  }
+
+  private void readerAdvance() {
+    mouseCursor.advance(cursorMayHide());
+    advance();
   }
 
   private void advance() {
@@ -705,6 +730,7 @@ final class DesktopWindow {
     if (cancel) {
       if (menu) {
         menu = false;
+        menuFocus.clear();
         return;
       }
       if (hidden) {
@@ -715,9 +741,7 @@ final class DesktopWindow {
       return;
     }
     if (menuButton) {
-      menu = !menu;
-      menuSelection = 0;
-      padHighlight = menu;
+      toggleMenu();
       return;
     }
     if (showMenu()) {
@@ -730,20 +754,24 @@ final class DesktopWindow {
         return;
       }
       if (dx != 0 || dy != 0) {
-        menuSelection =
-            Math.floorMod(
-                menuSelection + (width > height * 16f / 9f && dx != 0 ? dx * 4 : dx + dy), 8);
-        padHighlight = true;
-      } else if (accept) {
-        int bar = menuBar();
-        boolean rails = width > height * 16f / 9f;
-        click(
-            rails
-                ? (menuSelection < 4 ? bar / 2f : width - bar / 2f)
-                : (menuSelection + .5f) * width / 8,
-            rails ? ((menuSelection % 4) + .5f) * height / 4 : height - bar / 2f);
+        menuFocus.move(dx, dy);
+        return;
       }
-      return;
+      if (accept) {
+        int selected = menuFocus.selected();
+        if (selected >= 0) {
+          int bar = menuBar();
+          boolean rails = width > height * 16f / 9f;
+          click(
+              rails ? (selected < 4 ? bar / 2f : width - bar / 2f) : (selected + .5f) * width / 8,
+              rails ? ((selected % 4) + .5f) * height / 4 : height - bar / 2f);
+          return;
+        }
+        if (scene.json.optString("scene").equals("play")) {
+          readerAdvance();
+          return;
+        }
+      }
     }
     if (controls.active()) {
       if (dx != 0 || dy != 0) controls.navigate(dx + dy);
@@ -762,10 +790,7 @@ final class DesktopWindow {
     if (scene.json.optString("scene").equals("play")) {
       switch (action) {
         case TOGGLE_TEXT -> hidden = !hidden;
-        case ACCEPT -> {
-          mouseCursor.advance(cursorMayHide());
-          advance();
-        }
+        case ACCEPT -> readerAdvance();
         case HISTORY, UP -> dialogs.open("history");
         case LEFT -> dialogs.open("save");
         case RIGHT -> dialogs.open("load");
@@ -808,7 +833,6 @@ final class DesktopWindow {
         && windowFocused
         && !dialogOpen
         && !syncBusy
-        && !showMenu()
         && !controls.active()
         && !inputRegion.restricted()
         && scene != null
@@ -866,7 +890,7 @@ final class DesktopWindow {
   }
 
   private int menuBar() {
-    return width > height * 16f / 9f ? 76 : 58;
+    return width > height * 16f / 9f ? 152 : 58;
   }
 
   private boolean showMenu() {
@@ -895,24 +919,35 @@ final class DesktopWindow {
     } else canvas.drawRect(0, height - bar, width, height, paint);
     String[] names = {"Save", "Load", "History", "Auto", "Skip", "Hide", "Title", "Settings"};
     paint.setColor(0xffe5eefb);
-    paint.setTextSize(16);
+    paint.setTextSize(rails ? 16 : 14);
+    float icon = rails ? 32 : 22, total = icon + 7 + paint.getTextSize();
     for (int i = 0; i < 8; i++) {
       float x = rails ? (i < 4 ? bar / 2f : width - bar / 2f) : (i + .5f) * width / 8,
-          y = rails ? ((i % 4) + .5f) * height / 4 : height - bar / 2f;
+          y = rails ? ((i % 4) + .5f) * height / 4 : height - bar / 2f,
+          top = y - total / 2;
+      canvas.drawBitmap(
+          DesktopMenuIcons.icon(i),
+          null,
+          new RectF(x - icon / 2, top, x + icon / 2, top + icon),
+          paint);
       String label = translations.text(names[i]);
-      canvas.drawText(label, x - paint.measureText(label) / 2, y + 6, paint);
+      canvas.drawText(
+          label,
+          x - paint.measureText(label) / 2,
+          top + icon + 7 + paint.getTextSize() * .8f,
+          paint);
     }
-    if (padHighlight) {
-      Paint focus = new Paint(Paint.ANTI_ALIAS_FLAG);
-      focus.setColor(0xff9fcfff);
-      focus.setStyle(Paint.Style.STROKE);
-      focus.setStrokeWidth(2);
+    int selected = menuFocus.selected();
+    if (selected >= 0) {
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(2);
+      paint.setColor(0xff9fcfff);
       if (rails) {
-        float l = menuSelection < 4 ? 0 : width - bar, t = (menuSelection % 4) * height / 4f;
-        canvas.drawRect(l + 2, t + 2, l + bar - 2, t + height / 4f - 2, focus);
+        float l = selected < 4 ? 0 : width - bar, t = (selected % 4) * height / 4f;
+        canvas.drawRect(l + 2, t + 2, l + bar - 2, t + height / 4f - 2, paint);
       } else {
-        float l = menuSelection * width / 8f;
-        canvas.drawRect(l + 2, height - bar + 2, l + width / 8f - 2, height - 2, focus);
+        float l = selected * width / 8f;
+        canvas.drawRect(l + 2, height - bar + 2, l + width / 8f - 2, height - 2, paint);
       }
     }
   }

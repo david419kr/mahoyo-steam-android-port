@@ -21,7 +21,8 @@ display, dialogue placement, ambient margins, native-resolution text and render 
 
 During fullscreen play, the mouse pointer hides after two seconds of inactivity
 or immediately when Enter advances dialogue. Moving the mouse restores it.
-Menus and windowed mode keep the pointer visible.
+Save/load, history and settings dialogs, and windowed mode, keep the pointer visible.
+Visible menu rails do not prevent Enter or neutral controller A from hiding it.
 
 ## Controller
 
@@ -41,7 +42,12 @@ device recognized by GLFW's built-in gamepad mappings.
 | Hold RB | Hold R1 | Skip until released |
 | View / Back / Select | Create / Share / Select | Show or hide dialogue |
 
-In menus, use the D-pad to select, the bottom button to confirm and the right
+Opening the menu starts in neutral: A still advances the game. D-pad left selects
+Save on the left rail; right selects Skip on the right rail. Up/down move within
+the selected rail. Pressing toward the center returns to neutral; release and
+press again to enter the opposite rail. D-pad shortcuts apply only with the menu hidden.
+
+Inside a dialog, use the D-pad to select, the bottom button to confirm and the right
 button to cancel. Left/right adjust a focused settings slider. Losing focus or
 disconnecting the controller stops its held skip. A button held while a menu
 opens must be released before it can activate that menu.

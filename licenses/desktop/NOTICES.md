@@ -9,7 +9,7 @@ Bundled components:
 
 | Component | Version | License / notice |
 |---|---|---|
-| LWJGL, including Windows bindings | 3.3.6 | BSD-3-Clause, LWJGL.txt |
+| LWJGL, including Windows and JAWT bindings | 3.3.6 | BSD-3-Clause, LWJGL.txt |
 | GLFW | bundled with LWJGL 3.3.6 | Zlib, GLFW.txt |
 | stb (Vorbis decoder) | bundled with LWJGL 3.3.6 | MIT/public domain, STB.txt |
 | iced-x86 | 1.21.0 | MIT, iced-x86-LICENSE.txt |

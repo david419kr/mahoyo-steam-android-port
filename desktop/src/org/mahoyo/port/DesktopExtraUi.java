@@ -105,7 +105,7 @@ final class DesktopExtraUi {
       cards.add(card);
     }
     d.add(new JScrollPane(cards));
-    d.setVisible(true);
+    DesktopOverlays.show(d);
     if (!selected[0]) host.call("archiveBack", model.back());
   }
 
@@ -132,7 +132,7 @@ final class DesktopExtraUi {
       cards.add(card);
     }
     d.add(new JScrollPane(cards));
-    d.setVisible(true);
+    DesktopOverlays.show(d);
     host.call("galleryAction", model.id + " back");
   }
 
@@ -174,7 +174,7 @@ final class DesktopExtraUi {
     buttons.add(button("Close", d::dispose));
     d.add(buttons, BorderLayout.SOUTH);
     render.run();
-    d.setVisible(true);
+    DesktopOverlays.show(d);
     host.call("galleryAction", model[0].id + " back");
   }
 
@@ -211,7 +211,7 @@ final class DesktopExtraUi {
     toolbar.add(button("Close", d::dispose));
     d.add(new JScrollPane(rows));
     d.add(toolbar, BorderLayout.SOUTH);
-    d.setVisible(true);
+    DesktopOverlays.show(d);
     host.call("musicAction", model.id + " back");
   }
 }
