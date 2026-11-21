@@ -926,8 +926,7 @@ final class DesktopWindow {
           y = rails ? ((i % 4) + .5f) * height / 4 : height - bar / 2f,
           baseline = y - (paint.ascent() + paint.descent()) / 2;
       String label = translations.text(names[i]);
-      float left =
-          rails ? (i < 4 ? 0 : width - bar) + 10 : x - (icon + 10 + paint.measureText(label)) / 2;
+        float left = x - (icon + 10 + paint.measureText(label)) / 2;
       canvas.drawBitmap(
           DesktopMenuIcons.icon(i),
           null,
