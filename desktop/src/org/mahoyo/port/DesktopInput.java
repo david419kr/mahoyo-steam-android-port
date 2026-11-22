@@ -13,6 +13,7 @@ final class DesktopInput {
   private final Consumer<Boolean> skip;
   private final Set<Integer> controls = new HashSet<>();
   private boolean skipping;
+  private boolean focused = true;
 
   DesktopInput(
       BooleanSupplier blocked,
@@ -36,7 +37,7 @@ final class DesktopInput {
   void key(int key, int action, int modifiers) {
     if (key == GLFW.GLFW_KEY_LEFT_CONTROL || key == GLFW.GLFW_KEY_RIGHT_CONTROL) {
       if (action == GLFW.GLFW_RELEASE) controls.remove(key);
-      else if (action == GLFW.GLFW_PRESS && !blocked.getAsBoolean()) controls.add(key);
+      else if (action == GLFW.GLFW_PRESS && focused && !blocked.getAsBoolean()) controls.add(key);
       boolean next = !controls.isEmpty();
       if (next != skipping) {
         skipping = next;
@@ -44,7 +45,7 @@ final class DesktopInput {
       }
       return;
     }
-    if (action != GLFW.GLFW_PRESS || blocked.getAsBoolean()) return;
+    if (!focused || action != GLFW.GLFW_PRESS || blocked.getAsBoolean()) return;
     if ((key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)
         && (modifiers & GLFW.GLFW_MOD_ALT) != 0) fullscreen.run();
     else if ((key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)
@@ -56,10 +57,11 @@ final class DesktopInput {
   }
 
   void wheel(double y) {
-    if (y > 0 && !blocked.getAsBoolean()) history.run();
+    if (focused && y > 0 && !blocked.getAsBoolean()) history.run();
   }
 
   void focus(boolean focused) {
+    this.focused = focused;
     if (!focused) {
       controls.clear();
       if (skipping) {

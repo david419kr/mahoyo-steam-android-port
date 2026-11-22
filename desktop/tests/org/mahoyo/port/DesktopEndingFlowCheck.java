@@ -7,7 +7,6 @@ import org.json.*;
 
 /** Runs the real hidden GLFW render loop against an isolated authored ending script. */
 public final class DesktopEndingFlowCheck {
-  @SuppressWarnings("unchecked")
   public static void main(String[] args) throws Exception {
     Context.home = new File(args[0]).getCanonicalFile();
     if (!Context.home.getName().startsWith("ending-check-"))
@@ -32,21 +31,6 @@ public final class DesktopEndingFlowCheck {
             "ja");
     try {
       DesktopWindow window = new DesktopWindow(context, resources, engine);
-      // A hidden GLFW window cannot gain OS focus; simulate its focus notification on the GL
-      // thread.
-      var focused = DesktopWindow.class.getDeclaredField("windowFocused");
-      focused.setAccessible(true);
-      var commands = DesktopWindow.class.getDeclaredField("commands");
-      commands.setAccessible(true);
-      ((java.util.Queue<Runnable>) commands.get(window))
-          .add(
-              () -> {
-                try {
-                  focused.setBoolean(window, true);
-                } catch (IllegalAccessException failure) {
-                  throw new AssertionError(failure);
-                }
-              });
       window.run();
       JSONObject state = new JSONObject(NativeBridge.snapshot(engine));
       if (!state.optString("scene").equals("title") || !state.optString("error").isEmpty()) {
@@ -71,7 +55,7 @@ public final class DesktopEndingFlowCheck {
       if (!trophies.contains("WOHTROPHY1 1\n14\n"))
         throw new AssertionError("Completion trophy was not persisted");
       System.out.println(
-          "Real Windows render loop: authored ending -> automatic Title; clear flag and trophy"
+          "Unfocused Windows render loop: authored ending -> automatic Title; clear flag and trophy"
               + " preserved");
     } finally {
       NativeBridge.destroy(engine);

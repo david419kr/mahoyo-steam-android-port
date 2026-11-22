@@ -43,6 +43,20 @@ public final class DesktopInputCheck {
     if (!events.equals(Arrays.asList("skip:true", "skip:false")))
       throw new AssertionError("focus release: " + events);
     events.clear();
+    input.key(GLFW.GLFW_KEY_ENTER, GLFW.GLFW_PRESS, 0);
+    input.key(GLFW.GLFW_KEY_SPACE, GLFW.GLFW_PRESS, 0);
+    input.key(GLFW.GLFW_KEY_UP, GLFW.GLFW_PRESS, 0);
+    input.key(GLFW.GLFW_KEY_ESCAPE, GLFW.GLFW_PRESS, 0);
+    input.key(GLFW.GLFW_KEY_ENTER, GLFW.GLFW_PRESS, GLFW.GLFW_MOD_ALT);
+    input.key(GLFW.GLFW_KEY_ENTER, GLFW.GLFW_PRESS, GLFW.GLFW_MOD_SHIFT);
+    input.key(GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_PRESS, 0);
+    input.wheel(1);
+    if (!events.isEmpty()) throw new AssertionError("Unfocused keyboard/wheel input: " + events);
+    input.focus(true);
+    input.key(GLFW.GLFW_KEY_ENTER, GLFW.GLFW_PRESS, 0);
+    if (!events.equals(List.of("advance")))
+      throw new AssertionError("Refocused keyboard input: " + events);
+    events.clear();
     blocked[0] = true;
     input.key(GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_PRESS, 0);
     input.key(GLFW.GLFW_KEY_ENTER, GLFW.GLFW_PRESS, 0);

@@ -56,7 +56,7 @@ public final class DesktopGamepadCheck {
       pad.update(0, r1, true, game, 0, true, ++now);
       pad.update(0, r1, true, game, 0, true, ++now);
       if (!events.equals(List.of("skip:true", "skip:false")))
-        throw new AssertionError("Focus regain restarted held skip: " + events);
+        throw new AssertionError("Re-enabling blocked input restarted held skip: " + events);
       pad.update(0, 0, true, game, 0, true, ++now);
       pad.update(0, r1, true, game, 0, true, ++now);
       pad.update(-1, 0, true, game, 0, true, ++now);

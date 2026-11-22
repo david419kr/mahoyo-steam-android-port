@@ -10,7 +10,12 @@ import javax.swing.text.JTextComponent;
 final class DesktopDialogInput {
   static Window active() {
     Window window = KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
-    return window instanceof Dialog && window.isShowing() ? window : null;
+    if (window instanceof Dialog && window.isShowing()) return window;
+    // Controller input targets this JVM's visible dialog even while another app has OS focus.
+    Window[] windows = Window.getWindows();
+    for (int i = windows.length - 1; i >= 0; i--)
+      if (windows[i] instanceof Dialog && windows[i].isShowing()) return windows[i];
+    return null;
   }
 
   static void send(Window expected, DesktopGamepad.Action action) {

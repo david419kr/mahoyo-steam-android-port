@@ -473,7 +473,7 @@ final class DesktopWindow {
                                     : PadContext.TITLE;
         gamepad.poll(
             System.nanoTime(),
-            !syncBusy && (dialog != null || windowFocused && !dialogOpen),
+            !syncBusy && (dialog != null || !dialogOpen),
             padContext,
             padContext == PadContext.MENU
                 ? (menuFocus.selected() < 0 ? 0 : DesktopGamepad.VERTICAL)
@@ -710,8 +710,7 @@ final class DesktopWindow {
     Scene value = scene;
     if (value == null) return;
     boolean ready =
-        windowFocused
-            && !dialogOpen
+        !dialogOpen
             && !syncBusy
             && !controls.active()
             && committedScene == value
@@ -818,7 +817,7 @@ final class DesktopWindow {
       if (dialog != null) DesktopDialogInput.send(dialog, action);
       return;
     }
-    if (!windowFocused || scene == null) return;
+    if (scene == null) return;
     if (action == DesktopGamepad.Action.TOGGLE_FULLSCREEN) {
       fullscreen();
       return;

@@ -62,8 +62,11 @@ the selected rail. Pressing toward the center returns to neutral; release and
 press again to enter the opposite rail. D-pad shortcuts apply only with the menu hidden.
 
 Inside a dialog, use the D-pad to select, the bottom button to confirm and the right
-button to cancel. Left/right adjust a focused settings slider. Losing focus or
-disconnecting the controller stops its held skip. A button held while a menu
+button to cancel. Left/right adjust a focused settings slider. Controller input
+also works while another application has focus, including inside game dialogs.
+Keyboard input requires game focus; losing focus releases held Ctrl skip.
+Controller skip stops on button release, disconnection or a menu context change.
+A button held while a menu
 opens must be released before it can activate that menu.
 
 Korean patch: in Settings, select the existing `patch_KR` folder (or its parent)

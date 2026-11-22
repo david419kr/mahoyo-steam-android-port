@@ -26,7 +26,7 @@ public final class DesktopGameplayInputCheck {
       for (int i = 0; i < 200 && !state.optBoolean("canSave"); i++) {
         if (state.optString("waiting").equals("transitionReady")) {
           String ack = state.optString("alphaRulePrepareAck", "");
-            if (ack.isEmpty()) ack = state.getJSONObject("transition").optString("id");
+          if (ack.isEmpty()) ack = state.getJSONObject("transition").optString("id");
           state = call(handle, "transitionReady", ack);
         }
         state = call(handle, "tick", Integer.toString(i * 50));
@@ -72,9 +72,28 @@ public final class DesktopGameplayInputCheck {
       action.invoke(window, DesktopGamepad.Action.CANCEL);
       if (new JSONObject(NativeBridge.snapshot(handle)).getLong("version") <= version)
         throw new AssertionError("Game B with hidden rails did not advance");
+      set(window, "windowFocused", false);
+      for (DesktopGamepad.Action background :
+          new DesktopGamepad.Action[] {
+            DesktopGamepad.Action.ACCEPT, DesktopGamepad.Action.CANCEL
+          }) {
+        version = new JSONObject(NativeBridge.snapshot(handle)).getLong("version");
+        action.invoke(window, background);
+        if (new JSONObject(NativeBridge.snapshot(handle)).getLong("version") <= version)
+          throw new AssertionError("Unfocused controller action was blocked: " + background);
+      }
+      action.invoke(window, DesktopGamepad.Action.MENU);
+      if (!getBoolean(window, "menu"))
+        throw new AssertionError("Unfocused menu toggle was blocked");
+      action.invoke(window, DesktopGamepad.Action.MENU);
+      old = new DisplayPrefs(context).dynamic();
+      action.invoke(window, DesktopGamepad.Action.TOGGLE_DISPLAY);
+      if (new DisplayPrefs(context).dynamic() == old)
+        throw new AssertionError("Unfocused L1 was blocked");
+      action.invoke(window, DesktopGamepad.Action.TOGGLE_DISPLAY);
       System.out.println(
           "B advances with/without selected rails, keeps rail focus, hides cursor, does not advance"
-              + " popups; L1 display preference persists");
+              + " popups; background A/B/menu/L1 work; display preference persists");
     } finally {
       NativeBridge.destroy(handle);
     }
