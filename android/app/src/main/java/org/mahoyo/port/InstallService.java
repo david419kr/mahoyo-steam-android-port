@@ -13,7 +13,7 @@ public final class InstallService extends Service implements SteamSession.Listen
  private final LocalBinder binder=new LocalBinder();private final ExecutorService worker=Executors.newSingleThreadExecutor();private final Handler main=new Handler(Looper.getMainLooper());
  private Observer observer;private SteamSession session;private Future<?> job;private CompletableFuture<String> guard;private PowerManager.WakeLock wakeLock;private File downloadSource;final TransferStats transfer=new TransferStats();private final AuthQrRetry qrRetry=new AuthQrRetry();
  private LanQrServer qrLan;private long qrLanGeneration;private boolean qrLanForeground;String qrLanUrl="",qrLanError="";boolean qrLanStarting;
- String stage="choose",error="",email="",qrChallenge="";int retryAction=InstallRetry.OPTIONS;private int authMethod=InstallRetry.OPTIONS;boolean incorrect=false;long done=0,total=0,estimatedDownload=0,estimatedInstall=17_702_837_564L;float fraction=0;private boolean foreground=false;private long lastProgress=0;private volatile long operation=0;
+ String stage="choose",error="",email="",qrChallenge="";int retryAction=InstallRetry.OPTIONS;private int authMethod=InstallRetry.OPTIONS;boolean incorrect=false,canEnterGuardCode=false;long done=0,total=0,estimatedDownload=0,estimatedInstall=17_702_837_564L;float fraction=0;private boolean foreground=false;private long lastProgress=0;private volatile long operation=0;
  @Override public IBinder onBind(Intent intent){return binder;}
  @Override public void onCreate(){super.onCreate();try{org.json.JSONObject profile=SteamResources.assetJson(this,"steam-profile/source-profile.json",1024*1024).getJSONObject("steam");estimatedDownload=profile.getLong("networkBytes");estimatedInstall=profile.getLong("installedBytes");}catch(Exception e){failed(e.getMessage());}}
  void observe(Observer value){observer=value;if(value!=null)value.changed();}
@@ -23,13 +23,14 @@ public final class InstallService extends Service implements SteamSession.Listen
  void login(String username,char[] password){if(busy()){java.util.Arrays.fill(password,'\0');return;}authMethod=InstallRetry.PASSWORD;retryAction=InstallRetry.OPTIONS;qrRetry.clear();try{disconnect();error="";session=newSteamSession();stage="connecting";changed();session.login(username,password);}catch(Exception e){java.util.Arrays.fill(password,'\0');failed(e.getMessage());}}
  void loginQr(){if(busy())return;stopQrLan();authMethod=InstallRetry.QR;retryAction=InstallRetry.OPTIONS;qrRetry.start(SystemClock.elapsedRealtime());qrAttempt();}
  private void qrAttempt(){try{disconnectSteam();if(qrLan!=null)qrLan.update(null);error="";stage="connecting";session=newSteamSession();changed();session.loginQr();}catch(Exception e){failed(e.getMessage());}}
- void submitGuard(String code){CompletableFuture<String> answer=guard;if(answer!=null){guard=null;stage="authenticating";changed();answer.complete(code.trim());}}
- private void disconnectSteam(){if(session!=null)session.close();session=null;guard=null;qrChallenge="";}
+ void submitGuard(String code){CompletableFuture<String> answer=guard;if(stage.equals("guard")&&answer!=null&&!answer.isDone()){guard=null;stage="authenticating";changed();answer.complete(code.trim());}}
+ void useGuardCode(){if(stage.equals("mobile")&&canEnterGuardCode&&session!=null){canEnterGuardCode=false;session.useGuardCode();}}
+ private void disconnectSteam(){canEnterGuardCode=false;if(session!=null)session.close();session=null;guard=null;qrChallenge="";}
  void disconnect(){stopQrLan();disconnectSteam();}
  @Override public void status(String value){if(!value.equals("qr")&&!value.equals("connecting"))stopQrLan(false);stage=value;changed();}
  @Override public void guard(String email,boolean incorrect,CompletableFuture<String> answer){this.email=email==null?"":email;this.incorrect=incorrect;guard=answer;stage="guard";changed();}
  @Override public void qr(String challenge){qrChallenge=challenge;stage="qr";refreshQrLan();changed();}
- @Override public void mobileApproval(){stage="mobile";changed();}
+ @Override public void mobileApproval(boolean codeAllowed){canEnterGuardCode=codeAllowed;stage="mobile";changed();}
  @Override public void owned(String steamId){stopQrLan();qrRetry.clear();try{new Installation(this).confirmOwnership(steamId);stage="choose";changed();}catch(Exception e){failed(e.getMessage());}}
  void toggleQrLan(){if(qrLan!=null||qrLanStarting){stopQrLan();changed();return;}if(!stage.equals("qr")||qrChallenge.isEmpty())return;long ticket=++qrLanGeneration;qrLanStarting=true;qrLanError="";
   try{beginForeground();qrLanForeground=true;}catch(Exception failure){stopForegroundWork();qrLanStarting=false;qrLanError=getString(R.string.setup_qr_lan_unavailable);changed();return;}changed();

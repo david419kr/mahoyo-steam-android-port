@@ -14,7 +14,6 @@ import `in`.dragonbra.javasteam.steam.authentication.IChallengeUrlChanged
 import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
 import `in`.dragonbra.javasteam.steam.authentication.AuthSession
 import `in`.dragonbra.javasteam.steam.authentication.CredentialsAuthSession
-import `in`.dragonbra.javasteam.steam.authentication.AuthenticationException
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclient.EAuthSessionGuardType
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.License
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest
@@ -45,7 +44,7 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
         fun status(stage: String)
         fun guard(email: String?, incorrect: Boolean, answer: CompletableFuture<String>)
         fun qr(challenge: String)
-        fun mobileApproval()
+        fun mobileApproval(codeAllowed: Boolean)
         fun owned(steamId: String)
         fun estimate(downloadBytes: Long, installedBytes: Long)
         fun progress(fraction: Float, compressedBytes: Long, installedBytes: Long)
@@ -62,6 +61,8 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
     private val loggedOn=CompletableDeferred<LoggedOnCallback>()
     private val licenseList=CompletableDeferred<LicenseListCallback>()
     private var guard: CompletableFuture<String>?=null
+    @Volatile private var codeFallback: CompletableFuture<Unit>?=null
+    fun useGuardCode(){codeFallback?.complete(Unit)}
     private fun post(action:()->Unit){main.post{if(scope.isActive)action()}}
     private fun report(error:Exception){if(scope.isActive)post{listener.failed(if(error is CancellationException)AuthQrRetry.INTERRUPTED else error.message?:error.javaClass.simpleName)}}
     fun login(username: String,password: CharArray){scope.launch{
@@ -141,18 +142,27 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
         val device=EAuthSessionGuardType.k_EAuthSessionGuardType_DeviceCode
         val email=EAuthSessionGuardType.k_EAuthSessionGuardType_EmailCode
         val method=listOf(none,mobile,device,email).firstNotNullOfOrNull{type->session.allowedConfirmations.firstOrNull{it.confirmationType==type}}?:error("No supported Steam confirmation method")
-        if(method.confirmationType==mobile){post{listener.mobileApproval()};return approval(session,true)}
+        if(method.confirmationType==mobile){
+            val codeAllowed=session.allowedConfirmations.any{it.confirmationType==device}
+            if(!codeAllowed){post{listener.mobileApproval(false)};return approval(session,true)}
+            val switch=CompletableFuture<Unit>();codeFallback=switch
+            post{listener.mobileApproval(true)}
+            try{
+                return SteamGuardFlow.approve({approval(session,true)},{
+                    switch.await()
+                    enterGuardCode(session,device,null)
+                })
+            }finally{codeFallback=null;switch.cancel(true);guard?.cancel(true);guard=null}
+        }
         if(method.confirmationType!=none){
-            var incorrect=false
-            while(true){
-                val code=requestGuard(if(method.confirmationType==email)method.associatedMessage else null,incorrect).await()
-                try{session.sendSteamGuardCode(code,method.confirmationType,scope).await();break}
-                catch(error:AuthenticationException){if(error.result!=EResult.InvalidLoginAuthCode&&error.result!=EResult.TwoFactorCodeMismatch)throw error;incorrect=true}
-            }
+            enterGuardCode(session,method.confirmationType,if(method.confirmationType==email)method.associatedMessage else null)
         }
         return approval(session,false)
     }
-    private fun requestGuard(email:String?,incorrect:Boolean):CompletableFuture<String>{val answer=CompletableFuture<String>();guard=answer;post{listener.guard(email,incorrect,answer)};return answer}
+    private suspend fun enterGuardCode(session:CredentialsAuthSession,type:EAuthSessionGuardType,email:String?){
+        SteamGuardFlow.submitCode({incorrect->requestGuard(email,incorrect).await()},{code->session.sendSteamGuardCode(code,type,scope).await()})
+    }
+    private fun requestGuard(email:String?,incorrect:Boolean):CompletableFuture<String>{val answer=CompletableFuture<String>();guard=answer;post{if(!answer.isDone)listener.guard(email,incorrect,answer)};return answer}
     private data class DepotPlan(val manifest:Long,val network:Long,val installed:Long)
     private suspend fun depotPlan(apps:SteamApps):DepotPlan=withTimeout(60000){
             val tokens=apps.picsGetAccessTokens(listOf(Installation.APP_ID),emptyList()).await()
@@ -190,5 +200,5 @@ class SteamSession(private val listener: Listener,private val supportedManifest:
             post{listener.downloaded()}
         }catch(error:Exception){downloader?.close();downloader=null;report(error)}
     }}
-    override fun close(){verified=false;guard?.cancel(true);guard=null;downloader?.close();downloader=null;client?.disconnect();client=null;scope.cancel()}
+    override fun close(){verified=false;codeFallback?.cancel(true);codeFallback=null;guard?.cancel(true);guard=null;downloader?.close();downloader=null;client?.disconnect();client=null;scope.cancel()}
 }

@@ -56,4 +56,5 @@
     <string name="setup_patch_hint"></string>
     <string name="setup_steam_installed">Installed from Steam</string>
     <string name="setup_patch_installed">Korean patch applied</string>
+  <string name="setup_guard_instead">Enter Steam Guard code instead</string>
 </resources>

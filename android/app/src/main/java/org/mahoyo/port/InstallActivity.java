@@ -39,6 +39,7 @@ public final class InstallActivity extends Activity implements InstallService.Ob
   if(service.busy()){
    panel.addView(text(stageLabel(this,stage),18,0xffedf3fa));
    if(stage.equals("qr")){panel.addView(text(getString(R.string.setup_qr_guide),15,0xffb7cce1));qrLanControls();qrView=new ImageView(this);qrView.setScaleType(ImageView.ScaleType.FIT_CENTER);LinearLayout.LayoutParams qrParams=new LinearLayout.LayoutParams(-1,dp(240));qrParams.topMargin=dp(12);panel.addView(qrView,qrParams);}
+   else if(stage.equals("mobile")&&service.canEnterGuardCode){button(R.string.setup_guard_instead,()->service.useGuardCode());}
    else if(stage.equals("guard")){if(service.incorrect)panel.addView(text(getString(R.string.setup_guard_wrong),14,0xffd5b887));guard=input(getString(R.string.setup_guard),InputType.TYPE_CLASS_TEXT);button(R.string.setup_submit,()->service.submitGuard(guard.getText().toString()));}
    else if(!stage.equals("mobile")){progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);panel.addView(progress,new LinearLayout.LayoutParams(-1,dp(12)));progressText=text("",14,0xffb8c9dd);panel.addView(progressText);}
    space(18);button(R.string.setup_cancel,()->service.cancel());updateProgress();return;

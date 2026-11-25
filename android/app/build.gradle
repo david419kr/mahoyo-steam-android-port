@@ -53,6 +53,7 @@ android {
     ndkVersion '29.0.13113456'
     defaultConfig {
         applicationId 'org.mahoyo.port.unofficial'
+        manifestPlaceholders = [launcherLabel: '@string/app_name']
         minSdk 28
         targetSdk 35
         testInstrumentationRunner 'org.mahoyo.port.SourceProbe'
@@ -72,6 +73,13 @@ android {
     }
     buildTypes {
         release { debuggable false; minifyEnabled false; signingConfig signingConfigs.localRelease }
+        guardTest {
+            initWith release
+            applicationIdSuffix '.guardtest'
+            versionNameSuffix '-guard-test'
+            matchingFallbacks = ['release']
+            manifestPlaceholders = [launcherLabel: 'Mahoyo · Guard Test']
+        }
     }
     externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } }
     kotlinOptions { jvmTarget = "17" }
